@@ -1,1 +1,1 @@
-# workflow-management-service
+# workflow-management
