@@ -1,16 +1,12 @@
 package org.icgc.argo.workflow_management.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import org.icgc.argo.workflow_management.model.dto.WESRunConfig;
+import reactor.core.publisher.Mono;
 
 public interface WorkflowExecutionService {
-    class WESRunConfig {
-        JsonNode workflow_params;
-        String workflow_url;
-    }
+  Mono<String> run(WESRunConfig params);
 
-    String run(WESRunConfig params);
+  Mono<String> cancel(String runId);
 
-    String cancel(String runId);
-
-    String getServiceInfo();
+  Mono<String> getServiceInfo();
 }

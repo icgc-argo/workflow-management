@@ -1,15 +1,22 @@
 package org.icgc.argo.workflow_management.service;
 
+import lombok.extern.slf4j.Slf4j;
+import org.icgc.argo.workflow_management.model.dto.WESRunConfig;
+import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
+
+@Slf4j
+@Service(value = "nextflow")
 public class NextflowService implements WorkflowExecutionService {
-    public String run(WESRunConfig params) {
-        return "Not implemented!";
-    }
+  public Mono<String> run(WESRunConfig params) {
+    return null;
+  }
 
-    public String cancel(String runId) {
-        return "Not implemented!";
-    }
+  public Mono<String> cancel(String runId) {
+    return null;
+  }
 
-    public String getServiceInfo() {
-        return "Not implemented!";
-    }
+  public Mono<String> getServiceInfo() {
+    return null;
+  }
 }
