@@ -2,6 +2,7 @@ package org.icgc.argo.workflow_management.controller;
 
 import lombok.val;
 import org.icgc.argo.workflow_management.model.dto.RunsRequest;
+import org.icgc.argo.workflow_management.model.dto.RunsResponse;
 import org.icgc.argo.workflow_management.model.dto.WESRunConfig;
 import org.icgc.argo.workflow_management.service.WorkflowExecutionService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +24,7 @@ public class RunsController {
   private WorkflowExecutionService nextflowService;
 
   @PostMapping
-  private Mono<String> postRuns(@Valid @RequestBody RunsRequest runsRequest) {
+  private Mono<RunsResponse> postRuns(@Valid @RequestBody RunsRequest runsRequest) {
 
     // create run config from request
     val runConfig =
