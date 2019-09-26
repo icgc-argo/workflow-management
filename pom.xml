@@ -39,7 +39,15 @@
 			<artifactId>reactor-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-    </dependencies>
+		
+		<!-- https://mvnrepository.com/artifact/io.nextflow/nextflow -->
+		<dependency>
+			<groupId>io.nextflow</groupId>
+			<artifactId>nextflow</artifactId>
+			<version>19.07.0</version>
+		</dependency>
+
+	</dependencies>
 
 	<build>
 		<plugins>
