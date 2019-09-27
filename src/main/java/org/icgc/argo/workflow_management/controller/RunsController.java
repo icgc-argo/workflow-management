@@ -23,10 +23,6 @@ public class RunsController {
   @Qualifier("nextflow")
   private WorkflowExecutionService nextflowService;
 
-  @Autowired
-  @Qualifier("wdl")
-  private WorkflowExecutionService wdlService;
-
   @PostMapping
   private Mono<RunsResponse> postRuns(@Valid @RequestBody RunsRequest runsRequest) {
     val wesService = resolveWesType("nextflow");
@@ -42,10 +38,6 @@ public class RunsController {
   }
 
   private WorkflowExecutionService resolveWesType(String workflowType) {
-    if (workflowType.equals("wdl")) {
-      return wdlService;
-    }
-
     return nextflowService;
   }
 }
