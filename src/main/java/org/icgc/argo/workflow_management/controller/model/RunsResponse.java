@@ -1,4 +1,4 @@
-package org.icgc.argo.workflow_management.model.dto;
+package org.icgc.argo.workflow_management.controller.model;
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;

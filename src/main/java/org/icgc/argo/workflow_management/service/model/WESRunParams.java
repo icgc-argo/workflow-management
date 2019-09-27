@@ -1,4 +1,4 @@
-package org.icgc.argo.workflow_management.model.dto;
+package org.icgc.argo.workflow_management.service.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,7 +12,7 @@ import java.util.Map;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class WESRunConfig {
+public class WESRunParams {
   @NotNull private Map<String, Object> workflow_params;
   @NotNull private String workflow_url;
 }

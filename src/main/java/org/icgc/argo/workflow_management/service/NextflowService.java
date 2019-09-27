@@ -4,8 +4,8 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import nextflow.cli.CmdKubeRun;
 import nextflow.k8s.K8sDriverLauncher;
-import org.icgc.argo.workflow_management.model.dto.RunsResponse;
-import org.icgc.argo.workflow_management.model.dto.WESRunConfig;
+import org.icgc.argo.workflow_management.controller.model.RunsResponse;
+import org.icgc.argo.workflow_management.service.model.WESRunParams;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
@@ -14,7 +14,7 @@ import java.util.ArrayList;
 @Slf4j
 @Service(value = "nextflow")
 public class NextflowService implements WorkflowExecutionService {
-  public Mono<RunsResponse> run(WESRunConfig params) {
+  public Mono<RunsResponse> run(WESRunParams params) {
     return Mono.create(
         callback -> {
 
@@ -23,7 +23,8 @@ public class NextflowService implements WorkflowExecutionService {
           cmd.setLatest(true);
           cmd.setBackground(true);
 
-          // this looks like what we need: https://github.com/nextflow-io/nextflow/blob/de132de32c3855db6fa7b8611f92b165dcb4c859/modules/nextflow/src/main/groovy/nextflow/k8s/K8sDriverLauncher.groovy
+          // this looks like what we need:
+          // https://github.com/nextflow-io/nextflow/blob/de132de32c3855db6fa7b8611f92b165dcb4c859/modules/nextflow/src/main/groovy/nextflow/k8s/K8sDriverLauncher.groovy
           // TODO: extend this class and create the constructor / builder
           val driver = new K8sDriverLauncher();
           driver.run("test", new ArrayList<>());
