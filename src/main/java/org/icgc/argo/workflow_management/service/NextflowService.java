@@ -9,22 +9,27 @@ import nextflow.cli.Launcher;
 import nextflow.k8s.K8sDriverLauncher;
 import org.icgc.argo.workflow_management.controller.model.RunsResponse;
 import org.icgc.argo.workflow_management.service.model.WESRunParams;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ReflectionUtils;
 import reactor.core.publisher.Mono;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static java.util.Objects.nonNull;
 
 @Slf4j
 @Service(value = "nextflow")
 public class NextflowService implements WorkflowExecutionService {
+
+  @Value("${nextflow.k8s.namespace}")
+  private String k8sNamespace;
+
+  @Value("${nextflow.k8s.volMounts}")
+  private String k8sVolMounts;
+
   public Mono<RunsResponse> run(WESRunParams params) {
     return Mono.create(
         callback -> {
@@ -63,21 +68,27 @@ public class NextflowService implements WorkflowExecutionService {
   }
 
   private CmdKubeRun createCmd(@NonNull Launcher launcher, @NonNull WESRunParams params) {
-    // Construct cmd params from workflow params and url
+
+    // params to build CmdKubeRun object
     val cmdParams = new HashMap<String, Object>();
 
+    val processOptions = new HashMap<String, String>();
+
+    // todo: should come in as workflow engine options?
+    processOptions.put("container", "quay.io/pancancer/pcawg-bwa-mem:latest");
+    cmdParams.put("process", processOptions);
+    cmdParams.put("latest", true);
+
+    // launcher and launcher options required by CmdKubeRun
+    cmdParams.put("launcher", launcher);
+
+    // workflow name/git and workflow params from request
     cmdParams.put("args", Arrays.asList(params.getWorkflow_url()));
     cmdParams.put("params", params.getWorkflow_params());
 
-    // Add static options (todo: make into config?)
-    val processOptions = new HashMap<String, String>();
-    processOptions.put("container", "quay.io/pancancer/pcawg-bwa-mem:latest");
-
-    cmdParams.put("process", processOptions);
-    cmdParams.put("namespace", "nextflow-pcawg");
-    cmdParams.put("latest", true);
-    cmdParams.put("volMounts", Arrays.asList("nextflow-pv-claim:/mnt/volume/nextflow"));
-    cmdParams.put("launcher", launcher);
+    // K8s options from application.yml
+    cmdParams.put("namespace", k8sNamespace);
+    cmdParams.put("volMounts", Collections.singletonList(k8sVolMounts));
 
     return createWithReflection(CmdKubeRun.class, cmdParams).orElseThrow();
   }

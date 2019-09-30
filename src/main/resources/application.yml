@@ -1,0 +1,5 @@
+
+nextflow:
+  k8s:
+    namespace: "nextflow-pcawg"
+    volMounts: "nextflow-pv-claim:/mnt/volume/nextflow"
