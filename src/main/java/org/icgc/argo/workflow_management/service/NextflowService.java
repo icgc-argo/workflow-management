@@ -33,15 +33,15 @@ public class NextflowService implements WorkflowExecutionService {
   public Mono<RunsResponse> run(WESRunParams params) {
     return Mono.create(
         callback -> {
-          val cmd = createCmd(createLauncher(), params);
-          val driver = createDriver(cmd);
-
-          // Run it!
-          driver.run(params.getWorkflow_url(), Arrays.asList());
-          val exitStatus = driver.shutdown();
-          val response = new RunsResponse(exitStatus == 0 ? cmd.getRunName() : "Error!");
-
           try {
+            val cmd = createCmd(createLauncher(), params);
+            val driver = createDriver(cmd);
+
+            // Run it!
+            driver.run(params.getWorkflow_url(), Arrays.asList());
+            val exitStatus = driver.shutdown();
+            val response = new RunsResponse(exitStatus == 0 ? cmd.getRunName() : "Error!");
+
             callback.success(response);
           } catch (Exception e) {
             callback.error(e);
@@ -57,17 +57,17 @@ public class NextflowService implements WorkflowExecutionService {
     return null;
   }
 
-  private Launcher createLauncher() {
+  private Launcher createLauncher() throws NextflowReflectionException {
     // Add a launcher to the mix
     val launcherParams = new HashMap<String, Object>();
     val cliOptions = new CliOptions();
     cliOptions.setBackground(true);
     launcherParams.put("options", cliOptions);
 
-    return createWithReflection(Launcher.class, launcherParams).orElseThrow();
+    return createWithReflection(Launcher.class, launcherParams).orElseThrow(NextflowReflectionException::new);
   }
 
-  private CmdKubeRun createCmd(@NonNull Launcher launcher, @NonNull WESRunParams params) {
+  private CmdKubeRun createCmd(@NonNull Launcher launcher, @NonNull WESRunParams params) throws NextflowReflectionException {
 
     // params to build CmdKubeRun object
     val cmdParams = new HashMap<String, Object>();
@@ -90,22 +90,29 @@ public class NextflowService implements WorkflowExecutionService {
     cmdParams.put("namespace", k8sNamespace);
     cmdParams.put("volMounts", Collections.singletonList(k8sVolMounts));
 
-    return createWithReflection(CmdKubeRun.class, cmdParams).orElseThrow();
+    return createWithReflection(CmdKubeRun.class, cmdParams).orElseThrow(NextflowReflectionException::new);
   }
 
-  private K8sDriverLauncher createDriver(@NonNull CmdKubeRun cmd) {
+  private K8sDriverLauncher createDriver(@NonNull CmdKubeRun cmd) throws NextflowReflectionException {
+
     Method checkRunName = null;
+
     try {
       checkRunName = CmdKubeRun.class.getDeclaredMethod("checkRunName");
     } catch (NoSuchMethodException e) {
       e.printStackTrace();
     }
-    assert checkRunName != null;
-    checkRunName.setAccessible(true);
-    try {
-      checkRunName.invoke(cmd);
-    } catch (IllegalAccessException | InvocationTargetException e) {
-      e.printStackTrace();
+
+    if (checkRunName != null) {
+      checkRunName.setAccessible(true);
+
+      try {
+        checkRunName.invoke(cmd);
+      } catch (IllegalAccessException | InvocationTargetException e) {
+        e.printStackTrace();
+      }
+    } else {
+      throw new NextflowReflectionException("Cannot access checkRunName!");
     }
 
     val k8sDriverLauncherParams = new HashMap<String, Object>();
@@ -113,7 +120,8 @@ public class NextflowService implements WorkflowExecutionService {
     k8sDriverLauncherParams.put("runName", cmd.getRunName());
     k8sDriverLauncherParams.put("background", true);
 
-    return createWithReflection(K8sDriverLauncher.class, k8sDriverLauncherParams).orElseThrow();
+    return createWithReflection(K8sDriverLauncher.class, k8sDriverLauncherParams)
+        .orElseThrow(NextflowReflectionException::new);
   }
 
   private <T> Optional<T> createWithReflection(Class<T> objClass, Map<String, Object> params) {
@@ -139,5 +147,15 @@ public class NextflowService implements WorkflowExecutionService {
         });
 
     return obj;
+  }
+
+  public class NextflowReflectionException extends Exception {
+    NextflowReflectionException(String exception) {
+      super(exception);
+    }
+
+    NextflowReflectionException() {
+      super();
+    }
   }
 }
