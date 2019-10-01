@@ -8,8 +8,9 @@ import nextflow.cli.CmdKubeRun;
 import nextflow.cli.Launcher;
 import nextflow.k8s.K8sDriverLauncher;
 import org.icgc.argo.workflow_management.controller.model.RunsResponse;
+import org.icgc.argo.workflow_management.service.config.NextflowConfig;
 import org.icgc.argo.workflow_management.service.model.WESRunParams;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ReflectionUtils;
 import reactor.core.publisher.Mono;
@@ -24,11 +25,7 @@ import static java.util.Objects.nonNull;
 @Service(value = "nextflow")
 public class NextflowService implements WorkflowExecutionService {
 
-  @Value("${nextflow.k8s.namespace}")
-  private String k8sNamespace;
-
-  @Value("${nextflow.k8s.volMounts}")
-  private String k8sVolMounts;
+  @Autowired private NextflowConfig config;
 
   public Mono<RunsResponse> run(WESRunParams params) {
     return Mono.create(
@@ -38,7 +35,7 @@ public class NextflowService implements WorkflowExecutionService {
             val driver = createDriver(cmd);
 
             // Run it!
-            driver.run(params.getWorkflow_url(), Arrays.asList());
+            driver.run(params.getWorkflowUrl(), Arrays.asList());
             val exitStatus = driver.shutdown();
             val response = new RunsResponse(exitStatus == 0 ? cmd.getRunName() : "Error!");
 
@@ -64,36 +61,63 @@ public class NextflowService implements WorkflowExecutionService {
     cliOptions.setBackground(true);
     launcherParams.put("options", cliOptions);
 
-    return createWithReflection(Launcher.class, launcherParams).orElseThrow(NextflowReflectionException::new);
+    return createWithReflection(Launcher.class, launcherParams)
+        .orElseThrow(NextflowReflectionException::new);
   }
 
-  private CmdKubeRun createCmd(@NonNull Launcher launcher, @NonNull WESRunParams params) throws NextflowReflectionException {
+  private CmdKubeRun createCmd(@NonNull Launcher launcher, @NonNull WESRunParams params)
+      throws NextflowReflectionException {
+
+    // Config from application.yml
+    val k8sConfig = config.getK8s();
+    val webLogUrl = config.getWeblogUrl();
 
     // params to build CmdKubeRun object
     val cmdParams = new HashMap<String, Object>();
 
-    val processOptions = new HashMap<String, String>();
-
-    // todo: should come in as workflow engine options?
-    processOptions.put("container", "quay.io/pancancer/pcawg-bwa-mem:latest");
-    cmdParams.put("process", processOptions);
+    // always pull latest code before running
+    // (does not prevent us running a specific version (revision),
+    // does enforce pulling of that branch/hash before running)
     cmdParams.put("latest", true);
 
     // launcher and launcher options required by CmdKubeRun
     cmdParams.put("launcher", launcher);
 
     // workflow name/git and workflow params from request
-    cmdParams.put("args", Arrays.asList(params.getWorkflow_url()));
-    cmdParams.put("params", params.getWorkflow_params());
+    cmdParams.put("args", Arrays.asList(params.getWorkflowUrl()));
+    cmdParams.put("params", params.getWorkflowParams());
 
     // K8s options from application.yml
-    cmdParams.put("namespace", k8sNamespace);
-    cmdParams.put("volMounts", Collections.singletonList(k8sVolMounts));
+    cmdParams.put("namespace", k8sConfig.getNamespace());
+    cmdParams.put("volMounts", Collections.singletonList(k8sConfig.getVolMounts()));
 
-    return createWithReflection(CmdKubeRun.class, cmdParams).orElseThrow(NextflowReflectionException::new);
+    // Where to POST event-based logging
+    cmdParams.put("withWebLog", webLogUrl);
+
+    // Dynamic engine properties/config
+    val workflowEngineOptions = params.getWorkflowEngineParameters();
+
+    // Use revision if provided in workflow_engine_options
+    if (nonNull(workflowEngineOptions)) {
+
+      if (nonNull(workflowEngineOptions.getRevision())) {
+        cmdParams.put("revision", workflowEngineOptions.getRevision());
+      }
+
+      // Process options (default docker container to run for process if not specified)
+      if (nonNull(workflowEngineOptions.getProcess())) {
+        val processOptions = new HashMap<String, String>();
+        processOptions.put("container", workflowEngineOptions.getProcess().getContainer());
+        cmdParams.put("process", processOptions);
+      }
+    }
+
+    return createWithReflection(CmdKubeRun.class, cmdParams)
+        .orElseThrow(NextflowReflectionException::new);
   }
 
-  private K8sDriverLauncher createDriver(@NonNull CmdKubeRun cmd) throws NextflowReflectionException {
+  private K8sDriverLauncher createDriver(@NonNull CmdKubeRun cmd)
+      throws NextflowReflectionException {
 
     Method checkRunName = null;
 

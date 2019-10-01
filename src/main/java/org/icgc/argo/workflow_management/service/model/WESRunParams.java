@@ -1,18 +1,18 @@
 package org.icgc.argo.workflow_management.service.model;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import org.icgc.argo.workflow_management.controller.model.WorkflowEngineParameters;
 
-import javax.validation.constraints.NotNull;
 import java.util.Map;
 
 @Data
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class WESRunParams {
-  @NotNull private Map<String, Object> workflow_params;
-  @NotNull private String workflow_url;
+  @NonNull final Map<String, Object> workflowParams;
+  @NonNull private final WorkflowEngineParameters workflowEngineParameters;
+  @NonNull private final String workflowUrl;
 }

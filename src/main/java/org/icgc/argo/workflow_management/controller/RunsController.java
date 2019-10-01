@@ -30,8 +30,9 @@ public class RunsController {
     // create run config from request
     val runConfig =
         WESRunParams.builder()
-            .workflow_url(runsRequest.getWorkflowUrl())
-            .workflow_params(runsRequest.getWorkflowParams())
+            .workflowUrl(runsRequest.getWorkflowUrl())
+            .workflowParams(runsRequest.getWorkflowParams())
+            .workflowEngineParameters(runsRequest.getWorkflowEngineParameters())
             .build();
 
     return wesService.run(runConfig);
