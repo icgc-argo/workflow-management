@@ -11,11 +11,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
 public class WorkflowEngineParameters {
-  private ProcessOptions process;
-  private String revision;
-
-  @Data
-  public static class ProcessOptions {
-    private String container;
-  }
+  private String defaultContainer;
+  private String workflowVersion;
 }

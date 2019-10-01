@@ -47,11 +47,11 @@ public class NextflowService implements WorkflowExecutionService {
   }
 
   public Mono<String> cancel(String runId) {
-    return null;
+    return Mono.just("Unimplemented Endpoint!");
   }
 
   public Mono<String> getServiceInfo() {
-    return null;
+    return Mono.just("Unimplemented Endpoint!");
   }
 
   private Launcher createLauncher() throws NextflowReflectionException {
@@ -100,14 +100,14 @@ public class NextflowService implements WorkflowExecutionService {
     // Use revision if provided in workflow_engine_options
     if (nonNull(workflowEngineOptions)) {
 
-      if (nonNull(workflowEngineOptions.getRevision())) {
-        cmdParams.put("revision", workflowEngineOptions.getRevision());
+      if (nonNull(workflowEngineOptions.getWorkflowVersion())) {
+        cmdParams.put("revision", workflowEngineOptions.getWorkflowVersion());
       }
 
       // Process options (default docker container to run for process if not specified)
-      if (nonNull(workflowEngineOptions.getProcess())) {
+      if (nonNull(workflowEngineOptions.getDefaultContainer())) {
         val processOptions = new HashMap<String, String>();
-        processOptions.put("container", workflowEngineOptions.getProcess().getContainer());
+        processOptions.put("container", workflowEngineOptions.getDefaultContainer());
         cmdParams.put("process", processOptions);
       }
     }
