@@ -1,4 +1,4 @@
-package org.icgc.argo.workflow_management.service.config;
+package org.icgc.argo.workflow_management.service.properties;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @EnableConfigurationProperties
 @ConfigurationProperties(prefix = "nextflow")
-public class NextflowConfig {
+public class NextflowProperties {
   private K8sProperties k8s;
   private String weblogUrl;
 

@@ -8,7 +8,7 @@ import nextflow.cli.CmdKubeRun;
 import nextflow.cli.Launcher;
 import nextflow.k8s.K8sDriverLauncher;
 import org.icgc.argo.workflow_management.controller.model.RunsResponse;
-import org.icgc.argo.workflow_management.service.config.NextflowConfig;
+import org.icgc.argo.workflow_management.service.properties.NextflowProperties;
 import org.icgc.argo.workflow_management.service.model.WESRunParams;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -25,7 +25,7 @@ import static java.util.Objects.nonNull;
 @Service(value = "nextflow")
 public class NextflowService implements WorkflowExecutionService {
 
-  @Autowired private NextflowConfig config;
+  @Autowired private NextflowProperties config;
 
   public Mono<RunsResponse> run(WESRunParams params) {
     return Mono.create(

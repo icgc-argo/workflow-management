@@ -2,21 +2,17 @@ package org.icgc.argo.workflow_management.controller.model;
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import javax.validation.Valid;
+import java.util.*;
 
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
-// TODO: Should there be a separate service for service info?
+// TODO: Move this to the events/logging service
 public class ServiceInfoResponse {
   private String authInstructionsUrl;
   private String contactInfoUrl;

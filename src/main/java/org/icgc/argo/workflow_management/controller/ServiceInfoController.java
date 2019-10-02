@@ -1,29 +1,51 @@
 package org.icgc.argo.workflow_management.controller;
 
 import org.icgc.argo.workflow_management.controller.model.ServiceInfoResponse;
+import org.icgc.argo.workflow_management.controller.properties.ServiceInfoProperties;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
-import java.util.Arrays;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/service-info")
+// TODO: Move this to the events/logging service
 public class ServiceInfoController {
+
+  @Autowired
+  ServiceInfoProperties serviceInfoProperties;
 
   @GetMapping
   private Mono<ServiceInfoResponse> getServiceInfo() {
     return Mono.just(
         ServiceInfoResponse.builder()
-            .authInstructionsUrl("https://example.com/auth")
-            .contactInfoUrl("https://example.com/contact")
-            .supportedFilesystemProtocols(Arrays.asList("s3", "SONG"))
-            .supportedWesVersions("1.0.0")
-            .systemStateCounts(Map.of("counts", "should come from logs? should be a different service"))
-            .workflowEngineVersions(Map.of("nextflow", "19.07.0.5106"))
-            .workflowTypeVersions(Map.of("pcawg_bwa_mem", "1.0.0"))
+            .authInstructionsUrl(serviceInfoProperties.getAuthInstructionsUrl())
+            .contactInfoUrl(serviceInfoProperties.getContactInfoUrl())
+            .defaultWorkflowEngineParameters(serviceInfoProperties.getDefaultWorkflowEngineParameters())
+            .supportedFilesystemProtocols(serviceInfoProperties.getSupportedFilesystemProtocols())
+            .supportedWesVersions(serviceInfoProperties.getSupportedWesVersions())
+            .systemStateCounts(getSystemStateCounts())
+            .workflowEngineVersions(serviceInfoProperties.getWorkflowEngineVersions())
+            .workflowTypeVersions(serviceInfoProperties.getWorkflowTypeVersions())
             .build());
+  }
+
+  // TODO: Make this work for realzzz boiii
+  public Map<String, Object> getSystemStateCounts() {
+    return Map.of(
+        "UNKNOWN", 0,
+        "QUEUED", 3,
+        "INITIALIZING", 6,
+        "RUNNING", 10,
+        "PAUSED", 0,
+        "COMPLETE", 9001,
+        "EXECUTOR_ERROR", 0,
+        "SYSTEM_ERROR", 0,
+        "CANCELED", 13,
+        "CANCELING", 0
+  );
   }
 }
