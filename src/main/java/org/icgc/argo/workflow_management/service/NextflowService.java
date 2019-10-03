@@ -124,7 +124,7 @@ public class NextflowService implements WorkflowExecutionService {
     try {
       checkRunName = CmdKubeRun.class.getDeclaredMethod("checkRunName");
     } catch (NoSuchMethodException e) {
-      e.printStackTrace();
+      log.error("CmdKubeRun getDeclaredMethod error", e);
     }
 
     if (checkRunName != null) {
@@ -133,7 +133,7 @@ public class NextflowService implements WorkflowExecutionService {
       try {
         checkRunName.invoke(cmd);
       } catch (IllegalAccessException | InvocationTargetException e) {
-        e.printStackTrace();
+        log.error("checkRunName invoke error", e);
       }
     } else {
       throw new NextflowReflectionException("Cannot access checkRunName!");
@@ -153,7 +153,7 @@ public class NextflowService implements WorkflowExecutionService {
       T obj = objClass.newInstance();
       return Optional.of(reflectionFactory(objClass, obj, params));
     } catch (InstantiationException | IllegalAccessException e) {
-      log.error(e.getMessage());
+      log.error("createWithReflection error", e);
     }
 
     return Optional.empty();
