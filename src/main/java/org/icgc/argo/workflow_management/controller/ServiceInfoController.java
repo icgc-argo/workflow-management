@@ -34,7 +34,7 @@ public class ServiceInfoController {
   }
 
   // TODO: Make this work for realzzz boiii
-  public Map<String, Object> getSystemStateCounts() {
+  private static final Map<String, Object> getSystemStateCounts() {
     return Map.of(
         "UNKNOWN", 0,
         "QUEUED", 3,
