@@ -12,7 +12,6 @@ import org.icgc.argo.workflow_management.service.properties.NextflowProperties;
 import org.icgc.argo.workflow_management.service.model.WESRunParams;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.util.ReflectionUtils;
 import reactor.core.publisher.Mono;
 
 import java.lang.reflect.InvocationTargetException;
@@ -20,6 +19,7 @@ import java.lang.reflect.Method;
 import java.util.*;
 
 import static java.util.Objects.nonNull;
+import static org.icgc.argo.workflow_management.util.Reflections.createWithReflection;
 
 @Slf4j
 @Service(value = "nextflow")
@@ -146,31 +146,6 @@ public class NextflowService implements WorkflowExecutionService {
 
     return createWithReflection(K8sDriverLauncher.class, k8sDriverLauncherParams)
         .orElseThrow(NextflowReflectionException::new);
-  }
-
-  private <T> Optional<T> createWithReflection(Class<T> objClass, Map<String, Object> params) {
-    try {
-      T obj = objClass.newInstance();
-      return Optional.of(reflectionFactory(objClass, obj, params));
-    } catch (InstantiationException | IllegalAccessException e) {
-      log.error("createWithReflection error", e);
-    }
-
-    return Optional.empty();
-  }
-
-  private <T> T reflectionFactory(Class<T> objClass, T obj, Map<String, Object> map) {
-    map.forEach(
-        (key, value) -> {
-          val field = ReflectionUtils.findField(objClass, key);
-
-          if (nonNull(field)) {
-            ReflectionUtils.makeAccessible(field);
-            ReflectionUtils.setField(field, obj, value);
-          }
-        });
-
-    return obj;
   }
 
   public class NextflowReflectionException extends Exception {
