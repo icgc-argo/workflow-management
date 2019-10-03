@@ -8,6 +8,7 @@ import nextflow.cli.CmdKubeRun;
 import nextflow.cli.Launcher;
 import nextflow.k8s.K8sDriverLauncher;
 import org.icgc.argo.workflow_management.controller.model.RunsResponse;
+import org.icgc.argo.workflow_management.exception.NextflowReflectionException;
 import org.icgc.argo.workflow_management.service.properties.NextflowProperties;
 import org.icgc.argo.workflow_management.service.model.WESRunParams;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -146,15 +147,5 @@ public class NextflowService implements WorkflowExecutionService {
 
     return createWithReflection(K8sDriverLauncher.class, k8sDriverLauncherParams)
         .orElseThrow(NextflowReflectionException::new);
-  }
-
-  public class NextflowReflectionException extends Exception {
-    NextflowReflectionException(String exception) {
-      super(exception);
-    }
-
-    NextflowReflectionException() {
-      super();
-    }
   }
 }
