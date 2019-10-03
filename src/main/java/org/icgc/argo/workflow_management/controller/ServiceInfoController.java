@@ -15,23 +15,7 @@ import java.util.Map;
 // TODO: Move this to the events/logging service
 public class ServiceInfoController {
 
-  @Autowired
-  ServiceInfoProperties serviceInfoProperties;
-
-  @GetMapping
-  private Mono<ServiceInfoResponse> getServiceInfo() {
-    return Mono.just(
-        ServiceInfoResponse.builder()
-            .authInstructionsUrl(serviceInfoProperties.getAuthInstructionsUrl())
-            .contactInfoUrl(serviceInfoProperties.getContactInfoUrl())
-            .defaultWorkflowEngineParameters(serviceInfoProperties.getDefaultWorkflowEngineParameters())
-            .supportedFilesystemProtocols(serviceInfoProperties.getSupportedFilesystemProtocols())
-            .supportedWesVersions(serviceInfoProperties.getSupportedWesVersions())
-            .systemStateCounts(getSystemStateCounts())
-            .workflowEngineVersions(serviceInfoProperties.getWorkflowEngineVersions())
-            .workflowTypeVersions(serviceInfoProperties.getWorkflowTypeVersions())
-            .build());
-  }
+  @Autowired ServiceInfoProperties serviceInfoProperties;
 
   // TODO: Make this work for realzzz boiii
   private static final Map<String, Object> getSystemStateCounts() {
@@ -45,7 +29,22 @@ public class ServiceInfoController {
         "EXECUTOR_ERROR", 0,
         "SYSTEM_ERROR", 0,
         "CANCELED", 13,
-        "CANCELING", 0
-  );
+        "CANCELING", 0);
+  }
+
+  @GetMapping
+  private Mono<ServiceInfoResponse> getServiceInfo() {
+    return Mono.just(
+        ServiceInfoResponse.builder()
+            .authInstructionsUrl(serviceInfoProperties.getAuthInstructionsUrl())
+            .contactInfoUrl(serviceInfoProperties.getContactInfoUrl())
+            .defaultWorkflowEngineParameters(
+                serviceInfoProperties.getDefaultWorkflowEngineParameters())
+            .supportedFilesystemProtocols(serviceInfoProperties.getSupportedFilesystemProtocols())
+            .supportedWesVersions(serviceInfoProperties.getSupportedWesVersions())
+            .systemStateCounts(getSystemStateCounts())
+            .workflowEngineVersions(serviceInfoProperties.getWorkflowEngineVersions())
+            .workflowTypeVersions(serviceInfoProperties.getWorkflowTypeVersions())
+            .build());
   }
 }

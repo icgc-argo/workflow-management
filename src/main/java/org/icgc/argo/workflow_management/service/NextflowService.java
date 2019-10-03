@@ -8,19 +8,22 @@ import nextflow.cli.CmdKubeRun;
 import nextflow.cli.Launcher;
 import nextflow.k8s.K8sDriverLauncher;
 import org.icgc.argo.workflow_management.controller.model.RunsResponse;
-import org.icgc.argo.workflow_management.exception.NextflowReflectionException;
-import org.icgc.argo.workflow_management.service.properties.NextflowProperties;
+import org.icgc.argo.workflow_management.exception.ReflectionUtilsException;
 import org.icgc.argo.workflow_management.service.model.WESRunParams;
+import org.icgc.argo.workflow_management.service.properties.NextflowProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 
 import static java.util.Objects.nonNull;
 import static org.icgc.argo.workflow_management.util.Reflections.createWithReflection;
+import static org.icgc.argo.workflow_management.util.Reflections.invokeDeclaredMethod;
 
 @Slf4j
 @Service(value = "nextflow")
@@ -55,7 +58,7 @@ public class NextflowService implements WorkflowExecutionService {
     return Mono.just("Unimplemented Endpoint!");
   }
 
-  private Launcher createLauncher() throws NextflowReflectionException {
+  private Launcher createLauncher() throws ReflectionUtilsException {
     // Add a launcher to the mix
     val launcherParams = new HashMap<String, Object>();
     val cliOptions = new CliOptions();
@@ -63,11 +66,11 @@ public class NextflowService implements WorkflowExecutionService {
     launcherParams.put("options", cliOptions);
 
     return createWithReflection(Launcher.class, launcherParams)
-        .orElseThrow(NextflowReflectionException::new);
+        .orElseThrow(ReflectionUtilsException::new);
   }
 
   private CmdKubeRun createCmd(@NonNull Launcher launcher, @NonNull WESRunParams params)
-      throws NextflowReflectionException {
+      throws ReflectionUtilsException {
 
     // Config from application.yml
     val k8sConfig = config.getK8s();
@@ -114,31 +117,12 @@ public class NextflowService implements WorkflowExecutionService {
     }
 
     return createWithReflection(CmdKubeRun.class, cmdParams)
-        .orElseThrow(NextflowReflectionException::new);
+        .orElseThrow(ReflectionUtilsException::new);
   }
 
-  private K8sDriverLauncher createDriver(@NonNull CmdKubeRun cmd)
-      throws NextflowReflectionException {
+  private K8sDriverLauncher createDriver(@NonNull CmdKubeRun cmd) throws ReflectionUtilsException {
 
-    Method checkRunName = null;
-
-    try {
-      checkRunName = CmdKubeRun.class.getDeclaredMethod("checkRunName");
-    } catch (NoSuchMethodException e) {
-      log.error("CmdKubeRun getDeclaredMethod error", e);
-    }
-
-    if (checkRunName != null) {
-      checkRunName.setAccessible(true);
-
-      try {
-        checkRunName.invoke(cmd);
-      } catch (IllegalAccessException | InvocationTargetException e) {
-        log.error("checkRunName invoke error", e);
-      }
-    } else {
-      throw new NextflowReflectionException("Cannot access checkRunName!");
-    }
+    invokeDeclaredMethod(cmd, "checkRunName");
 
     val k8sDriverLauncherParams = new HashMap<String, Object>();
     k8sDriverLauncherParams.put("cmd", cmd);
@@ -146,6 +130,6 @@ public class NextflowService implements WorkflowExecutionService {
     k8sDriverLauncherParams.put("background", true);
 
     return createWithReflection(K8sDriverLauncher.class, k8sDriverLauncherParams)
-        .orElseThrow(NextflowReflectionException::new);
+        .orElseThrow(ReflectionUtilsException::new);
   }
 }
