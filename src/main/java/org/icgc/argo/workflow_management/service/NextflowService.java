@@ -77,8 +77,11 @@ public class NextflowService implements WorkflowExecutionService {
     // params to build CmdKubeRun object
     val cmdParams = new HashMap<String, Object>();
 
+    // run name (used for paramsFile as well)
+    val runName = UUID.randomUUID().toString();
+
     // assign UUID as the run name
-    cmdParams.put("runName", UUID.randomUUID().toString());
+    cmdParams.put("runName", runName);
 
     // always pull latest code before running
     // (does not prevent us running a specific version (revision),
@@ -90,7 +93,7 @@ public class NextflowService implements WorkflowExecutionService {
 
     // workflow name/git and workflow params from request (create params file)
     cmdParams.put("args", Arrays.asList(params.getWorkflowUrl()));
-    cmdParams.put("paramsFile", createParamsFile(params.getWorkflowParams()));
+    cmdParams.put("paramsFile", createParamsFile(runName, params.getWorkflowParams()));
 
     // K8s options from application.yml
     cmdParams.put("namespace", k8sConfig.getNamespace());
