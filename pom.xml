@@ -44,7 +44,7 @@
 		<dependency>
 			<groupId>io.nextflow</groupId>
 			<artifactId>nextflow</artifactId>
-			<version>19.07.0</version>
+			<version>19.10.0</version>
 		</dependency>
 
 	</dependencies>
