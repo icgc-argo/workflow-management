@@ -30,6 +30,7 @@ public class NextflowService implements WorkflowExecutionService {
   @Autowired private NextflowProperties config;
 
   public Mono<RunsResponse> run(WESRunParams params) {
+    // TODO: This is not really fluxing, make it flux
     return Mono.create(
         callback -> {
           try {
