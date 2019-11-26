@@ -15,8 +15,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -51,10 +49,6 @@ public class NextflowService implements WorkflowExecutionService {
   }
 
   public Mono<String> cancel(String runId) {
-    return Mono.just("Unimplemented Endpoint!");
-  }
-
-  public Mono<String> getServiceInfo() {
     return Mono.just("Unimplemented Endpoint!");
   }
 
