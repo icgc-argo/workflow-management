@@ -15,11 +15,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 
 import static java.util.Objects.nonNull;
+import static org.icgc.argo.workflow_management.util.ParamsFile.createParamsFile;
 import static org.icgc.argo.workflow_management.util.Reflections.createWithReflection;
 import static org.icgc.argo.workflow_management.util.Reflections.invokeDeclaredMethod;
 
@@ -65,7 +67,7 @@ public class NextflowService implements WorkflowExecutionService {
   }
 
   private CmdKubeRun createCmd(@NonNull Launcher launcher, @NonNull WESRunParams params)
-      throws ReflectionUtilsException {
+      throws ReflectionUtilsException, IOException {
 
     // Config from application.yml
     val k8sConfig = config.getK8s();
@@ -82,9 +84,9 @@ public class NextflowService implements WorkflowExecutionService {
     // launcher and launcher options required by CmdKubeRun
     cmdParams.put("launcher", launcher);
 
-    // workflow name/git and workflow params from request
+    // workflow name/git and workflow params from request (create params file)
     cmdParams.put("args", Arrays.asList(params.getWorkflowUrl()));
-    cmdParams.put("params", params.getWorkflowParams());
+    cmdParams.put("paramsFile", createParamsFile(params.getWorkflowParams()));
 
     // K8s options from application.yml
     cmdParams.put("namespace", k8sConfig.getNamespace());

@@ -12,7 +12,7 @@ import java.util.Map;
 @Builder
 @RequiredArgsConstructor
 public class WESRunParams {
-  @NonNull final Map<String, Object> workflowParams;
-  @NonNull private final WorkflowEngineParameters workflowEngineParameters;
+  @NonNull private final Map<String, Object> workflowParams;
   @NonNull private final String workflowUrl;
+  private final WorkflowEngineParameters workflowEngineParameters;
 }
