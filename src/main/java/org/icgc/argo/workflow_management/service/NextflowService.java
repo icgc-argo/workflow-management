@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.UUID;
 
 import static java.util.Objects.nonNull;
 import static org.icgc.argo.workflow_management.util.ParamsFile.createParamsFile;
@@ -75,6 +76,9 @@ public class NextflowService implements WorkflowExecutionService {
 
     // params to build CmdKubeRun object
     val cmdParams = new HashMap<String, Object>();
+
+    // assign UUID as the run name
+    cmdParams.put("runName", UUID.randomUUID().toString());
 
     // always pull latest code before running
     // (does not prevent us running a specific version (revision),
