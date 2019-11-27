@@ -23,7 +23,7 @@ ingress:
     # kubernetes.io/tls-acme: "true"
   hosts:
     - host: wf-management.light.overture.bio
-      paths: []
+      paths: [/]
 
   tls: []
   #  - secretName: chart-example-tls
@@ -41,6 +41,14 @@ resources: {}
   # requests:
   #   cpu: 100m
   #   memory: 128Mi
+
+env:
+  - name: NEXTFLOW_K8S_NAMESPACE
+    value: "nextflow-pcawg"
+  - name: NEXTFLOW_K8S_VOLMOUNTS
+    value: "nextflow-pv-claim:/mnt/volume/nextflow"
+  - name: NEXTFLOW_WEBLOGURL
+    value: "http://elasticsearch-master:9200/nextflow-pcawg/_doc/"
 
 nodeSelector: {}
 
