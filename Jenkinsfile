@@ -73,7 +73,7 @@ spec:
                     // DNS error if --network is default
                     sh "docker build --network=host . -t icgcargo/workflow-management:edge -t icgcargo/workflow-management:${version}-${commit}"
 
-                    sh "docker push icgcargo/workflow-management:${commit}"
+                    sh "docker push icgcargo/workflow-management:${version}-${commit}"
                     sh "docker push icgcargo/workflow-management:edge"
                 }
             }
