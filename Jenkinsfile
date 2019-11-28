@@ -49,6 +49,8 @@ spec:
             steps {
                 script {
                     commit = sh(returnStdout: true, script: 'git describe --always').trim()
+                }
+                script {
                     version = readMavenPom().getVersion()
                 }
             }
