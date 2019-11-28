@@ -62,20 +62,44 @@ spec:
                 }
             }
         }
-        stage('Build') {
+        stage('Build & Publish Develop') {
+            when {
+                branch "develop"
+            }
             steps {
                 container('docker') {
                     withCredentials([usernamePassword(credentialsId:'argoDockerHub', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
                         sh 'docker login -u $USERNAME -p $PASSWORD'
                     }
-                    script {
-                        commit = sh(returnStdout: true, script: 'git describe --always').trim()
+
+                    // DNS error if --network is default
+                    sh "docker build --network=host . -t icgcargo/workflow-management:edge -t icgcargo/workflow-management:${version}-${commit}"
+
+                    sh "docker push icgcargo/workflow-management:${version}-${commit}"
+                    sh "docker push icgcargo/workflow-management:edge"
+                }
+            }
+        }
+        stage('Release & Tag') {
+            when {
+                branch "master"
+            }
+            steps {
+                container('docker') {
+                    withCredentials([usernamePassword(credentialsId: 'argoGithub', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
+                        sh "git tag ${version}"
+                      sh "git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/icgc-argo/workflow-management --tags"
+                    }
+
+                    withCredentials([usernamePassword(credentialsId:'argoDockerHub', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                        sh 'docker login -u $USERNAME -p $PASSWORD'
                     }
 
                     // DNS error if --network is default
-                    sh "docker build --network=host . -t icgcargo/workflow-management:${commit}"
+                    sh "docker build --network=host . -t icgcargo/workflow-management:latest -t icgcargo/workflow-management:${version}"
 
-                    sh "docker push icgcargo/workflow-management:${commit}"
+                    sh "docker push icgcargo/workflow-management:${version}"
+                    sh "docker push icgcargo/workflow-management:latest"
                 }
             }
         }

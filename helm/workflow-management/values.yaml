@@ -5,7 +5,7 @@
 replicaCount: 1
 
 image:
-  repository: lepsalex/workflow-management
+  repository: icgcargo/workflow-management
   tag: latest
   pullPolicy: IfNotPresent
 
