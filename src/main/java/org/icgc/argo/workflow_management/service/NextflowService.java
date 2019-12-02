@@ -14,6 +14,8 @@ import org.icgc.argo.workflow_management.service.properties.NextflowProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -31,25 +33,36 @@ import static org.icgc.argo.workflow_management.util.Reflections.invokeDeclaredM
 public class NextflowService implements WorkflowExecutionService {
 
   @Autowired private NextflowProperties config;
+  private Scheduler scheduler = Schedulers.newElastic("nextflow-service");
 
+  // TODO: Better error handling?
+  // TODO: Check thread usage
   public Mono<RunsResponse> run(WESRunParams params) {
-    // TODO: This is not really fluxing, make it flux
-    return Mono.create(
-        callback -> {
-          try {
-            val cmd = createCmd(createLauncher(), params);
-            val driver = createDriver(cmd);
+    return Mono.fromSupplier(
+            () -> {
+              try {
+                return this.startRun(params);
+              } catch (Exception e) {
+                log.error("startRun error", e);
+                return "Error!";
+              }
+            })
+        .map(RunsResponse::new)
+        .subscribeOn(scheduler);
+  }
 
-            // Run it!
-            driver.run(params.getWorkflowUrl(), Arrays.asList());
-            val exitStatus = driver.shutdown();
-            val response = new RunsResponse(exitStatus == 0 ? cmd.getRunName() : "Error!");
+  private String startRun(WESRunParams params) throws Exception {
+    val cmd = createCmd(createLauncher(), params);
+    val driver = createDriver(cmd);
+    driver.run(params.getWorkflowUrl(), Arrays.asList());
+    val exitStatus = driver.shutdown();
 
-            callback.success(response);
-          } catch (Exception e) {
-            callback.error(e);
-          }
-        });
+    if (exitStatus == 0) {
+      return cmd.getRunName();
+    } else {
+      throw new Exception(
+          String.format("Invalid exit status (%d) from run %s", exitStatus, cmd.getRunName()));
+    }
   }
 
   public Mono<String> cancel(String runId) {
