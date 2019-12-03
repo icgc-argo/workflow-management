@@ -33,7 +33,6 @@ import reactor.core.scheduler.Schedulers;
 public class NextflowService implements WorkflowExecutionService {
 
   @Autowired private NextflowProperties config;
-  private Scheduler scheduler = Schedulers.newElastic("nextflow-service");
 
   private Scheduler scheduler = Schedulers.newElastic("nextflow-service");
 
