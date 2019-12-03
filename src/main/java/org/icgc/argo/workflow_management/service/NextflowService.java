@@ -33,10 +33,9 @@ import static org.icgc.argo.workflow_management.util.Reflections.invokeDeclaredM
 public class NextflowService implements WorkflowExecutionService {
 
   @Autowired private NextflowProperties config;
+
   private Scheduler scheduler = Schedulers.newElastic("nextflow-service");
 
-  // TODO: Better error handling?
-  // TODO: Check thread usage
   public Mono<RunsResponse> run(WESRunParams params) {
     return Mono.fromSupplier(
             () -> {
@@ -44,7 +43,7 @@ public class NextflowService implements WorkflowExecutionService {
                 return this.startRun(params);
               } catch (Exception e) {
                 log.error("startRun error", e);
-                return "Error!";
+                throw new RuntimeException(e.getMessage());
               }
             })
         .map(RunsResponse::new)
@@ -54,7 +53,7 @@ public class NextflowService implements WorkflowExecutionService {
   private String startRun(WESRunParams params) throws Exception {
     val cmd = createCmd(createLauncher(), params);
     val driver = createDriver(cmd);
-    driver.run(params.getWorkflowUrl(), Arrays.asList());
+    driver.run(params.getWorkflowUrl(), Collections.emptyList());
     val exitStatus = driver.shutdown();
 
     if (exitStatus == 0) {

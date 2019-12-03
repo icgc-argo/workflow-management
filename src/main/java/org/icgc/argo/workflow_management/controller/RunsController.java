@@ -25,6 +25,7 @@ public class RunsController {
 
   @PostMapping
   private Mono<RunsResponse> postRuns(@Valid @RequestBody RunsRequest runsRequest) {
+
     val wesService = resolveWesType("nextflow");
 
     // create run config from request
