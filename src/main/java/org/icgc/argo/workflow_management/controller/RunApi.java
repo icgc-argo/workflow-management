@@ -4,13 +4,12 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import javax.validation.Valid;
 import org.icgc.argo.workflow_management.controller.model.RunRequest;
 import org.icgc.argo.workflow_management.controller.model.RunResponse;
 import org.icgc.argo.workflow_management.exception.model.ErrorResponse;
 import org.springframework.web.bind.annotation.RequestBody;
 import reactor.core.publisher.Mono;
-
-import javax.validation.Valid;
 
 @Api(value = "WorkflowExecutionService", tags = "WorkflowExecutionService")
 public interface RunApi {
@@ -19,13 +18,12 @@ public interface RunApi {
       value = "Run a workflow",
       nickname = "run",
       notes =
-          "This endpoint creates a new workflow run and returns a RunId to monitor its progress.\n\n"
-              + "The workflow_attachment array may be used to upload files that are required to execute the workflow, including the primary workflow, tools imported by the workflow, other files referenced by the workflow, or files which are part of the input. The implementation should stage these files to a temporary directory and execute the workflow from there. These parts must have a Content-Disposition header with a \"filename\" provided for each part. Filenames may include subdirectories, but must not include references to parent directories with '..' -- implementations should guard against maliciously constructed filenames.\n\n"
-              + "The workflow_url is either an absolute URL to a workflow file that is accessible by the WES endpoint, or a relative URL corresponding to one of the files attached using workflow_attachment.\n\n"
-              + "The workflow_params JSON object specifies input parameters, such as input files. The exact format of the JSON object depends on the conventions of the workflow language being used. Input files should either be absolute URLs, or relative URLs corresponding to files uploaded using workflow_attachment. The WES endpoint must understand and be able to access URLs supplied in the input. This is implementation specific.\n\n"
-              + "The workflow_type is the type of workflow language and must be \"CWL\" or \"WDL\" currently (or another alternative supported by this WES instance).\n\n"
-              + "The workflow_type_version is the version of the workflow language submitted and must be one supported by this WES instance.\n\n"
-              + "See the RunRequest documentation for details about other fields.\n",
+          "This endpoint creates a new workflow run and returns a runId to monitor its progress.\n\n"
+              + "The workflow_attachment is part of the GA4GH WES API Standard however we currently not supporting it as of this release.\n\n"
+              + "The workflow_url is the workflow GitHub repository URL (ex. icgc-argo/nextflow-dna-seq-alignment) that is accessible by the WES endpoint.\n\n"
+              + "The workflow_params JSON object specifies the input parameters for a workflow. The exact format of the JSON object depends on the conventions of the workflow.\n\n"
+              + "The workflow_type is the type of workflow language, currently this WES API supports \"nextflow\" only.\n\n"
+              + "The workflow_type_version is the version of the workflow language to run the workflow against and must be one supported by this WES instance.\n",
       response = RunResponse.class,
       tags = {
         "WorkflowExecutionService",

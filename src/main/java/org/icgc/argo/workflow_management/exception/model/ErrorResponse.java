@@ -4,13 +4,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
-@ApiModel(description = "Standard error response")
 @Data
 @Builder
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode
+@ApiModel(description = "Standard error response")
 public class ErrorResponse {
 
   @JsonProperty("msg")
