@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
 @ApiModel(
     description =
-        "A successful run will will return the runId which can be used to get info about that run")
+        "A successful run will return the runId which can be used to get info about that run")
 public class RunResponse {
   @NotNull private String runId;
 }
