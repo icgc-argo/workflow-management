@@ -17,7 +17,7 @@ import nextflow.cli.CliOptions;
 import nextflow.cli.CmdKubeRun;
 import nextflow.cli.Launcher;
 import nextflow.k8s.K8sDriverLauncher;
-import org.icgc.argo.workflow_management.controller.model.RunsResponse;
+import org.icgc.argo.workflow_management.controller.model.RunResponse;
 import org.icgc.argo.workflow_management.exception.NextflowRunException;
 import org.icgc.argo.workflow_management.exception.ReflectionUtilsException;
 import org.icgc.argo.workflow_management.service.model.WESRunParams;
@@ -36,7 +36,7 @@ public class NextflowService implements WorkflowExecutionService {
 
   private Scheduler scheduler = Schedulers.newElastic("nextflow-service");
 
-  public Mono<RunsResponse> run(WESRunParams params) {
+  public Mono<RunResponse> run(WESRunParams params) {
     return Mono.fromSupplier(
             () -> {
               try {
@@ -46,11 +46,12 @@ public class NextflowService implements WorkflowExecutionService {
                 throw new RuntimeException(e.getMessage());
               }
             })
-        .map(RunsResponse::new)
+        .map(RunResponse::new)
         .subscribeOn(scheduler);
   }
 
-  private String startRun(WESRunParams params) throws ReflectionUtilsException, IOException, NextflowRunException {
+  private String startRun(WESRunParams params)
+      throws ReflectionUtilsException, IOException, NextflowRunException {
     val cmd = createCmd(createLauncher(), params);
     val driver = createDriver(cmd);
     driver.run(params.getWorkflowUrl(), Collections.emptyList());
