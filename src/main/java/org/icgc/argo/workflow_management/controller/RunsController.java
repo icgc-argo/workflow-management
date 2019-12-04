@@ -1,5 +1,6 @@
 package org.icgc.argo.workflow_management.controller;
 
+import javax.validation.Valid;
 import lombok.val;
 import org.icgc.argo.workflow_management.controller.model.RunsRequest;
 import org.icgc.argo.workflow_management.controller.model.RunsResponse;
@@ -13,8 +14,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
-import javax.validation.Valid;
-
 @RestController
 @RequestMapping("/runs")
 public class RunsController {
@@ -25,6 +24,7 @@ public class RunsController {
 
   @PostMapping
   private Mono<RunsResponse> postRuns(@Valid @RequestBody RunsRequest runsRequest) {
+
     val wesService = resolveWesType("nextflow");
 
     // create run config from request
