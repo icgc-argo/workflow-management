@@ -6,8 +6,8 @@ import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import javax.validation.Valid;
 import lombok.val;
-import org.icgc.argo.workflow_management.controller.model.RunsRequest;
-import org.icgc.argo.workflow_management.controller.model.RunsResponse;
+import org.icgc.argo.workflow_management.controller.model.RunRequest;
+import org.icgc.argo.workflow_management.controller.model.RunResponse;
 import org.icgc.argo.workflow_management.exception.model.ErrorResponse;
 import org.icgc.argo.workflow_management.service.WorkflowExecutionService;
 import org.icgc.argo.workflow_management.service.model.WESRunParams;
@@ -22,7 +22,7 @@ import reactor.core.publisher.Mono;
 @RestController
 @RequestMapping("/runs")
 @Api(value = "WorkflowExecutionService", tags = "WorkflowExecutionService")
-public class RunsController {
+public class RunController {
 
   @Autowired
   @Qualifier("nextflow")
@@ -39,13 +39,13 @@ public class RunsController {
               + "The workflow_type is the type of workflow language and must be \"CWL\" or \"WDL\" currently (or another alternative supported by this WES instance).\n\n"
               + "The workflow_type_version is the version of the workflow language submitted and must be one supported by this WES instance.\n\n"
               + "See the RunRequest documentation for details about other fields.\n",
-      response = RunsResponse.class,
+      response = RunResponse.class,
       tags = {
         "WorkflowExecutionService",
       })
   @ApiResponses(
       value = {
-        @ApiResponse(code = 200, message = "", response = RunsResponse.class),
+        @ApiResponse(code = 200, message = "", response = RunResponse.class),
         @ApiResponse(
             code = 401,
             message = "The request is unauthorized.",
@@ -64,16 +64,16 @@ public class RunsController {
             response = ErrorResponse.class)
       })
   @PostMapping
-  private Mono<RunsResponse> postRuns(@Valid @RequestBody RunsRequest runsRequest) {
+  private Mono<RunResponse> postRun(@Valid @RequestBody RunRequest runRequest) {
 
     val wesService = resolveWesType("nextflow");
 
     // create run config from request
     val runConfig =
         WESRunParams.builder()
-            .workflowUrl(runsRequest.getWorkflowUrl())
-            .workflowParams(runsRequest.getWorkflowParams())
-            .workflowEngineParameters(runsRequest.getWorkflowEngineParameters())
+            .workflowUrl(runRequest.getWorkflowUrl())
+            .workflowParams(runRequest.getWorkflowParams())
+            .workflowEngineParameters(runRequest.getWorkflowEngineParameters())
             .build();
 
     return wesService.run(runConfig);

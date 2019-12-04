@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
-public class RunsRequest {
+public class RunRequest {
   @NotBlank(message = "workflow_url is a required field!")
   private String workflowUrl;
 
