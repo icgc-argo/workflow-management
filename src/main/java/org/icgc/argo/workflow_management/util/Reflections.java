@@ -1,16 +1,15 @@
 package org.icgc.argo.workflow_management.util;
 
-import lombok.extern.slf4j.Slf4j;
-import lombok.val;
-import org.icgc.argo.workflow_management.exception.ReflectionUtilsException;
-import org.springframework.util.ReflectionUtils;
+import static java.util.Objects.nonNull;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.Optional;
-
-import static java.util.Objects.nonNull;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.icgc.argo.workflow_management.exception.ReflectionUtilsException;
+import org.springframework.util.ReflectionUtils;
 
 @Slf4j
 public class Reflections {

@@ -1,5 +1,15 @@
 package org.icgc.argo.workflow_management.service;
 
+import static java.util.Objects.nonNull;
+import static org.icgc.argo.workflow_management.util.ParamsFile.createParamsFile;
+import static org.icgc.argo.workflow_management.util.Reflections.createWithReflection;
+import static org.icgc.argo.workflow_management.util.Reflections.invokeDeclaredMethod;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.UUID;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -16,17 +26,6 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.UUID;
-
-import static java.util.Objects.nonNull;
-import static org.icgc.argo.workflow_management.util.ParamsFile.createParamsFile;
-import static org.icgc.argo.workflow_management.util.Reflections.createWithReflection;
-import static org.icgc.argo.workflow_management.util.Reflections.invokeDeclaredMethod;
 
 @Slf4j
 @Service(value = "nextflow")

@@ -1,5 +1,6 @@
 package org.icgc.argo.workflow_management.controller;
 
+import javax.validation.Valid;
 import lombok.val;
 import org.icgc.argo.workflow_management.controller.model.RunsRequest;
 import org.icgc.argo.workflow_management.controller.model.RunsResponse;
@@ -12,8 +13,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
-
-import javax.validation.Valid;
 
 @RestController
 @RequestMapping("/runs")
