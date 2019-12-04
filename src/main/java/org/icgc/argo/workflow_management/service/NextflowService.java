@@ -18,6 +18,7 @@ import nextflow.cli.CmdKubeRun;
 import nextflow.cli.Launcher;
 import nextflow.k8s.K8sDriverLauncher;
 import org.icgc.argo.workflow_management.controller.model.RunsResponse;
+import org.icgc.argo.workflow_management.exception.NextflowRunException;
 import org.icgc.argo.workflow_management.exception.ReflectionUtilsException;
 import org.icgc.argo.workflow_management.service.model.WESRunParams;
 import org.icgc.argo.workflow_management.service.properties.NextflowProperties;
@@ -49,7 +50,7 @@ public class NextflowService implements WorkflowExecutionService {
         .subscribeOn(scheduler);
   }
 
-  private String startRun(WESRunParams params) throws Exception {
+  private String startRun(WESRunParams params) throws ReflectionUtilsException, IOException, NextflowRunException {
     val cmd = createCmd(createLauncher(), params);
     val driver = createDriver(cmd);
     driver.run(params.getWorkflowUrl(), Collections.emptyList());
@@ -58,7 +59,7 @@ public class NextflowService implements WorkflowExecutionService {
     if (exitStatus == 0) {
       return cmd.getRunName();
     } else {
-      throw new Exception(
+      throw new NextflowRunException(
           String.format("Invalid exit status (%d) from run %s", exitStatus, cmd.getRunName()));
     }
   }
