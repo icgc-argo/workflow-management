@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
-/** An object that can optionally include information about the error. */
 @ApiModel(description = "Standard error response")
 @Data
 @Builder

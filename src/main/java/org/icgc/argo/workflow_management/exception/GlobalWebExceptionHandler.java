@@ -32,6 +32,7 @@ public class GlobalWebExceptionHandler {
   }
 
   private Mono<ErrorResponse> getErrorResponse(Exception ex, HttpStatus status) {
-    return Mono.just(ErrorResponse.builder().msg(ex.getMessage()).statusCode(status.value()).build());
+    return Mono.just(
+        ErrorResponse.builder().msg(ex.getMessage()).statusCode(status.value()).build());
   }
 }
