@@ -15,6 +15,6 @@ import lombok.NoArgsConstructor;
 @ApiModel(
     description =
         "A successful run will return the runId which can be used to get info about that run")
-public class RunResponse {
+public class RunsResponse {
   @NotNull private String runId;
 }

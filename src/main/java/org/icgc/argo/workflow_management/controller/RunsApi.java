@@ -5,18 +5,18 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import javax.validation.Valid;
-import org.icgc.argo.workflow_management.controller.model.RunRequest;
-import org.icgc.argo.workflow_management.controller.model.RunResponse;
+import org.icgc.argo.workflow_management.controller.model.RunsRequest;
+import org.icgc.argo.workflow_management.controller.model.RunsResponse;
 import org.icgc.argo.workflow_management.exception.model.ErrorResponse;
 import org.springframework.web.bind.annotation.RequestBody;
 import reactor.core.publisher.Mono;
 
 @Api(value = "WorkflowExecutionService", tags = "WorkflowExecutionService")
-public interface RunApi {
+public interface RunsApi {
 
   @ApiOperation(
       value = "Run a workflow",
-      nickname = "run",
+      nickname = "runs",
       notes =
           "This endpoint creates a new workflow run and returns a runId to monitor its progress.\n\n"
               + "The workflow_attachment is part of the GA4GH WES API Standard however we currently not supporting it as of this release.\n\n"
@@ -24,13 +24,13 @@ public interface RunApi {
               + "The workflow_params JSON object specifies the input parameters for a workflow. The exact format of the JSON object depends on the conventions of the workflow.\n\n"
               + "The workflow_type is the type of workflow language, currently this WES API supports \"nextflow\" only.\n\n"
               + "The workflow_type_version is the version of the workflow language to run the workflow against and must be one supported by this WES instance.\n",
-      response = RunResponse.class,
+      response = RunsResponse.class,
       tags = {
         "WorkflowExecutionService",
       })
   @ApiResponses(
       value = {
-        @ApiResponse(code = 200, message = "", response = RunResponse.class),
+        @ApiResponse(code = 200, message = "", response = RunsResponse.class),
         @ApiResponse(
             code = 401,
             message = "The request is unauthorized.",
@@ -48,5 +48,5 @@ public interface RunApi {
             message = "An unexpected error occurred.",
             response = ErrorResponse.class)
       })
-  Mono<RunResponse> postRun(@Valid @RequestBody RunRequest runRequest);
+  Mono<RunsResponse> postRun(@Valid @RequestBody RunsRequest runsRequest);
 }

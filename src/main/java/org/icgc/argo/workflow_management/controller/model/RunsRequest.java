@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
 @ApiModel(description = "A JSON of required and optional fields to run a workflow")
-public class RunRequest {
+public class RunsRequest {
   @NotBlank(message = "workflow_url is a required field!")
   private String workflowUrl;
 
