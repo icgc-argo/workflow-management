@@ -41,8 +41,12 @@ public class NextflowService implements WorkflowExecutionService {
             () -> {
               try {
                 return this.startRun(params);
+              } catch (RuntimeException e) {
+                // rethrow runtime exception for GlobalWebExceptionHandler
+                log.error("nextflow runtime exception", e);
+                throw e;
               } catch (Exception e) {
-                log.error("startRun error", e);
+                log.error("startRun exception", e);
                 throw new RuntimeException(e.getMessage());
               }
             })
