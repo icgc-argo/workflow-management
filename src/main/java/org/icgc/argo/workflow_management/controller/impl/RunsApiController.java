@@ -9,7 +9,10 @@ import org.icgc.argo.workflow_management.service.WorkflowExecutionService;
 import org.icgc.argo.workflow_management.service.model.WESRunParams;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
 @RestController
@@ -20,7 +23,6 @@ public class RunsApiController implements RunsApi {
   @Qualifier("nextflow")
   private WorkflowExecutionService nextflowService;
 
-  @CrossOrigin
   @PostMapping
   public Mono<RunsResponse> postRun(@Valid @RequestBody RunsRequest runsRequest) {
 
