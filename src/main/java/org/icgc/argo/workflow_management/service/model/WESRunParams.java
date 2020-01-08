@@ -1,12 +1,11 @@
 package org.icgc.argo.workflow_management.service.model;
 
+import java.util.Map;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.icgc.argo.workflow_management.controller.model.WorkflowEngineParameters;
-
-import java.util.Map;
 
 @Data
 @Builder

@@ -1,5 +1,15 @@
 package org.icgc.argo.workflow_management.service;
 
+import static java.util.Objects.nonNull;
+import static org.icgc.argo.workflow_management.util.ParamsFile.createParamsFile;
+import static org.icgc.argo.workflow_management.util.Reflections.createWithReflection;
+import static org.icgc.argo.workflow_management.util.Reflections.invokeDeclaredMethod;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.UUID;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -8,23 +18,15 @@ import nextflow.cli.CmdKubeRun;
 import nextflow.cli.Launcher;
 import nextflow.k8s.K8sDriverLauncher;
 import org.icgc.argo.workflow_management.controller.model.RunsResponse;
+import org.icgc.argo.workflow_management.exception.NextflowRunException;
 import org.icgc.argo.workflow_management.exception.ReflectionUtilsException;
 import org.icgc.argo.workflow_management.service.model.WESRunParams;
 import org.icgc.argo.workflow_management.service.properties.NextflowProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.UUID;
-
-import static java.util.Objects.nonNull;
-import static org.icgc.argo.workflow_management.util.ParamsFile.createParamsFile;
-import static org.icgc.argo.workflow_management.util.Reflections.createWithReflection;
-import static org.icgc.argo.workflow_management.util.Reflections.invokeDeclaredMethod;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 
 @Slf4j
 @Service(value = "nextflow")
@@ -32,24 +34,39 @@ public class NextflowService implements WorkflowExecutionService {
 
   @Autowired private NextflowProperties config;
 
+  private Scheduler scheduler = Schedulers.newElastic("nextflow-service");
+
   public Mono<RunsResponse> run(WESRunParams params) {
-    // TODO: This is not really fluxing, make it flux
-    return Mono.create(
-        callback -> {
-          try {
-            val cmd = createCmd(createLauncher(), params);
-            val driver = createDriver(cmd);
+    return Mono.fromSupplier(
+            () -> {
+              try {
+                return this.startRun(params);
+              } catch (RuntimeException e) {
+                // rethrow runtime exception for GlobalWebExceptionHandler
+                log.error("nextflow runtime exception", e);
+                throw e;
+              } catch (Exception e) {
+                log.error("startRun exception", e);
+                throw new RuntimeException(e.getMessage());
+              }
+            })
+        .map(RunsResponse::new)
+        .subscribeOn(scheduler);
+  }
 
-            // Run it!
-            driver.run(params.getWorkflowUrl(), Arrays.asList());
-            val exitStatus = driver.shutdown();
-            val response = new RunsResponse(exitStatus == 0 ? cmd.getRunName() : "Error!");
+  private String startRun(WESRunParams params)
+      throws ReflectionUtilsException, IOException, NextflowRunException {
+    val cmd = createCmd(createLauncher(), params);
+    val driver = createDriver(cmd);
+    driver.run(params.getWorkflowUrl(), Collections.emptyList());
+    val exitStatus = driver.shutdown();
 
-            callback.success(response);
-          } catch (Exception e) {
-            callback.error(e);
-          }
-        });
+    if (exitStatus == 0) {
+      return cmd.getRunName();
+    } else {
+      throw new NextflowRunException(
+          String.format("Invalid exit status (%d) from run %s", exitStatus, cmd.getRunName()));
+    }
   }
 
   public Mono<String> cancel(String runId) {
