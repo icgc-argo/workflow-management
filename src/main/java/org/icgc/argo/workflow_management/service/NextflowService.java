@@ -122,9 +122,13 @@ public class NextflowService implements WorkflowExecutionService {
     // Dynamic engine properties/config
     val workflowEngineOptions = params.getWorkflowEngineParameters();
 
-    // Use revision if provided in workflow_engine_options
     if (nonNull(workflowEngineOptions)) {
 
+      // Resume workflow by name/id
+      if (nonNull(workflowEngineOptions.getResume())) {
+        cmdParams.put("resume", workflowEngineOptions.getResume());
+      }
+      // Use revision if provided in workflow_engine_options
       if (nonNull(workflowEngineOptions.getWorkflowVersion())) {
         cmdParams.put("revision", workflowEngineOptions.getWorkflowVersion());
       }
