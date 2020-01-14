@@ -95,7 +95,11 @@ public class NextflowService implements WorkflowExecutionService {
     val cmdParams = new HashMap<String, Object>();
 
     // run name (used for paramsFile as well)
-    val runName = UUID.randomUUID().toString();
+    // You may be asking yourself, why is he replacing the "-" in the UUID, this is a valid question,
+    // well unfortunately when trying to resume a job, Nextflow searches for the UUID format ANYWHERE in the
+    // resume string, resulting in the incorrect assumption that we are passing an runId when in fact we are passing
+    // a runName ... thanks Nextflow ... this workaround solves that problem
+    val runName = String.format("wes-%s", UUID.randomUUID().toString().replace("-", ""));
 
     // assign UUID as the run name
     cmdParams.put("runName", runName);
@@ -122,9 +126,13 @@ public class NextflowService implements WorkflowExecutionService {
     // Dynamic engine properties/config
     val workflowEngineOptions = params.getWorkflowEngineParameters();
 
-    // Use revision if provided in workflow_engine_options
     if (nonNull(workflowEngineOptions)) {
 
+      // Resume workflow by name/id
+      if (nonNull(workflowEngineOptions.getResume())) {
+        cmdParams.put("resume", workflowEngineOptions.getResume());
+      }
+      // Use revision if provided in workflow_engine_options
       if (nonNull(workflowEngineOptions.getWorkflowVersion())) {
         cmdParams.put("revision", workflowEngineOptions.getWorkflowVersion());
       }

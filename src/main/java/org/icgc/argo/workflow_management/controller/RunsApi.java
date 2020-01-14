@@ -22,6 +22,7 @@ public interface RunsApi {
               + "The workflow_attachment is part of the GA4GH WES API Standard however we currently not supporting it as of this release.\n\n"
               + "The workflow_url is the workflow GitHub repository URL (ex. icgc-argo/nextflow-dna-seq-alignment) that is accessible by the WES endpoint.\n\n"
               + "The workflow_params JSON object specifies the input parameters for a workflow. The exact format of the JSON object depends on the conventions of the workflow.\n\n"
+              + "The workflow_engine_parameters JSON object specifies additional run-time arguments to the workflow engine (ie. specific workflow version, resuming a workflow, etc.)"
               + "The workflow_type is the type of workflow language, currently this WES API supports \"nextflow\" only.\n\n"
               + "The workflow_type_version is the version of the workflow language to run the workflow against and must be one supported by this WES instance.\n",
       response = RunsResponse.class,

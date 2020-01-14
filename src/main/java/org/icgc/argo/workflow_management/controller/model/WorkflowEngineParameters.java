@@ -15,4 +15,5 @@ import lombok.NoArgsConstructor;
 public class WorkflowEngineParameters {
   private String defaultContainer;
   private String workflowVersion;
+  private String resume;
 }
