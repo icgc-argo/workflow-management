@@ -95,7 +95,11 @@ public class NextflowService implements WorkflowExecutionService {
     val cmdParams = new HashMap<String, Object>();
 
     // run name (used for paramsFile as well)
-    val runName = UUID.randomUUID().toString();
+    // You may be asking yourself, why is he replacing the "-" in the UUID, this is a valid question,
+    // well unfortunately when trying to resume a job, Nextflow searches for the UUID format ANYWHERE in the
+    // resume string, resulting in the incorrect assumption that we are passing an runId when in fact we are passing
+    // a runName ... thanks Nextflow ... this workaround solves that problem
+    val runName = String.format("wes-%s", UUID.randomUUID().toString().replace("-", ""));
 
     // assign UUID as the run name
     cmdParams.put("runName", runName);
