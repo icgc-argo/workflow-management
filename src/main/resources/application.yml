@@ -1,7 +1,6 @@
-
 nextflow:
   k8s:
     namespace: "nextflow-pcawg"
     volMounts: "nextflow-pv-claim:/mnt/volume/nextflow"
-
+    masterUrl: "https://fartingowl.overture.bio:6443"
   weblogUrl: "http://elasticsearch-master:9200/nextflow-pcawg/_doc/"
