@@ -30,7 +30,7 @@ public class RunsApiController implements RunsApi {
         WESRunParams.builder()
             .workflowUrl(runsRequest.getWorkflowUrl())
             .workflowParams(runsRequest.getWorkflowParams())
-            .workflowEngineParameters(runsRequest.getWorkflowEngineParameters())
+            .workflowEngineParams(runsRequest.getWorkflowEngineParams())
             .build();
 
     return wesService.run(runConfig);

@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import org.icgc.argo.workflow_management.controller.model.WorkflowEngineParameters;
+import org.icgc.argo.workflow_management.controller.model.WorkflowEngineParams;
 
 @Data
 @Builder
@@ -13,5 +13,5 @@ import org.icgc.argo.workflow_management.controller.model.WorkflowEngineParamete
 public class WESRunParams {
   @NonNull private final Map<String, Object> workflowParams;
   @NonNull private final String workflowUrl;
-  private final WorkflowEngineParameters workflowEngineParameters;
+  private final WorkflowEngineParams workflowEngineParams;
 }

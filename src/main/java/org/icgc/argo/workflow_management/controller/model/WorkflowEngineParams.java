@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
 @ApiModel(description = "Describes valid workflow engine parameters (part of RunsRequest)")
-public class WorkflowEngineParameters {
+public class WorkflowEngineParams {
   private String defaultContainer;
   private String workflowVersion;
   private String resume;

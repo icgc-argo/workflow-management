@@ -22,7 +22,7 @@ public class RunsRequest {
   @NotNull(message = "workflow_params is a required field!")
   private Map<String, Object> workflowParams;
 
-  private WorkflowEngineParameters workflowEngineParameters;
+  private WorkflowEngineParams workflowEngineParams;
   private Map<String, Object> workflowType;
   private String[] workflowTypeVersion;
   private Map<String, Object> tags;

@@ -173,7 +173,7 @@ public class NextflowService implements WorkflowExecutionService {
     cmdParams.put("runName", runName);
 
     // always pull latest code before running
-    // (does not prevent us running a specific version (revision),
+    // does not prevent us running a specific version (revision),
     // does enforce pulling of that branch/hash before running)
     cmdParams.put("latest", true);
 
@@ -192,7 +192,7 @@ public class NextflowService implements WorkflowExecutionService {
     cmdParams.put("withWebLog", webLogUrl);
 
     // Dynamic engine properties/config
-    val workflowEngineOptions = params.getWorkflowEngineParameters();
+    val workflowEngineOptions = params.getWorkflowEngineParams();
 
     if (nonNull(workflowEngineOptions)) {
 
