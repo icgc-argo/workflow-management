@@ -9,10 +9,7 @@ import org.icgc.argo.workflow_management.service.WorkflowExecutionService;
 import org.icgc.argo.workflow_management.service.model.WESRunParams;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 @RestController
@@ -37,6 +34,15 @@ public class RunsApiController implements RunsApi {
             .build();
 
     return wesService.run(runConfig);
+  }
+
+  @PostMapping(
+      path = "/{run_id}/cancel",
+      produces = {"application/json"},
+      consumes = {"application/json"})
+  public Mono<RunsResponse> cancelRun(@Valid @PathVariable("run_id") String runId) {
+    val wesService = resolveWesType("nextflow");
+    return wesService.cancel(runId);
   }
 
   // This method will eventually be responsible for which workflow service we run
