@@ -7,5 +7,5 @@ import reactor.core.publisher.Mono;
 public interface WorkflowExecutionService {
   Mono<RunsResponse> run(WESRunParams params);
 
-  Mono<String> cancel(String runId);
+  Mono<RunsResponse> cancel(String runId);
 }

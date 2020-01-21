@@ -12,10 +12,12 @@ import org.springframework.context.annotation.Configuration;
 public class NextflowProperties {
   private K8sProperties k8s;
   private String weblogUrl;
+  private String masterUrl;
 
   @Data
   public static class K8sProperties {
     private String namespace;
     private String volMounts;
+    private String masterUrl;
   }
 }

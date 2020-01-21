@@ -50,4 +50,34 @@ public interface RunsApi {
             response = ErrorResponse.class)
       })
   Mono<RunsResponse> postRun(@Valid @RequestBody RunsRequest runsRequest);
+
+  @ApiOperation(
+      value = "Cancel a running workflow",
+      nickname = "cancel run",
+      notes = " ",
+      response = RunsResponse.class,
+      tags = {
+        "WorkflowExecutionService",
+      })
+  @ApiResponses(
+      value = {
+        @ApiResponse(code = 200, message = "", response = RunsResponse.class),
+        @ApiResponse(
+            code = 401,
+            message = "The request is unauthorized.",
+            response = ErrorResponse.class),
+        @ApiResponse(
+            code = 403,
+            message = "The requester is not authorized to perform this action.",
+            response = ErrorResponse.class),
+        @ApiResponse(
+            code = 404,
+            message = "The requested workflow run not found.",
+            response = ErrorResponse.class),
+        @ApiResponse(
+            code = 500,
+            message = "An unexpected error occurred.",
+            response = ErrorResponse.class)
+      })
+  Mono<RunsResponse> cancelRun(@Valid @RequestBody String runId);
 }

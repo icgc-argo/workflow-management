@@ -1,15 +1,18 @@
 package org.icgc.argo.workflow_management.service;
 
+import static java.lang.String.format;
 import static java.util.Objects.nonNull;
 import static org.icgc.argo.workflow_management.util.ParamsFile.createParamsFile;
 import static org.icgc.argo.workflow_management.util.Reflections.createWithReflection;
 import static org.icgc.argo.workflow_management.util.Reflections.invokeDeclaredMethod;
 
+import io.fabric8.kubernetes.client.*;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -65,12 +68,76 @@ public class NextflowService implements WorkflowExecutionService {
       return cmd.getRunName();
     } else {
       throw new NextflowRunException(
-          String.format("Invalid exit status (%d) from run %s", exitStatus, cmd.getRunName()));
+          format("Invalid exit status (%d) from run %s", exitStatus, cmd.getRunName()));
     }
   }
 
-  public Mono<String> cancel(String runId) {
-    return Mono.just("Unimplemented Endpoint!");
+  public Mono<RunsResponse> cancel(@NonNull String runId) {
+    return Mono.fromSupplier(
+            () -> {
+              try {
+                return this.cancelRun(runId);
+              } catch (RuntimeException e) {
+                // rethrow runtime exception for GlobalWebExceptionHandler
+                log.error("nextflow runtime exception", e);
+                throw e;
+              } catch (Exception e) {
+                log.error("cancelRun exception", e);
+                throw new RuntimeException(e.getMessage());
+              }
+            })
+        .map(RunsResponse::new)
+        .subscribeOn(scheduler);
+  }
+
+  private String cancelRun(@NonNull String runId) {
+    val masterUrl = config.getK8s().getMasterUrl();
+    val namespace = config.getK8s().getNamespace();
+    val config = new ConfigBuilder().withMasterUrl(masterUrl).withNamespace(namespace).build();
+
+    try (final val client = new DefaultKubernetesClient(config)) {
+      isPodRunning(client, namespace, runId);
+      val childPods =
+          client.pods().inNamespace(namespace).withLabel("runName", runId).list().getItems()
+              .stream()
+              .filter(pod -> pod.getMetadata().getName().startsWith("nf-"))
+              .collect(Collectors.toList());
+      if (childPods.size() == 0) {
+        throw new RuntimeException(
+            format("Cannot cancel run: pod with run name %s does not exist.", runId));
+      } else {
+        childPods.forEach(
+            pod -> {
+              client.pods().inNamespace(namespace).withName(pod.getMetadata().getName()).delete();
+              log.info(
+                  format(
+                      "Process pod %s with run name = %s has been deleted from namespace %s.",
+                      pod.getMetadata().getName(), runId, namespace));
+            });
+      }
+    } catch (KubernetesClientException e) {
+      log.error(e.getMessage(), e);
+    }
+    return runId;
+  }
+
+  private boolean isPodRunning(DefaultKubernetesClient client, String namespace, String runId) {
+    // can only cancel when executor pod is in running state
+    val executorPod =
+        client.pods().inNamespace(namespace).withLabel("runName", runId).list().getItems().stream()
+            .filter(pod -> pod.getMetadata().getName().startsWith("wes-"))
+            .findFirst()
+            .orElseThrow(
+                () ->
+                    new RuntimeException(
+                        format("Cannot found executor pod with run name %s.", runId)));
+    val state = executorPod.getStatus().getPhase();
+    if (!state.equalsIgnoreCase("Running")) {
+      throw new RuntimeException(
+          format(
+              "Executor pod %s is not in Running state, can only cancel a running workflow.",
+              runId));
+    } else return true;
   }
 
   private Launcher createLauncher() throws ReflectionUtilsException {
@@ -95,17 +162,18 @@ public class NextflowService implements WorkflowExecutionService {
     val cmdParams = new HashMap<String, Object>();
 
     // run name (used for paramsFile as well)
-    // You may be asking yourself, why is he replacing the "-" in the UUID, this is a valid question,
-    // well unfortunately when trying to resume a job, Nextflow searches for the UUID format ANYWHERE in the
-    // resume string, resulting in the incorrect assumption that we are passing an runId when in fact we are passing
-    // a runName ... thanks Nextflow ... this workaround solves that problem
-    val runName = String.format("wes-%s", UUID.randomUUID().toString().replace("-", ""));
+    // You may be asking yourself, why is he replacing the "-" in the UUID, this is a valid
+    // question, well unfortunately when trying to resume a job, Nextflow searches for the
+    // UUID format ANYWHERE in the resume string, resulting in the incorrect assumption
+    // that we are passing an runId when in fact we are passing a runName ...
+    // thanks Nextflow ... this workaround solves that problem
+    val runName = format("wes-%s", UUID.randomUUID().toString().replace("-", ""));
 
     // assign UUID as the run name
     cmdParams.put("runName", runName);
 
     // always pull latest code before running
-    // (does not prevent us running a specific version (revision),
+    // does not prevent us running a specific version (revision),
     // does enforce pulling of that branch/hash before running)
     cmdParams.put("latest", true);
 
@@ -124,7 +192,7 @@ public class NextflowService implements WorkflowExecutionService {
     cmdParams.put("withWebLog", webLogUrl);
 
     // Dynamic engine properties/config
-    val workflowEngineOptions = params.getWorkflowEngineParameters();
+    val workflowEngineOptions = params.getWorkflowEngineParams();
 
     if (nonNull(workflowEngineOptions)) {
 
