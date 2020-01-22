@@ -14,6 +14,6 @@ import lombok.NoArgsConstructor;
 @ApiModel(description = "Describes valid workflow engine parameters (part of RunsRequest)")
 public class WorkflowEngineParams {
   private String defaultContainer;
-  private String workflowVersion;
+  private String revision;
   private String resume;
 }
