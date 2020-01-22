@@ -175,6 +175,7 @@ public class NextflowService implements WorkflowExecutionService {
     // always pull latest code before running
     // does not prevent us running a specific version (revision),
     // does enforce pulling of that branch/hash before running)
+    // TODO: Look at this when closer to production, should be a controlled param
     cmdParams.put("latest", true);
 
     // launcher and launcher options required by CmdKubeRun
@@ -201,8 +202,8 @@ public class NextflowService implements WorkflowExecutionService {
         cmdParams.put("resume", workflowEngineOptions.getResume());
       }
       // Use revision if provided in workflow_engine_options
-      if (nonNull(workflowEngineOptions.getWorkflowVersion())) {
-        cmdParams.put("revision", workflowEngineOptions.getWorkflowVersion());
+      if (nonNull(workflowEngineOptions.getRevision())) {
+        cmdParams.put("revision", workflowEngineOptions.getRevision());
       }
 
       // Process options (default docker container to run for process if not specified)
