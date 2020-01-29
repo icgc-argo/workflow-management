@@ -93,8 +93,11 @@ public class NextflowService implements WorkflowExecutionService {
   private String cancelRun(@NonNull String runId) {
     val masterUrl = config.getK8s().getMasterUrl();
     val namespace = config.getK8s().getNamespace();
-    val config = new ConfigBuilder().withMasterUrl(masterUrl).withNamespace(namespace).build();
-
+    val config = new ConfigBuilder()
+                .withTrustCerts(true)
+                .withMasterUrl(masterUrl)
+                .withNamespace(namespace)
+                .build();
     try (final val client = new DefaultKubernetesClient(config)) {
       isPodRunning(client, namespace, runId);
       val childPods =
@@ -135,8 +138,8 @@ public class NextflowService implements WorkflowExecutionService {
     if (!state.equalsIgnoreCase("Running")) {
       throw new RuntimeException(
           format(
-              "Executor pod %s is not in Running state, can only cancel a running workflow.",
-              runId));
+              "Executor pod %s is in %s state, can only cancel a running workflow.",
+              runId, state));
     } else return true;
   }
 
