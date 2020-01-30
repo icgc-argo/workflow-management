@@ -93,8 +93,9 @@ public class NextflowService implements WorkflowExecutionService {
   private String cancelRun(@NonNull String runId) {
     val masterUrl = config.getK8s().getMasterUrl();
     val namespace = config.getK8s().getNamespace();
+    val turstCertificate = config.getK8s().isTrustCertificate();
     val config = new ConfigBuilder()
-                .withTrustCerts(true)
+                .withTrustCerts(turstCertificate)
                 .withMasterUrl(masterUrl)
                 .withNamespace(namespace)
                 .build();
@@ -120,6 +121,7 @@ public class NextflowService implements WorkflowExecutionService {
       }
     } catch (KubernetesClientException e) {
       log.error(e.getMessage(), e);
+      throw e;
     }
     return runId;
   }
