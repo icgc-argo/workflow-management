@@ -16,4 +16,5 @@ public class WorkflowEngineParams {
   private String defaultContainer;
   private String revision;
   private String resume;
+  private String workDir;
 }

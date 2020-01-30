@@ -93,8 +93,12 @@ public class NextflowService implements WorkflowExecutionService {
   private String cancelRun(@NonNull String runId) {
     val masterUrl = config.getK8s().getMasterUrl();
     val namespace = config.getK8s().getNamespace();
-    val config = new ConfigBuilder().withMasterUrl(masterUrl).withNamespace(namespace).build();
-
+    val turstCertificate = config.getK8s().isTrustCertificate();
+    val config = new ConfigBuilder()
+                .withTrustCerts(turstCertificate)
+                .withMasterUrl(masterUrl)
+                .withNamespace(namespace)
+                .build();
     try (final val client = new DefaultKubernetesClient(config)) {
       isPodRunning(client, namespace, runId);
       val childPods =
@@ -117,6 +121,7 @@ public class NextflowService implements WorkflowExecutionService {
       }
     } catch (KubernetesClientException e) {
       log.error(e.getMessage(), e);
+      throw e;
     }
     return runId;
   }
@@ -135,8 +140,8 @@ public class NextflowService implements WorkflowExecutionService {
     if (!state.equalsIgnoreCase("Running")) {
       throw new RuntimeException(
           format(
-              "Executor pod %s is not in Running state, can only cancel a running workflow.",
-              runId));
+              "Executor pod %s is in %s state, can only cancel a running workflow.",
+              runId, state));
     } else return true;
   }
 
@@ -187,7 +192,7 @@ public class NextflowService implements WorkflowExecutionService {
 
     // K8s options from application.yml
     cmdParams.put("namespace", k8sConfig.getNamespace());
-    cmdParams.put("volMounts", Collections.singletonList(k8sConfig.getVolMounts()));
+    cmdParams.put("volMounts", k8sConfig.getVolMounts());
 
     // Where to POST event-based logging
     cmdParams.put("withWebLog", webLogUrl);
@@ -204,6 +209,11 @@ public class NextflowService implements WorkflowExecutionService {
       // Use revision if provided in workflow_engine_options
       if (nonNull(workflowEngineOptions.getRevision())) {
         cmdParams.put("revision", workflowEngineOptions.getRevision());
+      }
+
+      // Use workDir if provided in workflow_engine_options
+      if (nonNull(workflowEngineOptions.getWorkDir())) {
+        cmdParams.put("workDir", workflowEngineOptions.getWorkDir());
       }
 
       // Process options (default docker container to run for process if not specified)
