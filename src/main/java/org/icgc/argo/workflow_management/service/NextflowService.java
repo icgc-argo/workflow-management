@@ -209,6 +209,11 @@ public class NextflowService implements WorkflowExecutionService {
         cmdParams.put("revision", workflowEngineOptions.getRevision());
       }
 
+      // Use workDir if provided in workflow_engine_options
+      if (nonNull(workflowEngineOptions.getWorkDir())) {
+        cmdParams.put("workDir", workflowEngineOptions.getWorkDir());
+      }
+
       // Process options (default docker container to run for process if not specified)
       if (nonNull(workflowEngineOptions.getDefaultContainer())) {
         val processOptions = new HashMap<String, String>();
