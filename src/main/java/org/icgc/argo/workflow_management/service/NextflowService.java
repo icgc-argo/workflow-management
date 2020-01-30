@@ -192,7 +192,7 @@ public class NextflowService implements WorkflowExecutionService {
 
     // K8s options from application.yml
     cmdParams.put("namespace", k8sConfig.getNamespace());
-    cmdParams.put("volMounts", Collections.singletonList(k8sConfig.getVolMounts()));
+    cmdParams.put("volMounts", k8sConfig.getVolMounts());
 
     // Where to POST event-based logging
     cmdParams.put("withWebLog", webLogUrl);
