@@ -4,7 +4,9 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.icgc.argo.workflow_management.exception.model.ErrorResponse;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.server.ResponseStatusException;
@@ -18,6 +20,7 @@ import static org.icgc.argo.workflow_management.exception.NextflowHttpStatusReso
 import static org.icgc.argo.workflow_management.util.JsonUtils.toJsonString;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 import static org.springframework.http.HttpStatus.resolve;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 @Slf4j
 @Order(-2)
@@ -30,6 +33,7 @@ public class GlobalWebExceptionHandler implements WebExceptionHandler{
     val errorResponseString = toJsonString(errorResponse);
     val serverHttpResponse = serverWebExchange.getResponse();
     serverHttpResponse.setStatusCode(resolve(errorResponse.getStatusCode()));
+    serverHttpResponse.getHeaders().setContentType(APPLICATION_JSON);
     val dataBuffer = serverHttpResponse.bufferFactory().wrap(errorResponseString.getBytes());
     return serverHttpResponse.writeWith(Flux.just(dataBuffer));
   }

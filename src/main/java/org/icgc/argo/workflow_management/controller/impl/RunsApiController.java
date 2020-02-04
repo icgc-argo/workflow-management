@@ -1,6 +1,8 @@
 package org.icgc.argo.workflow_management.controller.impl;
 
 import javax.validation.Valid;
+
+import io.swagger.annotations.ResponseHeader;
 import lombok.val;
 import org.icgc.argo.workflow_management.controller.RunsApi;
 import org.icgc.argo.workflow_management.controller.model.RunsRequest;
@@ -9,8 +11,11 @@ import org.icgc.argo.workflow_management.service.WorkflowExecutionService;
 import org.icgc.argo.workflow_management.service.model.WESRunParams;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
+
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 @RestController
 @RequestMapping("/runs")
