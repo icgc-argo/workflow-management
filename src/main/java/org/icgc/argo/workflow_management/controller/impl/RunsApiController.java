@@ -38,8 +38,7 @@ public class RunsApiController implements RunsApi {
 
   @PostMapping(
       path = "/{run_id}/cancel",
-      produces = {"application/json"},
-      consumes = {"application/json"})
+      produces = {"application/json"})
   public Mono<RunsResponse> cancelRun(@Valid @PathVariable("run_id") String runId) {
     val wesService = resolveWesType("nextflow");
     return wesService.cancel(runId);
