@@ -7,6 +7,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.server.ResponseStatusException;
@@ -32,10 +33,7 @@ public class GlobalWebExceptionHandler implements WebExceptionHandler{
     val errorResponse = processThrowable(throwable);
     val errorResponseString = toJsonString(errorResponse);
     val serverHttpResponse = serverWebExchange.getResponse();
-    serverHttpResponse.setStatusCode(resolve(errorResponse.getStatusCode()));
-    serverHttpResponse.getHeaders().setContentType(APPLICATION_JSON);
-    val dataBuffer = serverHttpResponse.bufferFactory().wrap(errorResponseString.getBytes());
-    return serverHttpResponse.writeWith(Flux.just(dataBuffer));
+    return  processResponse(serverHttpResponse, errorResponseString, errorResponse.getStatusCode());
   }
 
   private ErrorResponse processThrowable(Throwable t){
@@ -63,6 +61,13 @@ public class GlobalWebExceptionHandler implements WebExceptionHandler{
     log.error("{}[{}] exception @{}: exceptionType='{}' message='{}'",
         httpStatus.getReasonPhrase(), httpStatus.value(),timestamp, t.getClass().getSimpleName(),t.getMessage());
     return getErrorResponseRaw(t, httpStatus, timestamp);
+  }
+
+  private static Mono<Void> processResponse(ServerHttpResponse serverHttpResponse, String responseBody, int httpStatusCode){
+    serverHttpResponse.setStatusCode(resolve(httpStatusCode));
+    serverHttpResponse.getHeaders().setContentType(APPLICATION_JSON);
+    val dataBuffer = serverHttpResponse.bufferFactory().wrap(responseBody.getBytes());
+    return serverHttpResponse.writeWith(Flux.just(dataBuffer));
   }
 
   private static ErrorResponse getErrorResponseRaw(Throwable ex, HttpStatus status, long timestamp) {
