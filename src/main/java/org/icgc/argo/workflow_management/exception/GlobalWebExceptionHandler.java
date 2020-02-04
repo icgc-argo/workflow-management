@@ -5,6 +5,7 @@ import nextflow.exception.AbortOperationException;
 import org.icgc.argo.workflow_management.exception.model.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -62,4 +63,12 @@ public class GlobalWebExceptionHandler {
     return Mono.just(
         ErrorResponse.builder().msg(ex.getMessage()).statusCode(status.value()).build());
   }
+
+  @ExceptionHandler(Throwable.class)
+  private Mono<ErrorResponse> processError(Throwable t, ServerHttpRequest request, ServerHttpResponse response){
+    response.setStatusCode()
+    ErrorResponse.builder()
+  }
+
+
 }

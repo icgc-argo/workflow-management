@@ -57,8 +57,17 @@ public class NextflowService implements WorkflowExecutionService {
         .subscribeOn(scheduler);
   }
 
+  private void validateParams(WESRunParams params){
+    validateWorkflowUrl(params.getWorkflowUrl());
+  }
+
+  private void validateWorkflowUrl(String workflowUrl){
+
+  }
+
   private String startRun(WESRunParams params)
       throws ReflectionUtilsException, IOException, NextflowRunException {
+    validateParams(params);
     val cmd = createCmd(createLauncher(), params);
     val driver = createDriver(cmd);
     driver.run(params.getWorkflowUrl(), Collections.emptyList());
