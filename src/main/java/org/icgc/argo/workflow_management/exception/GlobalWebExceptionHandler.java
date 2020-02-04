@@ -36,7 +36,7 @@ public class GlobalWebExceptionHandler implements WebExceptionHandler{
     return  processResponse(serverHttpResponse, errorResponseString, errorResponse.getStatusCode());
   }
 
-  private ErrorResponse processThrowable(Throwable t){
+  private static ErrorResponse processThrowable(Throwable t){
     long timestamp = System.currentTimeMillis();
     HttpStatus httpStatus = null;
     if (t instanceof  WebClientResponseException) {
