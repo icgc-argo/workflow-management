@@ -121,13 +121,13 @@ public class CustomExceptionHandler {
   }
 
   @ExceptionHandler(WebClientResponseException.class)
-  public Mono<Void> handleWebclientResponseException(ServerWebExchange exchange, WebClientResponseException t){
-    return processGenericException(exchange, t, t.getStatusCode());
+  public Mono<ErrorResponse> handleWebclientResponseException(WebClientResponseException t){
+    return getGenericErrorResponse(t, t.getStatusCode());
   }
 
   @ExceptionHandler(ResponseStatusException.class)
-  public Mono<Void> handleResponseStatusException(ServerWebExchange exchange, ResponseStatusException t){
-    return processGenericException(exchange, t, t.getStatus());
+  public Mono<ErrorResponse> handleResponseStatusException(ResponseStatusException t){
+    return getGenericErrorResponse(t,  t.getStatus());
   }
 
   @ExceptionHandler(Throwable.class)
@@ -135,27 +135,21 @@ public class CustomExceptionHandler {
     val timestamp = System.currentTimeMillis();
     return findResponseStatus(t.getClass())
         .map(x -> handleResponseStatus(exchange, t, x, timestamp ))
-        .orElseGet(() -> processGenericException(exchange, t, INTERNAL_SERVER_ERROR, timestamp));
+        .orElseGet(() -> processGenericException(exchange, t.getMessage(), INTERNAL_SERVER_ERROR, timestamp));
   }
 
   private static Mono<Void> handleResponseStatus(ServerWebExchange exchange, Throwable t, ResponseStatus responseStatus, long timestamp){
-    val reason =  responseStatus.reason();
-    val httpStatus = responseStatus.value();
-    val message = isNullOrEmpty(t.getMessage()) ? (isNullOrEmpty(reason) ? null : reason) : t.getMessage();
+    val reason =  extractReason(responseStatus);
+    val httpStatus = extractHttpStatus(responseStatus);
+    final String message = isNullOrEmpty(t.getMessage()) ? (isNullOrEmpty(reason) ? null : reason) : t.getMessage();
     log.error("{}[{}] exception @{}: exceptionType='{}' message='{}'",
         httpStatus.getReasonPhrase(), httpStatus.value(),timestamp, t.getClass().getSimpleName(), message);
-    return processGenericException(exchange, t, httpStatus, timestamp);
+    return processGenericException(exchange, message, httpStatus, timestamp);
   }
 
-  private static Mono<Void> handleGenericException(ServerWebExchange exchange, Throwable t, ResponseStatus responseStatus, long timestamp){
-    log.error("{}[{}] exception @{}: exceptionType='{}' message='{}'",
-        httpStatus.getReasonPhrase(), httpStatus.value(),timestamp, t.getClass().getSimpleName(), message);
-    return processGenericException(exchange, t, httpStatus, timestamp);
-  }
-
-  private static Mono<Void> processGenericException(ServerWebExchange exchange, Throwable t, HttpStatus httpStatus, long timestamp){
+  private static Mono<Void> processGenericException(ServerWebExchange exchange, String message, HttpStatus httpStatus, long timestamp){
     val serverHttpResponse = exchange.getResponse();
-    val errorResponse = buildErrorResponse(t, httpStatus, timestamp);
+    val errorResponse = buildErrorResponse(message, httpStatus, timestamp);
     val errorResponseString = toJsonString(errorResponse);
     serverHttpResponse.setStatusCode(httpStatus);
     serverHttpResponse.getHeaders().setContentType(APPLICATION_JSON);
@@ -167,31 +161,39 @@ public class CustomExceptionHandler {
     val timestamp = System.currentTimeMillis();
     log.error("{}[{}] exception @{}: exceptionType='{}' message='{}'",
         httpStatus.getReasonPhrase(), httpStatus.value(),timestamp, t.getClass().getSimpleName(),t.getMessage());
-    return buildErrorResponseMono(t, httpStatus, timestamp);
+    return buildErrorResponseMono(t.getMessage(), httpStatus, timestamp);
   }
   private static Mono<ErrorResponse> getNextflowErrorResponse(Throwable t, HttpStatus httpStatus){
     val timestamp = System.currentTimeMillis();
     log.error("{}[{}] exception @{}: NextflowExceptionType='{}' message='{}'",
         httpStatus.getReasonPhrase(), httpStatus.value(), timestamp, t.getClass().getSimpleName(),t.getMessage());
-    return buildErrorResponseMono(t, httpStatus, timestamp);
+    return buildErrorResponseMono(t.getMessage(), httpStatus, timestamp);
   }
 
-  private static Mono<ErrorResponse> buildErrorResponseMono(Throwable ex, HttpStatus status, long timestamp) {
-    return Mono.just(buildErrorResponse(ex, status, timestamp));
+  private static Mono<ErrorResponse> buildErrorResponseMono(String message, HttpStatus status, long timestamp) {
+    return Mono.just(buildErrorResponse(message, status, timestamp));
   }
 
-  private static ErrorResponse buildErrorResponse(Throwable ex, HttpStatus status, long timestamp) {
+  private static ErrorResponse buildErrorResponse(String message, HttpStatus status, long timestamp) {
     return ErrorResponse.builder()
-        .msg(format("[@%s]: %s",timestamp, ex.getMessage()))
+        .msg(format("[@%s]: %s",timestamp, message))
         .statusCode(status.value())
         .build();
   }
 
-    private static Optional<ResponseStatus> findResponseStatus(Class<? extends Throwable> klazz){
-      if (klazz.isAnnotationPresent(ResponseStatus.class)){
-        val responseStatus = klazz.getDeclaredAnnotation(ResponseStatus.class);
-        return Optional.of(responseStatus);
-      }
-      return Optional.empty();
+  private static HttpStatus extractHttpStatus(ResponseStatus r){
+    return r.value();
+  }
+
+  private static String extractReason(ResponseStatus r){
+    return r.reason();
+  }
+
+  private static Optional<ResponseStatus> findResponseStatus(Class<? extends Throwable> klazz){
+    if (klazz.isAnnotationPresent(ResponseStatus.class)){
+      val responseStatus = klazz.getDeclaredAnnotation(ResponseStatus.class);
+      return Optional.of(responseStatus);
     }
+    return Optional.empty();
+  }
 }

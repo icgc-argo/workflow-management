@@ -3,6 +3,10 @@ package org.icgc.argo.workflow_management;
 import com.google.common.collect.Maps;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import nextflow.exception.AbortOperationException;
+import nextflow.exception.AbortSignalException;
+import nextflow.exception.DuplicateProcessInvocation;
+import nextflow.exception.IllegalFileException;
 import nextflow.exception.MissingFileException;
 import org.icgc.argo.workflow_management.controller.impl.RunsApiController;
 import org.icgc.argo.workflow_management.controller.model.RunsRequest;
@@ -26,9 +30,10 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
+import sun.misc.Signal;
 
 import java.util.Collection;
+import java.util.function.Supplier;
 
 import static java.util.Arrays.stream;
 import static org.hamcrest.Matchers.containsString;
@@ -40,8 +45,10 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.reset;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.BANDWIDTH_LIMIT_EXCEEDED;
+import static org.springframework.http.HttpStatus.CONFLICT;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.UNPROCESSABLE_ENTITY;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.web.reactive.function.BodyInserters.fromValue;
 
@@ -66,6 +73,83 @@ public class ErrorHandlingTests {
   private WebTestClient webClient;
 
   //TODO: rtisma    -- create test for https://github.com/${owner}/${repo}/blob/${branch}/${path-to-file}
+
+  /**
+   * 1- MissingFileException - 404 NOT_FOUND
+   * 2 - DuplicateProcessException - 409 CONFLICT
+   * 3 - IllegalFileException - 400 BEAD_REQUEST
+   * 4 - AbortOperationException - 422 Unprocessable
+   * 5 - AbortSignalException - 500 INTERNAL_SERVER_ERROR
+   * 6 - WebClientResponseException - whatever it contains
+   * 7 - ResponseStatusException - whatever it contains
+   * 8 - Exception annotated with @ResponseStatus - whatever it contains
+   * 9 - Exception NOT annotated with @ResponseStatus - should be 500
+   */
+
+  @Test
+  public void testNotFoundErrorHandling(){
+    doRunRequestError(MissingFileException::new, NOT_FOUND)
+        .expectBody()
+        .jsonPath("$.status_code", NOT_FOUND);
+  }
+
+  @Test
+  public void testConflictErrorHandling(){
+    doRunRequestError(DuplicateProcessInvocation::new, CONFLICT)
+        .expectBody()
+        .jsonPath("$.status_code", CONFLICT);
+  }
+
+  @Test
+  public void testBadRequestErrorHandling(){
+    doRunRequestError(IllegalFileException::new, NOT_FOUND)
+        .expectBody()
+        .jsonPath("$.status_code", NOT_FOUND);
+  }
+
+  @Test
+  public void testUnprocessableEntityErrorHandling(){
+    doRunRequestError(AbortOperationException::new, UNPROCESSABLE_ENTITY)
+        .expectBody()
+        .jsonPath("$.status_code", UNPROCESSABLE_ENTITY);
+  }
+
+  @Test
+  public void testInternalServerErrorErrorHandling(){
+    doRunRequestError(() -> new AbortSignalException(new Signal("somesignal")), INTERNAL_SERVER_ERROR)
+        .expectBody()
+        .jsonPath("$.status_code", INTERNAL_SERVER_ERROR);
+  }
+
+
+  private ResponseSpec doRunRequestError(Supplier<? extends Throwable> exceptionSupplier, HttpStatus expectedStatus){
+    val req = new RunsRequest();
+    req.setWorkflowUrl("sdf");
+    req.setWorkflowParams(Maps.newHashMap());
+    try {
+
+      setup(exceptionSupplier);
+    } catch (Throwable e){
+      log.info(e.getMessage());
+    }
+    return postRunRequestForError(req, expectedStatus);
+  }
+
+  private void setup(Supplier<? extends Throwable> exceptionSupplier){
+    // Replace nextflowService dependency in the controller with a mock
+    ReflectionTestUtils.setField(controller, "nextflowService", mockNextflowService);
+
+    // Setup the mock to throw an exception
+    reset(mockNextflowService);
+
+    given(mockNextflowService.run(Mockito.any()))
+        .willAnswer(i -> {
+              //              throw WebClientResponseException.create(NOT_FOUND.value(), NOT_FOUND.name(), null, null, null);
+                throw exceptionSupplier.get();
+            }
+        );
+
+  }
 
   @Test
   public void testResponseStatusAnnotation(){
