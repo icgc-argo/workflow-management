@@ -3,16 +3,15 @@ package org.icgc.argo.workflow_management;
 import com.google.common.collect.Maps;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.hamcrest.Matcher;
-import org.hamcrest.Matchers;
+import nextflow.exception.MissingFileException;
 import org.icgc.argo.workflow_management.controller.impl.RunsApiController;
 import org.icgc.argo.workflow_management.controller.model.RunsRequest;
+import org.icgc.argo.workflow_management.exception.CustomExceptionHandler;
 import org.icgc.argo.workflow_management.exception.NextflowHttpStatusResolver;
-import org.icgc.argo.workflow_management.exception.model.ErrorResponse;
+import org.icgc.argo.workflow_management.exception.ValidationException;
 import org.icgc.argo.workflow_management.service.NextflowService;
 import org.icgc.argo.workflow_management.service.properties.NextflowProperties;
 import org.junit.Test;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -20,16 +19,15 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
-import javax.net.ssl.HttpsURLConnection;
 import java.util.Collection;
 
 import static java.util.Arrays.stream;
@@ -41,15 +39,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.reset;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.BANDWIDTH_LIMIT_EXCEEDED;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
-import static org.springframework.http.MediaType.APPLICATION_OCTET_STREAM;
 import static org.springframework.web.reactive.function.BodyInserters.fromValue;
 
 @Slf4j
 @Import(value = {
     NextflowService.class,
-    NextflowProperties.class
+    NextflowProperties.class,
+    CustomExceptionHandler.class
 })
 @RunWith(SpringRunner.class)
 @ExtendWith(SpringExtension.class)
@@ -64,6 +64,37 @@ public class ErrorHandlingTests {
 
   @Autowired
   private WebTestClient webClient;
+
+  //TODO: rtisma    -- create test for https://github.com/${owner}/${repo}/blob/${branch}/${path-to-file}
+
+  @Test
+  public void testResponseStatusAnnotation(){
+    val req = new RunsRequest();
+    req.setWorkflowUrl("sdf");
+    req.setWorkflowParams(Maps.newHashMap());
+
+    // Replace nextflowService dependency in the controller with a mock
+    ReflectionTestUtils.setField(controller, "nextflowService", mockNextflowService);
+
+    // Setup the mock to throw an exception
+    reset(mockNextflowService);
+    given(mockNextflowService.run(Mockito.any()))
+        .willAnswer(i -> {
+//              throw WebClientResponseException.create(NOT_FOUND.value(), NOT_FOUND.name(), null, null, null);
+          throw new ValidationException("something");
+            }
+        );
+    postRunRequestForError(req, BAD_REQUEST)
+        .expectStatus().isEqualTo(BAD_REQUEST)
+        .expectBody()
+        .jsonPath("$.status_code").isEqualTo(BAD_REQUEST.value());
+
+    // Assert an INTERNAL_SERVER_ERROR is thrown for the custom unhandled exception
+//    postRunRequestForError(req, NOT_FOUND)
+//        .expectStatus().isEqualTo(NOT_FOUND)
+//        .expectBody()
+//        .jsonPath("$.status_code").isEqualTo(NOT_FOUND.value());
+  }
 
   /**
    *  Test that an invalid RunsRequest will throw BAD_REQUEST http status errors
@@ -188,6 +219,12 @@ public class ErrorHandlingTests {
 
   public static class SomeUnhandledTestException extends RuntimeException{
     public SomeUnhandledTestException() {
+    }
+  }
+
+  @ResponseStatus(BANDWIDTH_LIMIT_EXCEEDED)
+  public static class ResponseStatusTestException extends RuntimeException{
+    public ResponseStatusTestException() {
     }
   }
 

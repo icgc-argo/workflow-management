@@ -63,8 +63,12 @@ public class NextflowService implements WorkflowExecutionService {
   }
 
   private void validateWorkflowUrl(String workflowUrl){
+    //TODO: rtisma    -- create test for https://github.com/${owner}/${repo}/blob/${branch}/${path-to-file}
+    // generate url
+    // get
 
   }
+
 
   private String startRun(WESRunParams params)
       throws ReflectionUtilsException, IOException, NextflowRunException {
