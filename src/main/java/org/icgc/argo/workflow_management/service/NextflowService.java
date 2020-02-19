@@ -45,7 +45,7 @@ public class NextflowService implements WorkflowExecutionService {
               try {
                 return this.startRun(params);
               } catch (RuntimeException e) {
-                // rethrow runtime exception for GlobalWebExceptionHandler
+                // rethrow runtime exception for GlobalExceptionHandler
                 log.error("nextflow runtime exception", e);
                 throw e;
               } catch (Exception e) {
@@ -91,7 +91,7 @@ public class NextflowService implements WorkflowExecutionService {
               try {
                 return this.cancelRun(runId);
               } catch (RuntimeException e) {
-                // rethrow runtime exception for GlobalWebExceptionHandler
+                // rethrow runtime exception for GlobalExceptionHandler
                 log.error("nextflow runtime exception", e);
                 throw e;
               } catch (Exception e) {

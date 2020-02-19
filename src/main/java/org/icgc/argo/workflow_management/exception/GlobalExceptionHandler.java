@@ -52,7 +52,7 @@ import reactor.core.publisher.Mono;
 
 @Slf4j
 @ControllerAdvice
-public class CustomExceptionHandler {
+public class GlobalExceptionHandler {
 
   @ResponseBody
   @ResponseStatus(NOT_FOUND)
@@ -168,11 +168,6 @@ public class CustomExceptionHandler {
         t.getClass().getSimpleName(),
         message);
     return processGenericException(exchange, message, httpStatus, timestamp);
-  }
-
-  private static Mono<Void> processGenericException(
-      ServerWebExchange exchange, String message, HttpStatus httpStatus) {
-    return processGenericException(exchange, message, httpStatus, System.currentTimeMillis());
   }
 
   private static Mono<Void> processGenericException(

@@ -1,11 +1,9 @@
 package org.icgc.argo.workflow_management;
 
 import static java.lang.String.format;
-import static java.util.Arrays.stream;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.emptyOrNullString;
 import static org.hamcrest.Matchers.not;
-import static org.icgc.argo.workflow_management.exception.NextflowHttpStatusResolver.resolveHttpStatus;
 import static org.icgc.argo.workflow_management.util.RandomGenerator.createRandomGenerator;
 import static org.icgc.argo.workflow_management.util.Reflections.findResponseStatusAnnotation;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -22,7 +20,6 @@ import static org.springframework.web.reactive.function.BodyInserters.fromValue;
 
 import com.google.common.collect.Maps;
 import java.lang.reflect.Constructor;
-import java.util.Collection;
 import java.util.Optional;
 import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
@@ -34,8 +31,7 @@ import nextflow.exception.IllegalFileException;
 import nextflow.exception.MissingFileException;
 import org.icgc.argo.workflow_management.controller.impl.RunsApiController;
 import org.icgc.argo.workflow_management.controller.model.RunsRequest;
-import org.icgc.argo.workflow_management.exception.CustomExceptionHandler;
-import org.icgc.argo.workflow_management.exception.NextflowHttpStatusResolver;
+import org.icgc.argo.workflow_management.exception.GlobalExceptionHandler;
 import org.icgc.argo.workflow_management.exception.ValidationException;
 import org.icgc.argo.workflow_management.service.NextflowService;
 import org.icgc.argo.workflow_management.service.properties.NextflowProperties;
@@ -60,7 +56,7 @@ import org.springframework.web.server.ResponseStatusException;
 // TODO: rtisma    create test for
 // https://github.com/${owner}/${repo}/blob/${branch}/${path-to-file}
 @Slf4j
-@Import(value = {NextflowService.class, NextflowProperties.class, CustomExceptionHandler.class})
+@Import(value = {NextflowService.class, NextflowProperties.class, GlobalExceptionHandler.class})
 @RunWith(SpringRunner.class)
 @ExtendWith(SpringExtension.class)
 @WebFluxTest(controllers = RunsApiController.class)
@@ -223,10 +219,6 @@ public class ErrorHandlingTests {
     // Setup the mock to throw an exception
     setupNextflowRunAndThrowError(SomeUnhandledTestException.class);
 
-    // Assert the custom unhandled exception cannot be resolved
-    val result = resolveHttpStatus(SomeUnhandledTestException.class);
-    assertTrue(result.isEmpty());
-
     // Assert an INTERNAL_SERVER_ERROR is thrown for the custom unhandled exception
     postRunRequestForError(req, INTERNAL_SERVER_ERROR)
         .expectStatus()
@@ -242,31 +234,6 @@ public class ErrorHandlingTests {
    * Ensure all the exceptions in the NextflowHttpStatusResolver are handled by the custom
    * WebExceptionHandler
    */
-  @Test
-  public void testGlobalErrorHandling() {
-    // Setup valid request
-    val req = new RunsRequest();
-    req.setWorkflowUrl("sdf");
-    req.setWorkflowParams(Maps.newHashMap());
-
-    // Replace nextflowService dependency in the controller with a mock
-    ReflectionTestUtils.setField(controller, "nextflowService", mockNextflowService);
-
-    // Assert all exceptions with argumentless constructors return the expected http status code
-    stream(NextflowHttpStatusResolver.values())
-        .map(NextflowHttpStatusResolver::getNextflowNativeExceptionTypes)
-        .flatMap(Collection::stream)
-        .filter(
-            ErrorHandlingTests
-                ::hasArgumentlessConstructor) // not all are necessary, just a few argumentless ones
-        .forEach(
-            expectedExceptionType -> {
-              val expectedHttpStatus = resolveHttpStatus(expectedExceptionType).get();
-              setupNextflowRunAndThrowError(expectedExceptionType);
-              postRunRequestForError(req, expectedHttpStatus);
-            });
-  }
-
   private void setupNextflowRunAndThrowError(Class<? extends Throwable> exceptionClassToThrow) {
     reset(mockNextflowService);
     given(mockNextflowService.run(Mockito.any()))
