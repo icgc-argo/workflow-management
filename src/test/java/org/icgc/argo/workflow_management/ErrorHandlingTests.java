@@ -34,7 +34,6 @@ import nextflow.exception.MissingFileException;
 import org.icgc.argo.workflow_management.controller.impl.RunsApiController;
 import org.icgc.argo.workflow_management.controller.model.RunsRequest;
 import org.icgc.argo.workflow_management.exception.GlobalExceptionHandler;
-import org.icgc.argo.workflow_management.exception.ValidationException;
 import org.icgc.argo.workflow_management.service.NextflowService;
 import org.icgc.argo.workflow_management.service.properties.NextflowProperties;
 import org.junit.Test;
@@ -163,8 +162,8 @@ public class ErrorHandlingTests {
    */
   @Test
   public void testResponseStatusAnnotation() {
-    runResponseStatusAnnotationTest(ValidationException.class, BAD_REQUEST);
-    runResponseStatusAnnotationTest(ResponseStatusTestException.class, BANDWIDTH_LIMIT_EXCEEDED);
+    runResponseStatusAnnotationTest(ResponseStatusTest1Exception.class, BANDWIDTH_LIMIT_EXCEEDED);
+    runResponseStatusAnnotationTest(ResponseStatusTest2Exception.class, NOT_FOUND);
   }
 
   /** Test that an invalid RunsRequest will throw BAD_REQUEST http status errors */
@@ -205,8 +204,8 @@ public class ErrorHandlingTests {
   }
 
   /**
-   * Ensure exceptions NOT defined in the CustomErrorHandler are
-   * handled as INTERNAL_SERVER_ERROR errors
+   * Ensure exceptions NOT defined in the CustomErrorHandler are handled as INTERNAL_SERVER_ERROR
+   * errors
    */
   @Test
   public void testUnhandledException() {
@@ -335,8 +334,15 @@ public class ErrorHandlingTests {
   }
 
   @ResponseStatus(BANDWIDTH_LIMIT_EXCEEDED)
-  public static class ResponseStatusTestException extends RuntimeException {
-    public ResponseStatusTestException(String message) {
+  public static class ResponseStatusTest1Exception extends RuntimeException {
+    public ResponseStatusTest1Exception(String message) {
+      super(message);
+    }
+  }
+
+  @ResponseStatus(NOT_FOUND)
+  public static class ResponseStatusTest2Exception extends Exception {
+    public ResponseStatusTest2Exception(String message) {
       super(message);
     }
   }
