@@ -205,7 +205,7 @@ public class ErrorHandlingTests {
   }
 
   /**
-   * Ensure exceptions NOT defined in the NextflowHttpStatusResolver, or CustomErrorHandler are
+   * Ensure exceptions NOT defined in the CustomErrorHandler are
    * handled as INTERNAL_SERVER_ERROR errors
    */
   @Test
