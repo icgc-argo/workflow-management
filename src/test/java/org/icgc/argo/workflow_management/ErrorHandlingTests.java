@@ -7,6 +7,7 @@ import static org.hamcrest.Matchers.not;
 import static org.icgc.argo.workflow_management.util.RandomGenerator.createRandomGenerator;
 import static org.icgc.argo.workflow_management.util.Reflections.findResponseStatusAnnotation;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.reset;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
@@ -20,6 +21,7 @@ import static org.springframework.web.reactive.function.BodyInserters.fromValue;
 
 import com.google.common.collect.Maps;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Optional;
 import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
@@ -213,11 +215,7 @@ public class ErrorHandlingTests {
     req.setWorkflowUrl("sdf");
     req.setWorkflowParams(Maps.newHashMap());
 
-    // Replace nextflowService dependency in the controller with a mock
-    ReflectionTestUtils.setField(controller, "nextflowService", mockNextflowService);
-
-    // Setup the mock to throw an exception
-    setupNextflowRunAndThrowError(SomeUnhandledTestException.class);
+    setup(SomeUnhandledTestException::new);
 
     // Assert an INTERNAL_SERVER_ERROR is thrown for the custom unhandled exception
     postRunRequestForError(req, INTERNAL_SERVER_ERROR)
@@ -228,19 +226,6 @@ public class ErrorHandlingTests {
         .isEqualTo(INTERNAL_SERVER_ERROR.value())
         .jsonPath("$.msg")
         .value(not(emptyOrNullString()));
-  }
-
-  /**
-   * Ensure all the exceptions in the NextflowHttpStatusResolver are handled by the custom
-   * WebExceptionHandler
-   */
-  private void setupNextflowRunAndThrowError(Class<? extends Throwable> exceptionClassToThrow) {
-    reset(mockNextflowService);
-    given(mockNextflowService.run(Mockito.any()))
-        .willAnswer(
-            i -> {
-              throw exceptionClassToThrow.getConstructor().newInstance();
-            });
   }
 
   private ResponseSpec postRunRequest(RunsRequest r) {
@@ -277,12 +262,24 @@ public class ErrorHandlingTests {
 
     // Setup the mock to throw an exception
     reset(mockNextflowService);
-
     given(mockNextflowService.run(Mockito.any()))
         .willAnswer(
             i -> {
               throw exceptionSupplier.get();
             });
+  }
+
+  private <T extends Throwable> void setupSingleStringConstructor(
+      Class<T> klazz, Constructor<T> exceptionConstructor) {
+    setup(
+        () -> {
+          try {
+            return exceptionConstructor.newInstance("something");
+          } catch (IllegalAccessException | InstantiationException | InvocationTargetException e) {
+            fail(format("Could not instantiate '%s'", klazz.getSimpleName()));
+            return null;
+          }
+        });
   }
 
   private <T extends Throwable> void runResponseStatusAnnotationTest(
@@ -306,16 +303,8 @@ public class ErrorHandlingTests {
             "The class '%s' does not contain the ResponseStatus annotation",
             exceptionClass.getSimpleName()));
 
-    // Replace nextflowService dependency in the controller with a mock
-    ReflectionTestUtils.setField(controller, "nextflowService", mockNextflowService);
+    setupSingleStringConstructor(exceptionClass, result.get());
 
-    // Setup the mock to throw an exception
-    reset(mockNextflowService);
-    given(mockNextflowService.run(Mockito.any()))
-        .willAnswer(
-            i -> {
-              throw result.get().newInstance("something");
-            });
     postRunRequestForError(req, expectedErrorStatus)
         .expectStatus()
         .isEqualTo(expectedErrorStatus)
