@@ -11,5 +11,4 @@ public class WorkflowManagementApplicationTests {
 
   @Test
   public void contextLoads() {}
-
 }

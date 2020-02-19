@@ -1,6 +1,13 @@
 package org.icgc.argo.workflow_management.exception;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static java.util.Arrays.stream;
+import static java.util.stream.Collectors.toMap;
+
 import com.google.common.collect.Maps;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -32,39 +39,30 @@ import nextflow.exception.ScriptRuntimeException;
 import nextflow.exception.StopSplitIterationException;
 import org.springframework.http.HttpStatus;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
-import static com.google.common.base.Preconditions.checkArgument;
-import static java.util.Arrays.stream;
-import static java.util.stream.Collectors.toMap;
-
 @Getter
 @RequiredArgsConstructor
 public enum NextflowHttpStatusResolver {
-  NOT_FOUND(HttpStatus.NOT_FOUND,
-      MissingFileException.class ,
+  NOT_FOUND(
+      HttpStatus.NOT_FOUND,
+      MissingFileException.class,
       MissingLibraryException.class,
       MissingModuleComponentException.class,
-      MissingValueException.class
-  ),
-  CONFLICT(HttpStatus.CONFLICT,
+      MissingValueException.class),
+  CONFLICT(
+      HttpStatus.CONFLICT,
       DuplicateChannelNameException.class,
       DuplicateModuleIncludeException.class,
-      DuplicateProcessInvocation.class
-  ),
-  BAD_REQUEST(HttpStatus.BAD_REQUEST,
+      DuplicateProcessInvocation.class),
+  BAD_REQUEST(
+      HttpStatus.BAD_REQUEST,
       IllegalConfigException.class,
       IllegalDirectiveException.class,
       IllegalFileException.class,
       IllegalInvocationException.class,
-      IllegalModulePath.class
-  ),
-  UNPROCESSABLE_ENTITY(HttpStatus.UNPROCESSABLE_ENTITY,
-      AbortOperationException.class
-  ),
-  INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR,
+      IllegalModulePath.class),
+  UNPROCESSABLE_ENTITY(HttpStatus.UNPROCESSABLE_ENTITY, AbortOperationException.class),
+  INTERNAL_SERVER_ERROR(
+      HttpStatus.INTERNAL_SERVER_ERROR,
       AbortRunException.class,
       AbortSignalException.class,
       ConfigParseException.class,
@@ -76,40 +74,44 @@ public enum NextflowHttpStatusResolver {
       ProcessUnrecoverableException.class,
       ScriptCompilationException.class,
       ScriptRuntimeException.class,
-      StopSplitIterationException.class
-  );
+      StopSplitIterationException.class);
 
-//  ProcessException.class,  // super class for many exceptions
+  //  ProcessException.class,  // super class for many exceptions
 
-
-  private static final String NEXTFLOW_EXCEPTION_PACKAGE_NAME = ProcessException.class.getPackageName();
+  private static final String NEXTFLOW_EXCEPTION_PACKAGE_NAME =
+      ProcessException.class.getPackageName();
   private static final Map<Class<?>, NextflowHttpStatusResolver> map = Maps.newHashMap();
+
   static {
     stream(NextflowHttpStatusResolver.values())
-        .forEach(n -> {
-          map.putAll(n.getNextflowNativeExceptionTypes().stream()
-              .peek(NextflowHttpStatusResolver::checkIfNextflowException)
-              .collect(toMap(x -> x, y -> n)));
-        });
+        .forEach(
+            n -> {
+              map.putAll(
+                  n.getNextflowNativeExceptionTypes().stream()
+                      .peek(NextflowHttpStatusResolver::checkIfNextflowException)
+                      .collect(toMap(x -> x, y -> n)));
+            });
   }
 
-  private static void checkIfNextflowException(Class<? extends  Throwable> nextflowException){
-    checkArgument(nextflowException.getPackageName().equals(NEXTFLOW_EXCEPTION_PACKAGE_NAME),
+  private static void checkIfNextflowException(Class<? extends Throwable> nextflowException) {
+    checkArgument(
+        nextflowException.getPackageName().equals(NEXTFLOW_EXCEPTION_PACKAGE_NAME),
         "The class '%s' does not belong to the nextflow exception package '%s'",
-        nextflowException.getName(), NEXTFLOW_EXCEPTION_PACKAGE_NAME);
+        nextflowException.getName(),
+        NEXTFLOW_EXCEPTION_PACKAGE_NAME);
   }
 
   NextflowHttpStatusResolver(
-      HttpStatus httpStatus,
-      @NonNull Class<? extends Throwable> ... nextflowNativeExceptionTypes) {
+      HttpStatus httpStatus, @NonNull Class<? extends Throwable>... nextflowNativeExceptionTypes) {
     this.nextflowNativeExceptionTypes = List.of(nextflowNativeExceptionTypes);
-    this.httpStatus= httpStatus;
+    this.httpStatus = httpStatus;
   }
 
   @NonNull private final List<Class<? extends Throwable>> nextflowNativeExceptionTypes;
   @NonNull private final HttpStatus httpStatus;
 
-  public static Optional<HttpStatus> resolveHttpStatus(Class<? extends Throwable> nextflowException){
+  public static Optional<HttpStatus> resolveHttpStatus(
+      Class<? extends Throwable> nextflowException) {
     return Optional.ofNullable(map.get(nextflowException))
         .map(NextflowHttpStatusResolver::getHttpStatus);
   }

@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 @Slf4j
 public class Reflections {
 
-
   public static <T> Optional<T> createWithReflection(
       Class<T> objClass, Map<String, Object> params) {
     try {
@@ -60,8 +59,9 @@ public class Reflections {
     invokeDeclaredMethod(obj, methodName, null);
   }
 
-  public static Optional<ResponseStatus> findResponseStatusAnnotation(Class<? extends Throwable> klazz){
-    if (klazz.isAnnotationPresent(ResponseStatus.class)){
+  public static Optional<ResponseStatus> findResponseStatusAnnotation(
+      Class<? extends Throwable> klazz) {
+    if (klazz.isAnnotationPresent(ResponseStatus.class)) {
       val responseStatus = klazz.getDeclaredAnnotation(ResponseStatus.class);
       return Optional.of(responseStatus);
     }

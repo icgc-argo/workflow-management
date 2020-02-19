@@ -1,21 +1,17 @@
 package org.icgc.argo.workflow_management.util;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static java.lang.Integer.MAX_VALUE;
+import static java.util.stream.Collectors.toUnmodifiableList;
+
 import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Random;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Random;
-import java.util.stream.Collectors;
-
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.collect.Lists.newArrayList;
-import static java.lang.Integer.MAX_VALUE;
-import static java.util.stream.Collectors.toUnmodifiableList;
 
 @Slf4j
 public class RandomGenerator {
@@ -30,14 +26,9 @@ public class RandomGenerator {
     this.seed = seed;
   }
 
-  /**
-   *  Select a random enum with a filter
-   */
+  /** Select a random enum with a filter */
   public <E extends Enum<E>> E randomEnum(@NonNull Class<E> enumClass, Predicate<E> filter) {
-    val enumList = EnumSet.allOf(enumClass)
-        .stream()
-        .filter(filter)
-        .collect(toUnmodifiableList());
+    val enumList = EnumSet.allOf(enumClass).stream().filter(filter).collect(toUnmodifiableList());
     return randomElement(enumList);
   }
 
@@ -121,5 +112,4 @@ public class RandomGenerator {
     val seed = System.currentTimeMillis();
     return createRandomGenerator(id, seed);
   }
-
 }

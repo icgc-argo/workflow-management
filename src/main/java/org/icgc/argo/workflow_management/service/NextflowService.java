@@ -26,14 +26,13 @@ import org.icgc.argo.workflow_management.exception.ReflectionUtilsException;
 import org.icgc.argo.workflow_management.service.model.WESRunParams;
 import org.icgc.argo.workflow_management.service.properties.NextflowProperties;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
 @Slf4j
-@Service(value = "nextflow" )
+@Service(value = "nextflow")
 public class NextflowService implements WorkflowExecutionService {
 
   @Autowired private NextflowProperties config;
@@ -58,17 +57,17 @@ public class NextflowService implements WorkflowExecutionService {
         .subscribeOn(scheduler);
   }
 
-  private void validateParams(WESRunParams params){
+  private void validateParams(WESRunParams params) {
     validateWorkflowUrl(params.getWorkflowUrl());
   }
 
-  private void validateWorkflowUrl(String workflowUrl){
-    //TODO: rtisma    -- create test for https://github.com/${owner}/${repo}/blob/${branch}/${path-to-file}
+  private void validateWorkflowUrl(String workflowUrl) {
+    // TODO: rtisma    -- create test for
+    // https://github.com/${owner}/${repo}/blob/${branch}/${path-to-file}
     // generate url
     // get
 
   }
-
 
   private String startRun(WESRunParams params)
       throws ReflectionUtilsException, IOException, NextflowRunException {
@@ -108,11 +107,12 @@ public class NextflowService implements WorkflowExecutionService {
     val masterUrl = config.getK8s().getMasterUrl();
     val namespace = config.getK8s().getNamespace();
     val turstCertificate = config.getK8s().isTrustCertificate();
-    val config = new ConfigBuilder()
-                .withTrustCerts(turstCertificate)
-                .withMasterUrl(masterUrl)
-                .withNamespace(namespace)
-                .build();
+    val config =
+        new ConfigBuilder()
+            .withTrustCerts(turstCertificate)
+            .withMasterUrl(masterUrl)
+            .withNamespace(namespace)
+            .build();
     try (final val client = new DefaultKubernetesClient(config)) {
       isPodRunning(client, namespace, runId);
       val childPods =
@@ -154,8 +154,7 @@ public class NextflowService implements WorkflowExecutionService {
     if (!state.equalsIgnoreCase("Running")) {
       throw new RuntimeException(
           format(
-              "Executor pod %s is in %s state, can only cancel a running workflow.",
-              runId, state));
+              "Executor pod %s is in %s state, can only cancel a running workflow.", runId, state));
     } else return true;
   }
 
