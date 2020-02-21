@@ -45,7 +45,7 @@ public class NextflowService implements WorkflowExecutionService {
               try {
                 return this.startRun(params);
               } catch (RuntimeException e) {
-                // rethrow runtime exception for GlobalWebExceptionHandler
+                // rethrow runtime exception for GlobalExceptionHandler
                 log.error("nextflow runtime exception", e);
                 throw e;
               } catch (Exception e) {
@@ -78,7 +78,7 @@ public class NextflowService implements WorkflowExecutionService {
               try {
                 return this.cancelRun(runId);
               } catch (RuntimeException e) {
-                // rethrow runtime exception for GlobalWebExceptionHandler
+                // rethrow runtime exception for GlobalExceptionHandler
                 log.error("nextflow runtime exception", e);
                 throw e;
               } catch (Exception e) {
@@ -94,11 +94,12 @@ public class NextflowService implements WorkflowExecutionService {
     val masterUrl = config.getK8s().getMasterUrl();
     val namespace = config.getK8s().getNamespace();
     val turstCertificate = config.getK8s().isTrustCertificate();
-    val config = new ConfigBuilder()
-                .withTrustCerts(turstCertificate)
-                .withMasterUrl(masterUrl)
-                .withNamespace(namespace)
-                .build();
+    val config =
+        new ConfigBuilder()
+            .withTrustCerts(turstCertificate)
+            .withMasterUrl(masterUrl)
+            .withNamespace(namespace)
+            .build();
     try (final val client = new DefaultKubernetesClient(config)) {
       isPodRunning(client, namespace, runId);
       val childPods =
@@ -140,8 +141,7 @@ public class NextflowService implements WorkflowExecutionService {
     if (!state.equalsIgnoreCase("Running")) {
       throw new RuntimeException(
           format(
-              "Executor pod %s is in %s state, can only cancel a running workflow.",
-              runId, state));
+              "Executor pod %s is in %s state, can only cancel a running workflow.", runId, state));
     } else return true;
   }
 
