@@ -177,12 +177,6 @@ public class NextflowService implements WorkflowExecutionService {
     // assign UUID as the run name
     cmdParams.put("runName", runName);
 
-    // always pull latest code before running
-    // does not prevent us running a specific version (revision),
-    // does enforce pulling of that branch/hash before running)
-    // TODO: Look at this when closer to production, should be a controlled param
-    cmdParams.put("latest", true);
-
     // launcher and launcher options required by CmdKubeRun
     cmdParams.put("launcher", launcher);
 
@@ -214,6 +208,13 @@ public class NextflowService implements WorkflowExecutionService {
       // Use workDir if provided in workflow_engine_options
       if (nonNull(workflowEngineOptions.getWorkDir())) {
         cmdParams.put("workDir", workflowEngineOptions.getWorkDir());
+      }
+
+      // should pull latest code before running?
+      // does not prevent us running a specific version (revision),
+      // does enforce pulling of that branch/hash before running)
+      if (nonNull(workflowEngineOptions.getLatest())) {
+        cmdParams.put("latest", workflowEngineOptions.getLatest().equals("true"));
       }
 
       // Process options (default docker container to run for process if not specified)
