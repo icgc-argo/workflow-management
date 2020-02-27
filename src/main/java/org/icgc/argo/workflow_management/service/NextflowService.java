@@ -45,7 +45,7 @@ public class NextflowService implements WorkflowExecutionService {
               try {
                 return this.startRun(params);
               } catch (RuntimeException e) {
-                // rethrow runtime exception for GlobalWebExceptionHandler
+                // rethrow runtime exception for GlobalExceptionHandler
                 log.error("nextflow runtime exception", e);
                 throw e;
               } catch (Exception e) {
@@ -78,7 +78,7 @@ public class NextflowService implements WorkflowExecutionService {
               try {
                 return this.cancelRun(runId);
               } catch (RuntimeException e) {
-                // rethrow runtime exception for GlobalWebExceptionHandler
+                // rethrow runtime exception for GlobalExceptionHandler
                 log.error("nextflow runtime exception", e);
                 throw e;
               } catch (Exception e) {
@@ -94,11 +94,12 @@ public class NextflowService implements WorkflowExecutionService {
     val masterUrl = config.getK8s().getMasterUrl();
     val namespace = config.getK8s().getNamespace();
     val turstCertificate = config.getK8s().isTrustCertificate();
-    val config = new ConfigBuilder()
-                .withTrustCerts(turstCertificate)
-                .withMasterUrl(masterUrl)
-                .withNamespace(namespace)
-                .build();
+    val config =
+        new ConfigBuilder()
+            .withTrustCerts(turstCertificate)
+            .withMasterUrl(masterUrl)
+            .withNamespace(namespace)
+            .build();
     try (final val client = new DefaultKubernetesClient(config)) {
       isPodRunning(client, namespace, runId);
       val childPods =
@@ -140,8 +141,7 @@ public class NextflowService implements WorkflowExecutionService {
     if (!state.equalsIgnoreCase("Running")) {
       throw new RuntimeException(
           format(
-              "Executor pod %s is in %s state, can only cancel a running workflow.",
-              runId, state));
+              "Executor pod %s is in %s state, can only cancel a running workflow.", runId, state));
     } else return true;
   }
 
@@ -177,12 +177,6 @@ public class NextflowService implements WorkflowExecutionService {
     // assign UUID as the run name
     cmdParams.put("runName", runName);
 
-    // always pull latest code before running
-    // does not prevent us running a specific version (revision),
-    // does enforce pulling of that branch/hash before running)
-    // TODO: Look at this when closer to production, should be a controlled param
-    cmdParams.put("latest", true);
-
     // launcher and launcher options required by CmdKubeRun
     cmdParams.put("launcher", launcher);
 
@@ -214,6 +208,13 @@ public class NextflowService implements WorkflowExecutionService {
       // Use workDir if provided in workflow_engine_options
       if (nonNull(workflowEngineOptions.getWorkDir())) {
         cmdParams.put("workDir", workflowEngineOptions.getWorkDir());
+      }
+
+      // should pull latest code before running?
+      // does not prevent us running a specific version (revision),
+      // does enforce pulling of that branch/hash before running)
+      if (nonNull(workflowEngineOptions.getLatest())) {
+        cmdParams.put("latest", workflowEngineOptions.getLatest().equals("true"));
       }
 
       // Process options (default docker container to run for process if not specified)

@@ -10,9 +10,11 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.icgc.argo.workflow_management.exception.ReflectionUtilsException;
 import org.springframework.util.ReflectionUtils;
+import org.springframework.web.bind.annotation.ResponseStatus;
 
 @Slf4j
 public class Reflections {
+
   public static <T> Optional<T> createWithReflection(
       Class<T> objClass, Map<String, Object> params) {
     try {
@@ -55,6 +57,15 @@ public class Reflections {
   public static <T> void invokeDeclaredMethod(T obj, String methodName)
       throws ReflectionUtilsException {
     invokeDeclaredMethod(obj, methodName, null);
+  }
+
+  public static Optional<ResponseStatus> findResponseStatusAnnotation(
+      Class<? extends Throwable> klazz) {
+    if (klazz.isAnnotationPresent(ResponseStatus.class)) {
+      val responseStatus = klazz.getDeclaredAnnotation(ResponseStatus.class);
+      return Optional.of(responseStatus);
+    }
+    return Optional.empty();
   }
 
   private static <T> T reflectionFactory(Class<T> objClass, T obj, Map<String, Object> map) {
