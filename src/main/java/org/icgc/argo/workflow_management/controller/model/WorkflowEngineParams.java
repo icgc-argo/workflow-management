@@ -17,5 +17,6 @@ public class WorkflowEngineParams {
   private String revision;
   private String resume;
   private String workDir;
+  private String projectDir;
   private String latest;
 }

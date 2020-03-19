@@ -1,18 +1,8 @@
 package org.icgc.argo.workflow_management.service;
 
-import static java.lang.String.format;
-import static java.util.Objects.nonNull;
-import static org.icgc.argo.workflow_management.util.ParamsFile.createParamsFile;
-import static org.icgc.argo.workflow_management.util.Reflections.createWithReflection;
-import static org.icgc.argo.workflow_management.util.Reflections.invokeDeclaredMethod;
-
-import io.fabric8.kubernetes.client.*;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.UUID;
-import java.util.stream.Collectors;
+import io.fabric8.kubernetes.client.ConfigBuilder;
+import io.fabric8.kubernetes.client.DefaultKubernetesClient;
+import io.fabric8.kubernetes.client.KubernetesClientException;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -30,6 +20,17 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+
+import java.io.IOException;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static java.lang.String.format;
+import static java.util.Objects.nonNull;
+import static org.icgc.argo.workflow_management.util.NextflowConfigFile.createNextflowConfigFile;
+import static org.icgc.argo.workflow_management.util.ParamsFile.createParamsFile;
+import static org.icgc.argo.workflow_management.util.Reflections.createWithReflection;
+import static org.icgc.argo.workflow_management.util.Reflections.invokeDeclaredMethod;
 
 @Slf4j
 @Service(value = "nextflow")
@@ -205,9 +206,15 @@ public class NextflowService implements WorkflowExecutionService {
         cmdParams.put("revision", workflowEngineOptions.getRevision());
       }
 
-      // Use workDir if provided in workflow_engine_options
-      if (nonNull(workflowEngineOptions.getWorkDir())) {
-        cmdParams.put("workDir", workflowEngineOptions.getWorkDir());
+      // Use projectDir and/or workDir if provided in workflow_engine_options
+      if (nonNull(workflowEngineOptions.getProjectDir())
+          || nonNull(workflowEngineOptions.getWorkDir())) {
+        val config =
+            createNextflowConfigFile(
+                runName,
+                Optional.ofNullable(workflowEngineOptions.getProjectDir()),
+                Optional.ofNullable(workflowEngineOptions.getWorkDir()));
+        cmdParams.put("runConfig", List.of(config));
       }
 
       // should pull latest code before running?
