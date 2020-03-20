@@ -1,5 +1,6 @@
 package org.icgc.argo.workflow_management.util;
 
+import lombok.NonNull;
 import lombok.val;
 
 import java.io.File;
@@ -7,14 +8,13 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
+import java.util.function.Consumer;
+
+import static com.google.common.base.Strings.isNullOrEmpty;
 
 public class NextflowConfigFile {
   public static String createNextflowConfigFile(
-      String filename,
-      Optional<String> launchDir,
-      Optional<String> projectDir,
-      Optional<String> workDir)
+      @NonNull String filename, String launchDir, String projectDir, String workDir)
       throws IOException {
     val filePath = String.format("/tmp/%s.config", filename);
 
@@ -25,9 +25,9 @@ public class NextflowConfigFile {
     List<String> fileContent = new ArrayList<>();
 
     fileContent.add("k8s {");
-    launchDir.ifPresent(text -> fileContent.add(String.format("\tlaunchDir = '%s'", text)));
-    projectDir.ifPresent(text -> fileContent.add(String.format("\tprojectDir = '%s'", text)));
-    workDir.ifPresent(text -> fileContent.add(String.format("\tworkDir = '%s'", text)));
+    writeFormattedLineIfValue(fileContent::add, "\tlaunchDir = '%s'", launchDir);
+    writeFormattedLineIfValue(fileContent::add, "\tprojectDir = '%s'", projectDir);
+    writeFormattedLineIfValue(fileContent::add, "\tworkDir = '%s'", workDir);
     fileContent.add("}");
 
     // Write contents to file
@@ -42,5 +42,12 @@ public class NextflowConfigFile {
 
     // Return path for usage in nextflow
     return filePath;
+  }
+
+  private static void writeFormattedLineIfValue(
+      @NonNull Consumer<String> consumer, @NonNull String formatted, String value) {
+    if (!isNullOrEmpty(value)) {
+      consumer.accept(String.format(formatted, value));
+    }
   }
 }
