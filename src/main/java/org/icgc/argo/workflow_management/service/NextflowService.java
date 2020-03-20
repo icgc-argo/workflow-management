@@ -213,9 +213,9 @@ public class NextflowService implements WorkflowExecutionService {
         val config =
             createNextflowConfigFile(
                 runName,
-                Optional.ofNullable(workflowEngineOptions.getLaunchDir()),
-                Optional.ofNullable(workflowEngineOptions.getProjectDir()),
-                Optional.ofNullable(workflowEngineOptions.getWorkDir()));
+                workflowEngineOptions.getLaunchDir(),
+                workflowEngineOptions.getProjectDir(),
+                workflowEngineOptions.getWorkDir());
         cmdParams.put("runConfig", List.of(config));
       }
 
