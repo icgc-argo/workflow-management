@@ -11,7 +11,11 @@ import java.util.Optional;
 
 public class NextflowConfigFile {
   public static String createNextflowConfigFile(
-      String filename, Optional<String> projectDir, Optional<String> workDir) throws IOException {
+      String filename,
+      Optional<String> launchDir,
+      Optional<String> projectDir,
+      Optional<String> workDir)
+      throws IOException {
     val filePath = String.format("/tmp/%s.config", filename);
 
     File configFile = new File(filePath);
@@ -21,6 +25,7 @@ public class NextflowConfigFile {
     List<String> fileContent = new ArrayList<>();
 
     fileContent.add("k8s {");
+    launchDir.ifPresent(text -> fileContent.add(String.format("\tlaunchDir = '%s'", text)));
     projectDir.ifPresent(text -> fileContent.add(String.format("\tprojectDir = '%s'", text)));
     workDir.ifPresent(text -> fileContent.add(String.format("\tworkDir = '%s'", text)));
     fileContent.add("}");

@@ -206,12 +206,14 @@ public class NextflowService implements WorkflowExecutionService {
         cmdParams.put("revision", workflowEngineOptions.getRevision());
       }
 
-      // Use projectDir and/or workDir if provided in workflow_engine_options
-      if (nonNull(workflowEngineOptions.getProjectDir())
+      // Use launchDir, projectDir and/or workDir if provided in workflow_engine_options
+      if (nonNull(workflowEngineOptions.getLaunchDir())
+          || nonNull(workflowEngineOptions.getProjectDir())
           || nonNull(workflowEngineOptions.getWorkDir())) {
         val config =
             createNextflowConfigFile(
                 runName,
+                Optional.ofNullable(workflowEngineOptions.getLaunchDir()),
                 Optional.ofNullable(workflowEngineOptions.getProjectDir()),
                 Optional.ofNullable(workflowEngineOptions.getWorkDir()));
         cmdParams.put("runConfig", List.of(config));
