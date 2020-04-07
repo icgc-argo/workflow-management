@@ -1,8 +1,18 @@
 package org.icgc.argo.workflow_management.service;
 
+import static java.lang.String.format;
+import static java.util.Objects.nonNull;
+import static org.icgc.argo.workflow_management.util.NextflowConfigFile.createNextflowConfigFile;
+import static org.icgc.argo.workflow_management.util.ParamsFile.createParamsFile;
+import static org.icgc.argo.workflow_management.util.Reflections.createWithReflection;
+import static org.icgc.argo.workflow_management.util.Reflections.invokeDeclaredMethod;
+
 import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
+import java.io.IOException;
+import java.util.*;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -20,17 +30,6 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-
-import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static java.lang.String.format;
-import static java.util.Objects.nonNull;
-import static org.icgc.argo.workflow_management.util.NextflowConfigFile.createNextflowConfigFile;
-import static org.icgc.argo.workflow_management.util.ParamsFile.createParamsFile;
-import static org.icgc.argo.workflow_management.util.Reflections.createWithReflection;
-import static org.icgc.argo.workflow_management.util.Reflections.invokeDeclaredMethod;
 
 @Slf4j
 @Service(value = "nextflow")
@@ -195,43 +194,38 @@ public class NextflowService implements WorkflowExecutionService {
     // Dynamic engine properties/config
     val workflowEngineOptions = params.getWorkflowEngineParams();
 
-    if (nonNull(workflowEngineOptions)) {
+    // Write config file for run (minimum contents == runAsUser)
+    // Use launchDir, projectDir and/or workDir if provided in workflow_engine_options
+    val config =
+        createNextflowConfigFile(
+            runName,
+            k8sConfig.getRunAsUser(),
+            workflowEngineOptions.getLaunchDir(),
+            workflowEngineOptions.getProjectDir(),
+            workflowEngineOptions.getWorkDir());
+    cmdParams.put("runConfig", List.of(config));
 
-      // Resume workflow by name/id
-      if (nonNull(workflowEngineOptions.getResume())) {
-        cmdParams.put("resume", workflowEngineOptions.getResume());
-      }
-      // Use revision if provided in workflow_engine_options
-      if (nonNull(workflowEngineOptions.getRevision())) {
-        cmdParams.put("revision", workflowEngineOptions.getRevision());
-      }
+    // Resume workflow by name/id
+    if (nonNull(workflowEngineOptions.getResume())) {
+      cmdParams.put("resume", workflowEngineOptions.getResume());
+    }
+    // Use revision if provided in workflow_engine_options
+    if (nonNull(workflowEngineOptions.getRevision())) {
+      cmdParams.put("revision", workflowEngineOptions.getRevision());
+    }
 
-      // Use launchDir, projectDir and/or workDir if provided in workflow_engine_options
-      if (nonNull(workflowEngineOptions.getLaunchDir())
-          || nonNull(workflowEngineOptions.getProjectDir())
-          || nonNull(workflowEngineOptions.getWorkDir())) {
-        val config =
-            createNextflowConfigFile(
-                runName,
-                workflowEngineOptions.getLaunchDir(),
-                workflowEngineOptions.getProjectDir(),
-                workflowEngineOptions.getWorkDir());
-        cmdParams.put("runConfig", List.of(config));
-      }
+    // should pull latest code before running?
+    // does not prevent us running a specific version (revision),
+    // does enforce pulling of that branch/hash before running)
+    if (nonNull(workflowEngineOptions.getLatest())) {
+      cmdParams.put("latest", workflowEngineOptions.getLatest().equals("true"));
+    }
 
-      // should pull latest code before running?
-      // does not prevent us running a specific version (revision),
-      // does enforce pulling of that branch/hash before running)
-      if (nonNull(workflowEngineOptions.getLatest())) {
-        cmdParams.put("latest", workflowEngineOptions.getLatest().equals("true"));
-      }
-
-      // Process options (default docker container to run for process if not specified)
-      if (nonNull(workflowEngineOptions.getDefaultContainer())) {
-        val processOptions = new HashMap<String, String>();
-        processOptions.put("container", workflowEngineOptions.getDefaultContainer());
-        cmdParams.put("process", processOptions);
-      }
+    // Process options (default docker container to run for process if not specified)
+    if (nonNull(workflowEngineOptions.getDefaultContainer())) {
+      val processOptions = new HashMap<String, String>();
+      processOptions.put("container", workflowEngineOptions.getDefaultContainer());
+      cmdParams.put("process", processOptions);
     }
 
     return createWithReflection(CmdKubeRun.class, cmdParams)
