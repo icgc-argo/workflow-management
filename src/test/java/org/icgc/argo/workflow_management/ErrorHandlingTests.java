@@ -176,9 +176,7 @@ public class ErrorHandlingTests {
         .jsonPath("$.status_code")
         .isEqualTo(BAD_REQUEST.value())
         .jsonPath("$.msg")
-        .value(containsString("workflow_url is a required field!"))
-        .jsonPath("$.msg")
-        .value(containsString("workflow_params is a required field!"));
+        .value(containsString("workflow_url is a required field!"));
 
     // Assert a request with only the workflowParams field defined returns a BAD_REQUEST
     val reqWorkflowUrlUndefined = new RunsRequest();
