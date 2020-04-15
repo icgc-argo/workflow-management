@@ -1,5 +1,6 @@
 package org.icgc.argo.workflow_management.service;
 
+import static java.lang.Boolean.parseBoolean;
 import static java.lang.String.format;
 import static java.util.Objects.nonNull;
 import static org.icgc.argo.workflow_management.util.NextflowConfigFile.createNextflowConfigFile;
@@ -26,6 +27,7 @@ import org.icgc.argo.workflow_management.exception.NextflowRunException;
 import org.icgc.argo.workflow_management.exception.ReflectionUtilsException;
 import org.icgc.argo.workflow_management.service.model.WESRunParams;
 import org.icgc.argo.workflow_management.service.properties.NextflowProperties;
+import org.icgc.argo.workflow_management.util.ConditionalPutMap;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -192,8 +194,8 @@ public class NextflowService implements WorkflowExecutionService {
     val k8sConfig = config.getK8s();
     val webLogUrl = config.getWeblogUrl();
 
-    // params to build CmdKubeRun object
-    val cmdParams = new HashMap<String, Object>();
+    // params map to build CmdKubeRun (put if val not null)
+    val cmdParams = new ConditionalPutMap<String, Object>(Objects::nonNull, new HashMap<>());
 
     // run name (used for paramsFile as well)
     // You may be asking yourself, why is he replacing the "-" in the UUID, this is a valid
@@ -223,43 +225,33 @@ public class NextflowService implements WorkflowExecutionService {
     // Dynamic engine properties/config
     val workflowEngineOptions = params.getWorkflowEngineParams();
 
-    if (nonNull(workflowEngineOptions)) {
+    // Write config file for run using required and optional arguments
+    // Use launchDir, projectDir and/or workDir if provided in workflow_engine_options
+    val config =
+        createNextflowConfigFile(
+            runName,
+            k8sConfig.getRunAsUser(),
+            workflowEngineOptions.getLaunchDir(),
+            workflowEngineOptions.getProjectDir(),
+            workflowEngineOptions.getWorkDir());
+    cmdParams.put("runConfig", List.of(config));
 
-      // Resume workflow by name/id
-      if (nonNull(workflowEngineOptions.getResume())) {
-        cmdParams.put("resume", workflowEngineOptions.getResume());
-      }
-      // Use revision if provided in workflow_engine_options
-      if (nonNull(workflowEngineOptions.getRevision())) {
-        cmdParams.put("revision", workflowEngineOptions.getRevision());
-      }
+    // Resume workflow by name/id
+    cmdParams.put("resume", workflowEngineOptions.getResume());
 
-      // Use launchDir, projectDir and/or workDir if provided in workflow_engine_options
-      if (nonNull(workflowEngineOptions.getLaunchDir())
-          || nonNull(workflowEngineOptions.getProjectDir())
-          || nonNull(workflowEngineOptions.getWorkDir())) {
-        val config =
-            createNextflowConfigFile(
-                runName,
-                workflowEngineOptions.getLaunchDir(),
-                workflowEngineOptions.getProjectDir(),
-                workflowEngineOptions.getWorkDir());
-        cmdParams.put("runConfig", List.of(config));
-      }
+    // Use revision if provided in workflow_engine_options
+    cmdParams.put("revision", workflowEngineOptions.getRevision());
 
-      // should pull latest code before running?
-      // does not prevent us running a specific version (revision),
-      // does enforce pulling of that branch/hash before running)
-      if (nonNull(workflowEngineOptions.getLatest())) {
-        cmdParams.put("latest", workflowEngineOptions.getLatest().equals("true"));
-      }
+    // should pull latest code before running?
+    // does not prevent us running a specific version (revision),
+    // does enforce pulling of that branch/hash before running)
+    cmdParams.put("latest", workflowEngineOptions.getLatest(), v -> parseBoolean((String) v));
 
-      // Process options (default docker container to run for process if not specified)
-      if (nonNull(workflowEngineOptions.getDefaultContainer())) {
-        val processOptions = new HashMap<String, String>();
-        processOptions.put("container", workflowEngineOptions.getDefaultContainer());
-        cmdParams.put("process", processOptions);
-      }
+    // Process options (default docker container to run for process if not specified)
+    if (nonNull(workflowEngineOptions.getDefaultContainer())) {
+      val processOptions = new HashMap<String, String>();
+      processOptions.put("container", workflowEngineOptions.getDefaultContainer());
+      cmdParams.put("process", processOptions);
     }
 
     return createWithReflection(CmdKubeRun.class, cmdParams)

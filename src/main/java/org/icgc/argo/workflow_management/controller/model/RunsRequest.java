@@ -3,6 +3,8 @@ package org.icgc.argo.workflow_management.controller.model;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import io.swagger.annotations.ApiModel;
+
+import java.util.HashMap;
 import java.util.Map;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
@@ -19,10 +21,9 @@ public class RunsRequest {
   @NotBlank(message = "workflow_url is a required field!")
   private String workflowUrl;
 
-  @NotNull(message = "workflow_params is a required field!")
-  private Map<String, Object> workflowParams;
+  private Map<String, Object> workflowParams = new HashMap<String, Object>();
+  private WorkflowEngineParams workflowEngineParams = new WorkflowEngineParams();
 
-  private WorkflowEngineParams workflowEngineParams;
   private Map<String, Object> workflowType;
   private String[] workflowTypeVersion;
   private Map<String, Object> tags;

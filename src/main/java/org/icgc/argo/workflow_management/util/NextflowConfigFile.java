@@ -13,7 +13,11 @@ import lombok.val;
 
 public class NextflowConfigFile {
   public static String createNextflowConfigFile(
-      @NonNull String filename, String launchDir, String projectDir, String workDir)
+      @NonNull String filename,
+      @NonNull Integer runAsUser,
+      String launchDir,
+      String projectDir,
+      String workDir)
       throws IOException {
     val filePath = String.format("/tmp/%s.config", filename);
 
@@ -24,9 +28,16 @@ public class NextflowConfigFile {
     List<String> fileContent = new ArrayList<>();
 
     fileContent.add("k8s {");
+
+    // pod security
+    fileContent.add(String.format("\trunAsUser = %s", runAsUser));
+
+    // variable config passed in via WorkflowEngineParams
     writeFormattedLineIfValue(fileContent::add, "\tlaunchDir = '%s'", launchDir);
     writeFormattedLineIfValue(fileContent::add, "\tprojectDir = '%s'", projectDir);
     writeFormattedLineIfValue(fileContent::add, "\tworkDir = '%s'", workDir);
+
+    // close it off
     fileContent.add("}");
 
     // Write contents to file
