@@ -1,8 +1,18 @@
 package org.icgc.argo.workflow_management.service;
 
+import static java.lang.String.format;
+import static java.util.Objects.nonNull;
+import static org.icgc.argo.workflow_management.util.NextflowConfigFile.createNextflowConfigFile;
+import static org.icgc.argo.workflow_management.util.ParamsFile.createParamsFile;
+import static org.icgc.argo.workflow_management.util.Reflections.createWithReflection;
+import static org.icgc.argo.workflow_management.util.Reflections.invokeDeclaredMethod;
+
 import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
+import java.io.IOException;
+import java.util.*;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -21,24 +31,19 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
-import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static java.lang.String.format;
-import static java.util.Objects.nonNull;
-import static org.icgc.argo.workflow_management.util.NextflowConfigFile.createNextflowConfigFile;
-import static org.icgc.argo.workflow_management.util.ParamsFile.createParamsFile;
-import static org.icgc.argo.workflow_management.util.Reflections.createWithReflection;
-import static org.icgc.argo.workflow_management.util.Reflections.invokeDeclaredMethod;
-
 @Slf4j
 @Service(value = "nextflow")
 public class NextflowService implements WorkflowExecutionService {
+  private final NextflowProperties config;
+  private final WorkflowStatusMonitor statusMonitor;
+  private final Scheduler scheduler;
 
-  @Autowired private NextflowProperties config;
-
-  private Scheduler scheduler = Schedulers.newElastic("nextflow-service");
+  @Autowired
+  public NextflowService(NextflowProperties config) {
+    this.config = config;
+    this.scheduler = Schedulers.newElastic("nextflow-service");
+    this.statusMonitor = new WorkflowStatusMonitor(config);
+  }
 
   public Mono<RunsResponse> run(WESRunParams params) {
     return Mono.fromSupplier(
@@ -66,6 +71,19 @@ public class NextflowService implements WorkflowExecutionService {
     val exitStatus = driver.shutdown();
 
     if (exitStatus == 0) {
+      String phase = getPhase(cmd.getRunName());
+      log.info(format("Run %s is currently in phase '%s'", cmd.getRunName(), phase));
+      if (phase.equalsIgnoreCase("Failed")) {
+        throw new NextflowRunException(
+            format("Pod execution failed for run'%s'\n", cmd.getRunName()));
+      }
+      statusMonitor.addRunId(cmd.getRunName());
+      if (!statusMonitor.isRunning()) {
+        log.info("Starting status monitor");
+        val t = new Thread(statusMonitor);
+        t.start();
+      }
+
       return cmd.getRunName();
     } else {
       throw new NextflowRunException(
@@ -91,18 +109,23 @@ public class NextflowService implements WorkflowExecutionService {
         .subscribeOn(scheduler);
   }
 
-  private String cancelRun(@NonNull String runId) {
+  DefaultKubernetesClient getClient() {
     val masterUrl = config.getK8s().getMasterUrl();
     val namespace = config.getK8s().getNamespace();
-    val turstCertificate = config.getK8s().isTrustCertificate();
+    val trustCertificate = config.getK8s().isTrustCertificate();
     val config =
         new ConfigBuilder()
-            .withTrustCerts(turstCertificate)
+            .withTrustCerts(trustCertificate)
             .withMasterUrl(masterUrl)
             .withNamespace(namespace)
             .build();
-    try (final val client = new DefaultKubernetesClient(config)) {
-      isPodRunning(client, namespace, runId);
+    return new DefaultKubernetesClient(config);
+  }
+
+  private String cancelRun(@NonNull String runId) {
+    val namespace = config.getK8s().getNamespace();
+    try (final val client = getClient()) {
+      isPodRunning(runId);
       val childPods =
           client.pods().inNamespace(namespace).withLabel("runName", runId).list().getItems()
               .stream()
@@ -128,8 +151,9 @@ public class NextflowService implements WorkflowExecutionService {
     return runId;
   }
 
-  private boolean isPodRunning(DefaultKubernetesClient client, String namespace, String runId) {
-    // can only cancel when executor pod is in running state
+  private String getPhase(String runId) {
+    val client = getClient();
+    val namespace = config.getK8s().getNamespace();
     val executorPod =
         client.pods().inNamespace(namespace).withLabel("runName", runId).list().getItems().stream()
             .filter(pod -> pod.getMetadata().getName().startsWith("wes-"))
@@ -138,19 +162,25 @@ public class NextflowService implements WorkflowExecutionService {
                 () ->
                     new RuntimeException(
                         format("Cannot found executor pod with run name %s.", runId)));
-    val state = executorPod.getStatus().getPhase();
+    return executorPod.getStatus().getPhase();
+  }
+
+  private void isPodRunning(String runId) {
+    val state = getPhase(runId);
+    // can only cancel when executor pod is in running state
+
     if (!state.equalsIgnoreCase("Running")) {
       throw new RuntimeException(
           format(
               "Executor pod %s is in %s state, can only cancel a running workflow.", runId, state));
-    } else return true;
+    }
   }
 
   private Launcher createLauncher() throws ReflectionUtilsException {
     // Add a launcher to the mix
     val launcherParams = new HashMap<String, Object>();
     val cliOptions = new CliOptions();
-    cliOptions.setBackground(true);
+    cliOptions.setBackground(false);
     launcherParams.put("options", cliOptions);
 
     return createWithReflection(Launcher.class, launcherParams)
@@ -182,7 +212,7 @@ public class NextflowService implements WorkflowExecutionService {
     cmdParams.put("launcher", launcher);
 
     // workflow name/git and workflow params from request (create params file)
-    cmdParams.put("args", Arrays.asList(params.getWorkflowUrl()));
+    cmdParams.put("args", List.of(params.getWorkflowUrl()));
     cmdParams.put("paramsFile", createParamsFile(runName, params.getWorkflowParams()));
 
     // K8s options from application.yml

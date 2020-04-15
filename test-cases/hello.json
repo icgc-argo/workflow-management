@@ -1,0 +1,13 @@
+{ 
+  "workflow_url": "file:/Users/khartmann/projects/nextflow-io/hello",
+  "workflow_params": {},
+  "workflow_engine_params": {
+      "defaultContainer": "nextflow/bash",
+      "revision": "",
+      "resume": "",
+      "launchDir": "",
+      "projectDir": "",
+      "workDir": "",
+      "latest": ""
+  }
+}

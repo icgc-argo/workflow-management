@@ -1,7 +1,6 @@
 package org.icgc.argo.workflow_management.util;
 
-import lombok.NonNull;
-import lombok.val;
+import static com.google.common.base.Strings.isNullOrEmpty;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -9,8 +8,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-
-import static com.google.common.base.Strings.isNullOrEmpty;
+import lombok.NonNull;
+import lombok.val;
 
 public class NextflowConfigFile {
   public static String createNextflowConfigFile(
