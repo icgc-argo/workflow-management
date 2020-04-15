@@ -12,6 +12,7 @@ import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -43,6 +44,9 @@ public class NextflowService implements WorkflowExecutionService {
     this.config = config;
     this.scheduler = Schedulers.newElastic("nextflow-service");
     this.statusMonitor = new WorkflowStatusMonitor(config);
+    Schedulers.single()
+        .createWorker()
+        .schedulePeriodically(statusMonitor, 0L, config.getSleepInterval(), TimeUnit.MILLISECONDS);
   }
 
   public Mono<RunsResponse> run(WESRunParams params) {
@@ -78,12 +82,6 @@ public class NextflowService implements WorkflowExecutionService {
             format("Pod execution failed for run'%s'\n", cmd.getRunName()));
       }
       statusMonitor.addRunId(cmd.getRunName());
-      if (!statusMonitor.isRunning()) {
-        log.info("Starting status monitor");
-        val t = new Thread(statusMonitor);
-        t.start();
-      }
-
       return cmd.getRunName();
     } else {
       throw new NextflowRunException(

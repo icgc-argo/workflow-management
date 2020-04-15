@@ -8,11 +8,9 @@ import static org.icgc.argo.workflow_management.util.JsonUtils.toJsonString;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
-
 import java.io.IOError;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.icgc.argo.workflow_management.service.model.Metadata;
@@ -30,10 +28,8 @@ import org.springframework.web.client.RestTemplate;
 @Service
 public class WorkflowStatusMonitor implements Runnable {
   private Set<String> podNames;
-  private long sleepInterval; // in milliseconds
   private DefaultKubernetesClient kubernetesClient;
   private RestTemplate restTemplate;
-  private boolean isRunning;
   private String namespace;
   private String webLogUrl;
   private Integer maxErrorLogLines;
@@ -41,10 +37,10 @@ public class WorkflowStatusMonitor implements Runnable {
   @Autowired
   WorkflowStatusMonitor(NextflowProperties config) {
     this.podNames = new ConcurrentSkipListSet<>();
-    this.sleepInterval = config.getSleepInterval();
     this.namespace = config.getK8s().getNamespace();
     this.maxErrorLogLines = config.getMaxErrorLogLines();
-    kubernetesClient = getClient(config.getK8s().getMasterUrl(), namespace, config.getK8s().isTrustCertificate());
+    kubernetesClient =
+        getClient(config.getK8s().getMasterUrl(), namespace, config.getK8s().isTrustCertificate());
 
     if (config.getWeblogPort() == null) {
       this.webLogUrl = config.getWeblogUrl();
@@ -52,28 +48,19 @@ public class WorkflowStatusMonitor implements Runnable {
       this.webLogUrl = config.getWeblogUrl() + ":" + config.getWeblogPort();
     }
     this.restTemplate = new RestTemplate();
-
-    this.isRunning = false;
   }
 
-  @SuppressWarnings("InfiniteLoopStatement")
-  @SneakyThrows
   public void run() {
-    this.isRunning = true;
-    while (true) {
-      try {
-        kubernetesClient.pods().inNamespace(namespace).list().getItems().stream()
-            .filter(this::isMonitored)
-            .forEach(this::handlePod);
-      } catch (Exception e) {
-        log.error(format("Workflow Status Monitor threw exception %s", e.getMessage()));
-      }
-      Thread.sleep(sleepInterval);
+    if (podNames.isEmpty()) {
+      return;
     }
-  }
-
-  public boolean isRunning() {
-    return this.isRunning;
+    try {
+      kubernetesClient.pods().inNamespace(namespace).list().getItems().stream()
+          .filter(this::isMonitored)
+          .forEach(this::handlePod);
+    } catch (Exception e) {
+      log.error(format("Workflow Status Monitor threw exception %s", e.getMessage()));
+    }
   }
 
   public boolean isMonitored(Pod pod) {
@@ -107,7 +94,12 @@ public class WorkflowStatusMonitor implements Runnable {
   }
 
   public String getPodLog(Pod pod) {
-    return kubernetesClient.pods().inNamespace(namespace).withName(getPodName(pod)).tailingLines(maxErrorLogLines).getLog();
+    return kubernetesClient
+        .pods()
+        .inNamespace(namespace)
+        .withName(getPodName(pod))
+        .tailingLines(maxErrorLogLines)
+        .getLog();
   }
 
   private String getFailureMessage(Pod pod) {
@@ -130,11 +122,7 @@ public class WorkflowStatusMonitor implements Runnable {
     try {
       val result = restTemplate.postForEntity(webLogUrl, request, String.class);
       log.info(format("Webclient returned '%s'", result));
-      if (result.getStatusCode().is2xxSuccessful()) {
-        status = true;
-      } else {
-        status = false;
-      }
+      status = result.getStatusCode().is2xxSuccessful();
     } catch (IOError error) {
       log.error(format("Failed to post '%s' to '%s'", body, webLogUrl));
       status = false;
