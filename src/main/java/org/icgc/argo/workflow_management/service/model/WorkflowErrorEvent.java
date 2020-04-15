@@ -11,7 +11,7 @@ import lombok.*;
 @AllArgsConstructor
 @EqualsAndHashCode
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class WorkflowEvent {
+public class WorkflowErrorEvent {
 
   /** workflow run ID */
   @NonNull private String runId;
@@ -26,4 +26,5 @@ public class WorkflowEvent {
   }
 
   @NonNull private Metadata metadata;
+  @NonNull private String error;
 }

@@ -3,8 +3,16 @@ set -x
 export NEXTFLOW_K8S_NAMESPACE=rdpc-collab-dev
 export NEXTFLOW_K8S_TRUST_CERTIFICATE=true
 #export NEXTFLOW_WEBLOGURL=http://relay-weblog
-export NEXTFLOW_WEBLOGURL=http://localhost:9090
+export NEXTFLOW_WEBLOGURL=http://localhost
 export NEXTFLOW_K8S_MASTERURL=https://kube.rdpc-dev.cancercollaboratory.org:6443
 export NEXTFLOW_K8S_VOLMOUNTS_0=nfs-dev-1-vol-dev-1:/nfs-dev-1-vol-dev-1
 export NEXTFLOW_K8S_VOLMOUNTS_1=nfs-dev-1-vol-dev-2:/nfs-dev-1-vol-dev-2
+pid=$(ps ax | grep workflow | grep -v 'grep' | grep -v IntelliJ| tee mrap | sed -e 's/^[ ]*\([0-9][0-9]*\)[^0-9].*$/\1/')
+
+if [ -z "$pid" ]; then
+   true # nothing to do
+else
+  kill $pid 
+fi
+
 java -jar target/*.jar >& workflow.log &

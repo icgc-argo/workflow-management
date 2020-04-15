@@ -8,6 +8,7 @@ import static org.icgc.argo.workflow_management.util.JsonUtils.toJsonString;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
+
 import java.io.IOError;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -16,7 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.icgc.argo.workflow_management.service.model.Metadata;
 import org.icgc.argo.workflow_management.service.model.Workflow;
-import org.icgc.argo.workflow_management.service.model.WorkflowEvent;
+import org.icgc.argo.workflow_management.service.model.WorkflowErrorEvent;
 import org.icgc.argo.workflow_management.service.properties.NextflowProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
@@ -35,14 +36,15 @@ public class WorkflowStatusMonitor implements Runnable {
   private boolean isRunning;
   private String namespace;
   private String webLogUrl;
+  private Integer maxErrorLogLines;
 
   @Autowired
   WorkflowStatusMonitor(NextflowProperties config) {
     this.podNames = new ConcurrentSkipListSet<>();
     this.sleepInterval = config.getSleepInterval();
     this.namespace = config.getK8s().getNamespace();
-    kubernetesClient =
-        getClient(config.getK8s().getMasterUrl(), namespace, config.getK8s().isTrustCertificate());
+    this.maxErrorLogLines = config.getMaxErrorLogLines();
+    kubernetesClient = getClient(config.getK8s().getMasterUrl(), namespace, config.getK8s().isTrustCertificate());
 
     if (config.getWeblogPort() == null) {
       this.webLogUrl = config.getWeblogUrl();
@@ -104,12 +106,19 @@ public class WorkflowStatusMonitor implements Runnable {
     return pod.getStatus().getPhase();
   }
 
+  public String getPodLog(Pod pod) {
+    return kubernetesClient.pods().inNamespace(namespace).withName(getPodName(pod)).tailingLines(maxErrorLogLines).getLog();
+  }
+
   private String getFailureMessage(Pod pod) {
     val runId = pod.getMetadata().getUid();
     val start = parse(pod.getMetadata().getCreationTimestamp());
     val workflow = new Workflow(start, now());
     val m = new Metadata(workflow);
-    val event = new WorkflowEvent(runId, getPodName(pod), m);
+    val error = getPodLog(pod);
+
+    val event = new WorkflowErrorEvent(runId, getPodName(pod), m, error);
+
     return toJsonString(event);
   }
 
@@ -118,12 +127,14 @@ public class WorkflowStatusMonitor implements Runnable {
     val headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_JSON);
     val request = new HttpEntity<>(body, headers);
-    String result = "";
     try {
-
-      result = restTemplate.postForObject(webLogUrl, request, String.class);
+      val result = restTemplate.postForEntity(webLogUrl, request, String.class);
       log.info(format("Webclient returned '%s'", result));
-      status = true;
+      if (result.getStatusCode().is2xxSuccessful()) {
+        status = true;
+      } else {
+        status = false;
+      }
     } catch (IOError error) {
       log.error(format("Failed to post '%s' to '%s'", body, webLogUrl));
       status = false;

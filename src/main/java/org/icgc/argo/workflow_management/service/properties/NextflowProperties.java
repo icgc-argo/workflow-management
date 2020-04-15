@@ -17,6 +17,7 @@ public class NextflowProperties {
   private String masterUrl;
   private boolean trustCertificate;
   private long sleepInterval;
+  private int maxErrorLogLines;
 
   @Data
   public static class K8sProperties {
