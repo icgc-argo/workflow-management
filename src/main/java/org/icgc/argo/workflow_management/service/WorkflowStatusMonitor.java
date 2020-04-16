@@ -9,7 +9,6 @@ import org.icgc.argo.workflow_management.service.model.Metadata;
 import org.icgc.argo.workflow_management.service.model.Workflow;
 import org.icgc.argo.workflow_management.service.model.WorkflowErrorEvent;
 import org.icgc.argo.workflow_management.service.properties.NextflowProperties;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -32,8 +31,8 @@ public class WorkflowStatusMonitor implements Runnable {
   private String namespace;
   private String webLogUrl;
   private Integer maxErrorLogLines;
-
-  @Autowired WorkflowStatusMonitor(NextflowProperties config) {
+  
+  WorkflowStatusMonitor(NextflowProperties config) {
     this.podNames = new HashSet<>();
     this.namespace = config.getK8s().getNamespace();
     this.maxErrorLogLines = config.getMaxErrorLogLines();
