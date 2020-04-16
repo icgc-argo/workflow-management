@@ -1,16 +1,8 @@
 package org.icgc.argo.workflow_management.service;
 
-import static java.lang.String.format;
-import static java.time.OffsetDateTime.now;
-import static java.time.OffsetDateTime.parse;
-import static org.icgc.argo.workflow_management.util.JsonUtils.toJsonString;
-
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
-import java.io.IOError;
-import java.util.Set;
-import java.util.concurrent.ConcurrentSkipListSet;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.icgc.argo.workflow_management.service.model.Metadata;
@@ -21,11 +13,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.IOError;
+import java.util.HashSet;
+import java.util.Set;
+
+import static java.lang.String.format;
+import static java.time.OffsetDateTime.now;
+import static java.time.OffsetDateTime.parse;
+import static org.icgc.argo.workflow_management.util.JsonUtils.toJsonString;
+
 @Slf4j
-@Service
 public class WorkflowStatusMonitor implements Runnable {
   private Set<String> podNames;
   private DefaultKubernetesClient kubernetesClient;
@@ -34,13 +33,12 @@ public class WorkflowStatusMonitor implements Runnable {
   private String webLogUrl;
   private Integer maxErrorLogLines;
 
-  @Autowired
-  WorkflowStatusMonitor(NextflowProperties config) {
-    this.podNames = new ConcurrentSkipListSet<>();
+  @Autowired WorkflowStatusMonitor(NextflowProperties config) {
+    this.podNames = new HashSet<>();
     this.namespace = config.getK8s().getNamespace();
     this.maxErrorLogLines = config.getMaxErrorLogLines();
     kubernetesClient =
-        getClient(config.getK8s().getMasterUrl(), namespace, config.getK8s().isTrustCertificate());
+      getClient(config.getK8s().getMasterUrl(), namespace, config.getK8s().isTrustCertificate());
 
     if (config.getWeblogPort() == null) {
       this.webLogUrl = config.getWeblogUrl();
@@ -56,8 +54,8 @@ public class WorkflowStatusMonitor implements Runnable {
     }
     try {
       kubernetesClient.pods().inNamespace(namespace).list().getItems().stream()
-          .filter(this::isMonitored)
-          .forEach(this::handlePod);
+        .filter(this::isMonitored)
+        .forEach(this::handlePod);
     } catch (Exception e) {
       log.error(format("Workflow Status Monitor threw exception %s", e.getMessage()));
     }
@@ -95,11 +93,11 @@ public class WorkflowStatusMonitor implements Runnable {
 
   public String getPodLog(Pod pod) {
     return kubernetesClient
-        .pods()
-        .inNamespace(namespace)
-        .withName(getPodName(pod))
-        .tailingLines(maxErrorLogLines)
-        .getLog();
+      .pods()
+      .inNamespace(namespace)
+      .withName(getPodName(pod))
+      .tailingLines(maxErrorLogLines)
+      .getLog();
   }
 
   private String getFailureMessage(Pod pod) {
@@ -133,11 +131,11 @@ public class WorkflowStatusMonitor implements Runnable {
 
   DefaultKubernetesClient getClient(String masterUrl, String namespace, boolean trustCertificate) {
     val config =
-        new ConfigBuilder()
-            .withTrustCerts(trustCertificate)
-            .withMasterUrl(masterUrl)
-            .withNamespace(namespace)
-            .build();
+      new ConfigBuilder()
+        .withTrustCerts(trustCertificate)
+        .withMasterUrl(masterUrl)
+        .withNamespace(namespace)
+        .build();
     return new DefaultKubernetesClient(config);
   }
 
