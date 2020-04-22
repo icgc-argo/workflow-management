@@ -7,6 +7,5 @@ nextflow:
     masterUrl: "localhost:8080"
     trustCertificate: false
   weblogUrl: "http://localhost"
-  weblogPort: 9090
   sleepInterval: 1000 # milliseconds
   maxErrorLogLines: 50 # we put the last ${maxErrorLogLines} into the error message if a Pod fails

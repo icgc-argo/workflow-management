@@ -3,6 +3,8 @@ package org.icgc.argo.workflow_management.service;
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.String.format;
 import static java.util.Objects.nonNull;
+import static org.icgc.argo.workflow_management.service.model.KubernetesPhase.running;
+import static org.icgc.argo.workflow_management.service.model.KubernetesPhase.valueOf;
 import static org.icgc.argo.workflow_management.util.NextflowConfigFile.createNextflowConfigFile;
 import static org.icgc.argo.workflow_management.util.ParamsFile.createParamsFile;
 import static org.icgc.argo.workflow_management.util.Reflections.createWithReflection;
@@ -13,18 +15,20 @@ import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import lombok.NonNull;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import nextflow.Session;
 import nextflow.cli.CliOptions;
 import nextflow.cli.CmdKubeRun;
 import nextflow.cli.Launcher;
-import nextflow.k8s.K8sDriverLauncher;
+import nextflow.script.ScriptBinding;
 import org.icgc.argo.workflow_management.controller.model.RunsResponse;
 import org.icgc.argo.workflow_management.exception.NextflowRunException;
 import org.icgc.argo.workflow_management.exception.ReflectionUtilsException;
+import org.icgc.argo.workflow_management.service.model.KubernetesPhase;
 import org.icgc.argo.workflow_management.service.model.WESRunParams;
 import org.icgc.argo.workflow_management.service.properties.NextflowProperties;
 import org.icgc.argo.workflow_management.util.ConditionalPutMap;
@@ -38,17 +42,14 @@ import reactor.core.scheduler.Schedulers;
 @Service(value = "nextflow")
 public class NextflowService implements WorkflowExecutionService {
   private final NextflowProperties config;
-  private final WorkflowStatusMonitor statusMonitor;
   private final Scheduler scheduler;
+  public static final String NEXTFLOW_PREFIX = "nf-";
+  public static final String WES_PREFIX = "wes-";
 
   @Autowired
   public NextflowService(NextflowProperties config) {
     this.config = config;
     this.scheduler = Schedulers.newElastic("nextflow-service");
-    this.statusMonitor = new WorkflowStatusMonitor(config);
-    Schedulers.single()
-        .createWorker()
-        .schedulePeriodically(statusMonitor, 0L, config.getSleepInterval(), TimeUnit.MILLISECONDS);
   }
 
   public Mono<RunsResponse> run(WESRunParams params) {
@@ -77,18 +78,47 @@ public class NextflowService implements WorkflowExecutionService {
     val exitStatus = driver.shutdown();
 
     if (exitStatus == 0) {
-      String phase = getPhase(cmd.getRunName());
-      log.info(format("Run %s is currently in phase '%s'", cmd.getRunName(), phase));
-      if (phase.equalsIgnoreCase("Failed")) {
-        throw new NextflowRunException(
-            format("Pod execution failed for run'%s'\n", cmd.getRunName()));
-      }
-      statusMonitor.addRunId(cmd.getRunName());
+      // Schedule a workflow monitor to watch over our nextflow pod and make sure that we report an
+      // error if it
+      // fails to run.
+
+      val session = getSession(params, cmd, driver);
+      val podName = cmd.getRunName();
+      val sender = new NextflowWebLogEventSender(config.getWeblogUrl());
+      val monitor =
+          new NextflowWorkflowMonitor(
+              getClient(), config.getMaxErrorLogLines(), podName, sender, session);
+      scheduler.schedule(monitor);
       return cmd.getRunName();
     } else {
       throw new NextflowRunException(
           format("Invalid exit status (%d) from run %s", exitStatus, cmd.getRunName()));
     }
+  }
+
+  @SneakyThrows
+  Session getSession(WESRunParams params, CmdKubeRun cmd, NextFlowK8sDriverLauncher driver) {
+    val session = new Session();
+    session.setRunName(cmd.getRunName());
+    session.setCommandLine(driver.getCommandLine());
+
+    val b = new ScriptBinding();
+    b.setArgs(cmd.getArgs());
+    b.setEntryName(cmd.getEntryName());
+    val m = new TreeMap<String, Object>(cmd.getParams());
+    b.setParams(m);
+    b.setSession(session);
+    session.setBinding(b);
+
+    session.setLibDir(cmd.getLibPath());
+    session.setProfile(cmd.getProfile());
+    session.setScriptName(params.getWorkflowUrl());
+    // session.setBaseDir(Paths.get(params.getWorkflowEngineParams().getProjectDir()));
+    // session.setWorkDir(Paths.get(params.getWorkflowEngineParams().getWorkDir()));
+
+    session.setConfig(params.getWorkflowParams());
+    session.setResumeMode(params.getWorkflowEngineParams().getResume().equalsIgnoreCase("true"));
+    return session;
   }
 
   public Mono<RunsResponse> cancel(@NonNull String runId) {
@@ -129,7 +159,7 @@ public class NextflowService implements WorkflowExecutionService {
       val childPods =
           client.pods().inNamespace(namespace).withLabel("runName", runId).list().getItems()
               .stream()
-              .filter(pod -> pod.getMetadata().getName().startsWith("nf-"))
+              .filter(pod -> pod.getMetadata().getName().startsWith(NEXTFLOW_PREFIX))
               .collect(Collectors.toList());
       if (childPods.size() == 0) {
         throw new RuntimeException(
@@ -151,25 +181,25 @@ public class NextflowService implements WorkflowExecutionService {
     return runId;
   }
 
-  private String getPhase(String runId) {
+  private KubernetesPhase getPhase(String runId) {
     val client = getClient();
     val namespace = config.getK8s().getNamespace();
     val executorPod =
         client.pods().inNamespace(namespace).withLabel("runName", runId).list().getItems().stream()
-            .filter(pod -> pod.getMetadata().getName().startsWith("wes-"))
+            .filter(pod -> pod.getMetadata().getName().startsWith(WES_PREFIX))
             .findFirst()
             .orElseThrow(
                 () ->
                     new RuntimeException(
                         format("Cannot found executor pod with run name %s.", runId)));
-    return executorPod.getStatus().getPhase();
+    return valueOf(executorPod.getStatus().getPhase().toLowerCase());
   }
 
   private void isPodRunning(String runId) {
     val state = getPhase(runId);
     // can only cancel when executor pod is in running state
 
-    if (!state.equalsIgnoreCase("Running")) {
+    if (!state.equals(running)) {
       throw new RuntimeException(
           format(
               "Executor pod %s is in %s state, can only cancel a running workflow.", runId, state));
@@ -180,7 +210,7 @@ public class NextflowService implements WorkflowExecutionService {
     // Add a launcher to the mix
     val launcherParams = new HashMap<String, Object>();
     val cliOptions = new CliOptions();
-    cliOptions.setBackground(false);
+    cliOptions.setBackground(true);
     launcherParams.put("options", cliOptions);
 
     return createWithReflection(Launcher.class, launcherParams)
@@ -258,7 +288,8 @@ public class NextflowService implements WorkflowExecutionService {
         .orElseThrow(ReflectionUtilsException::new);
   }
 
-  private K8sDriverLauncher createDriver(@NonNull CmdKubeRun cmd) throws ReflectionUtilsException {
+  private NextFlowK8sDriverLauncher createDriver(@NonNull CmdKubeRun cmd)
+      throws ReflectionUtilsException {
 
     invokeDeclaredMethod(cmd, "checkRunName");
 
@@ -267,7 +298,7 @@ public class NextflowService implements WorkflowExecutionService {
     k8sDriverLauncherParams.put("runName", cmd.getRunName());
     k8sDriverLauncherParams.put("background", true);
 
-    return createWithReflection(K8sDriverLauncher.class, k8sDriverLauncherParams)
+    return createWithReflection(NextFlowK8sDriverLauncher.class, k8sDriverLauncherParams)
         .orElseThrow(ReflectionUtilsException::new);
   }
 }

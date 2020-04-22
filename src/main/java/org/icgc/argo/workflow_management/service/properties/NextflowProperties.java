@@ -13,7 +13,6 @@ import org.springframework.context.annotation.Configuration;
 public class NextflowProperties {
   private K8sProperties k8s;
   private String weblogUrl;
-  private Integer weblogPort;
   private String masterUrl;
   private boolean trustCertificate;
   private long sleepInterval;
