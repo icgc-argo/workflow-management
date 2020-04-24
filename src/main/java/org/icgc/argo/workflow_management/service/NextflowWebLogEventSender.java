@@ -1,5 +1,6 @@
 package org.icgc.argo.workflow_management.service;
 
+import static org.icgc.argo.workflow_management.service.NextflowWebLogEventSender.Event.*;
 import static org.icgc.argo.workflow_management.util.JsonUtils.toJsonString;
 
 import java.net.URL;
@@ -26,37 +27,37 @@ public class NextflowWebLogEventSender {
   }
 
   enum Event {
-    started,
-    completed,
-    process_submitted,
-    process_started,
-    process_completed,
-    error
+    STARTED,
+    COMPLETED,
+    PROCESS_SUBMITTED,
+    PROCESS_STARTED,
+    PROCESS_COMPLETED,
+    ERROR
   }
 
   @SneakyThrows
   public void sendStartEvent(NextflowMetadata meta) {
-    this.sendWorkflowEvent(Event.started, meta);
+    this.sendWorkflowEvent(STARTED, meta);
   }
 
   public void sendCompletedEvent(NextflowMetadata meta) {
-    sendWorkflowEvent(Event.completed, meta);
+    sendWorkflowEvent(COMPLETED, meta);
   }
 
   public void sendProcessSubmitted(TraceRecord traceRecord) {
-    sendTraceEvent(Event.process_submitted, traceRecord);
+    sendTraceEvent(PROCESS_SUBMITTED, traceRecord);
   }
 
   public void sendProcessStarted(TraceRecord traceRecord) {
-    sendTraceEvent(Event.process_started, traceRecord);
+    sendTraceEvent(PROCESS_STARTED, traceRecord);
   }
 
   public void sendProcessCompleted(TraceRecord traceRecord) {
-    sendTraceEvent(Event.process_completed, traceRecord);
+    sendTraceEvent(PROCESS_COMPLETED, traceRecord);
   }
 
   public void sendErrorEvent(TraceRecord traceRecord) {
-    sendTraceEvent(Event.error, traceRecord);
+    sendTraceEvent(ERROR, traceRecord);
   }
 
   public void sendTraceEvent(Event event, TraceRecord traceRecord) {};
