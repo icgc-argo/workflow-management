@@ -12,27 +12,27 @@ import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import nextflow.Session;
 import nextflow.util.Duration;
 import org.icgc.argo.workflow_management.service.model.KubernetesPhase;
+import org.icgc.argo.workflow_management.service.model.NextflowMetadata;
 
 @Slf4j
 @AllArgsConstructor
 public class NextflowWorkflowMonitor implements Runnable {
   private DefaultKubernetesClient kubernetesClient;
   private Integer maxErrorLogLines;
-  private String podName;
   private NextflowWebLogEventSender webLogSender;
-  private Session session;
+  private NextflowMetadata metadata;
 
   public void run() {
     boolean done = false;
+    val podName = metadata.getWorkflow().getRunName();
     while (!done) {
       try {
         PodResource<Pod, DoneablePod> pod = kubernetesClient.pods().withName(podName);
         var p = pod.get();
         var log = pod.tailingLines(maxErrorLogLines).getLog();
-        done = handlePod(p, log);
+        done = handlePod(metadata, p, log);
       } catch (Exception e) {
         log.error(format("Workflow Status Monitor threw exception %s", e.getMessage()));
         try {
@@ -44,10 +44,11 @@ public class NextflowWorkflowMonitor implements Runnable {
     }
   }
 
-  public boolean handlePod(Pod pod, String podLog) {
+  public boolean handlePod(NextflowMetadata metadata, Pod pod, String podLog) {
+    val podName = pod.getMetadata().getName();
     // if the pod running nextflow has created children, we'll assume it started successfully, and
     // that it can handle it's own logging from here on in.
-    if (podHasChildren()) {
+    if (podHasChildren(podName)) {
       log.info(podName + " has children! Done!");
       return true;
     }
@@ -56,18 +57,13 @@ public class NextflowWorkflowMonitor implements Runnable {
     // that the pod has started, and has failed, with the pod log as the error report.
     if (podFailed(pod)) {
       log.info("Sending start event");
-      webLogSender.sendStartEvent(session);
+      webLogSender.sendStartEvent(metadata);
       log.info("Updating the failure message");
-      var failed = updateFailure(session, podLog);
-      log.info("Sending completed event" + failed.toString());
-      webLogSender.sendCompletedEvent(failed);
+      updateFailure(metadata, pod, podLog);
+      log.info("Sending completed event");
+      webLogSender.sendCompletedEvent(metadata);
       log.info("Event sent");
-      //      try {
-      //        webLogSender.onFlowComplete();
-      //      } catch (Exception e) {
-      //        log.error("Caught exception" + e.toString());
-      //      }
-      log.info(podName + " failed!");
+      log.info(podName + " failed! Done!");
       return true;
     }
 
@@ -75,7 +71,7 @@ public class NextflowWorkflowMonitor implements Runnable {
     return false;
   }
 
-  private boolean podHasChildren() {
+  private boolean podHasChildren(String podName) {
     val childPods =
         kubernetesClient.pods().inNamespace(kubernetesClient.getNamespace())
             .withLabel("runName", podName).list().getItems().stream()
@@ -86,21 +82,22 @@ public class NextflowWorkflowMonitor implements Runnable {
   }
 
   private boolean podFailed(Pod pod) {
-    return getPhase(pod).equals(KubernetesPhase.failed);
+    return getPhase(pod).equals(KubernetesPhase.FAILED);
   }
 
-  public Session updateFailure(Session session, String podLog) {
-    val meta = session.getWorkflowMetadata();
-    meta.setComplete(now());
-    meta.setDuration(Duration.between(meta.getStart(), meta.getComplete()));
-    meta.setErrorReport(podLog);
-    meta.setErrorMessage("Nextflow pod failed to start");
-    meta.setSuccess(false);
-    meta.setResume(false);
-    return session;
+  public void updateFailure(NextflowMetadata metadata, Pod pod, String podLog) {
+    val workflow = metadata.getWorkflow();
+    workflow.update(pod);
+
+    workflow.setComplete(now());
+    workflow.setDuration(Duration.between(workflow.getStart(), workflow.getComplete()));
+    workflow.setErrorReport(podLog);
+    workflow.setErrorMessage("Nextflow pod failed to start");
+    workflow.setSuccess(false);
+    workflow.setResume(false);
   }
 
   public KubernetesPhase getPhase(Pod pod) {
-    return KubernetesPhase.valueOf(pod.getStatus().getPhase().toLowerCase());
+    return KubernetesPhase.valueOf(pod.getStatus().getPhase().toUpperCase());
   }
 }

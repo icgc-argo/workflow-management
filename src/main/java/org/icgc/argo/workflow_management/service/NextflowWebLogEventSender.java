@@ -1,12 +1,30 @@
 package org.icgc.argo.workflow_management.service;
 
-import java.io.File;
-import nextflow.Session;
-import nextflow.script.ScriptFile;
-import nextflow.trace.TraceRecord;
-import nextflow.trace.WebLogObserver;
+import static org.icgc.argo.workflow_management.util.JsonUtils.toJsonString;
 
-public class NextflowWebLogEventSender extends WebLogObserver {
+import java.net.URL;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.TimeZone;
+import lombok.AllArgsConstructor;
+import lombok.SneakyThrows;
+import lombok.val;
+import nextflow.Const;
+import nextflow.extension.Bolts;
+import nextflow.trace.TraceRecord;
+import nextflow.util.SimpleHttpClient;
+import org.icgc.argo.workflow_management.service.model.NextflowMetadata;
+
+@AllArgsConstructor
+public class NextflowWebLogEventSender {
+  private final SimpleHttpClient httpClient;
+  private final URL endpoint;
+
+  public NextflowWebLogEventSender(URL endpoint) {
+    this.endpoint = endpoint;
+    this.httpClient = new SimpleHttpClient();
+  }
+
   enum Event {
     started,
     completed,
@@ -16,44 +34,55 @@ public class NextflowWebLogEventSender extends WebLogObserver {
     error
   }
 
-  public NextflowWebLogEventSender(String url) {
-    super(url);
+  @SneakyThrows
+  public void sendStartEvent(NextflowMetadata meta) {
+    this.sendWorkflowEvent(Event.started, meta);
   }
 
-  @Override
-  protected void asyncHttpMessage(String event, Object payload) {
-    // don't send anything ... we'll do it explicitly
-  }
-
-  public void sendStartEvent(Session session) {
-    var scriptfile = new ScriptFile(new File("/dev/null"));
-    session.setCacheable(false);
-    session.init(scriptfile);
-    this.onFlowCreate(session);
-    this.sendEvent(Event.started, createFlowPayloadFromSession(session));
-  }
-
-  public void sendCompletedEvent(Session session) {
-    sendEvent(Event.completed, createFlowPayloadFromSession(session));
+  public void sendCompletedEvent(NextflowMetadata meta) {
+    sendWorkflowEvent(Event.completed, meta);
   }
 
   public void sendProcessSubmitted(TraceRecord traceRecord) {
-    sendEvent(Event.process_submitted, traceRecord);
+    sendTraceEvent(Event.process_submitted, traceRecord);
   }
 
   public void sendProcessStarted(TraceRecord traceRecord) {
-    sendEvent(Event.process_started, traceRecord);
+    sendTraceEvent(Event.process_started, traceRecord);
   }
 
   public void sendProcessCompleted(TraceRecord traceRecord) {
-    sendEvent(Event.process_completed, traceRecord);
+    sendTraceEvent(Event.process_completed, traceRecord);
   }
 
   public void sendErrorEvent(TraceRecord traceRecord) {
-    sendEvent(Event.error, traceRecord);
+    sendTraceEvent(Event.error, traceRecord);
   }
 
-  public void sendEvent(Event event, Object payload) {
-    this.sendHttpMessage(event.toString(), payload);
+  public void sendTraceEvent(Event event, TraceRecord traceRecord) {};
+
+  public HashMap<String, Object> getHash(Event event, String runName) {
+    var message = new HashMap<String, Object>();
+    String time =
+        Bolts.format(new Date(), Const.ISO_8601_DATETIME_FORMAT, TimeZone.getTimeZone("UTC"));
+    message.put("runName", runName);
+    message.put("runId", "?");
+    message.put("event", event.toString());
+    message.put("utcTime", time);
+
+    return message;
+  }
+
+  public void sendWorkflowEvent(Event event, NextflowMetadata meta) {
+    this.httpClient.sendHttpMessage(this.endpoint.toString(), getWorkflowMessage(event, meta));
+  }
+
+  public String getWorkflowMessage(Event event, NextflowMetadata logMessage) {
+    val runName = logMessage.getWorkflow().getRunName();
+    val message = getHash(event, runName);
+
+    message.put("metadata", logMessage);
+
+    return toJsonString(message);
   }
 }
