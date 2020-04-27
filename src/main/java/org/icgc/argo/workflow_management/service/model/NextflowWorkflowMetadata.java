@@ -1,5 +1,7 @@
 package org.icgc.argo.workflow_management.service.model;
 
+import static org.icgc.argo.workflow_management.util.Reflections.invokeDeclaredMethod;
+
 import io.fabric8.kubernetes.api.model.Pod;
 import java.nio.file.Path;
 import java.time.OffsetDateTime;
@@ -7,14 +9,17 @@ import java.util.List;
 import java.util.UUID;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import nextflow.NextflowMeta;
 import nextflow.cli.CmdKubeRun;
 import nextflow.config.Manifest;
+import nextflow.k8s.K8sDriverLauncher;
 import nextflow.trace.WorkflowStats;
 import nextflow.util.Duration;
-import org.icgc.argo.workflow_management.service.NextFlowK8sDriverLauncher;
+import org.icgc.argo.workflow_management.exception.ReflectionUtilsException;
 
-/** * Side effect-free data object mimic-ing nextflow's WorkflowMetadata class... */
+/** Side effect-free data object mimic-ing nextflow's WorkflowMetadata class... */
+@Slf4j
 @Data
 @NoArgsConstructor
 public class NextflowWorkflowMetadata {
@@ -56,9 +61,18 @@ public class NextflowWorkflowMetadata {
     this.setStart(OffsetDateTime.parse(pod.getStatus().getStartTime()));
   }
 
-  public static NextflowWorkflowMetadata create(CmdKubeRun cmd, NextFlowK8sDriverLauncher driver) {
+  public static NextflowWorkflowMetadata create(CmdKubeRun cmd, K8sDriverLauncher driver) {
     NextflowWorkflowMetadata metadata = new NextflowWorkflowMetadata();
-    metadata.setCommandLine(driver.getCommandLine());
+    String commandLine;
+    try {
+      commandLine = invokeDeclaredMethod(driver, "getLaunchCli", String.class);
+    } catch (ReflectionUtilsException e) {
+      log.error(
+          "Caught ReflectionUtilsException while trying to invoke method 'getLaunchCli':"
+              + e.toString());
+      commandLine = "?";
+    }
+    metadata.setCommandLine(commandLine);
     metadata.setProfile(cmd.getProfile());
     metadata.setRevision(cmd.getRevision());
     metadata.setRunName(cmd.getRunName());

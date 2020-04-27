@@ -18,16 +18,36 @@ public class Reflections {
   public static <T> Optional<T> createWithReflection(
       Class<T> objClass, Map<String, Object> params) {
     try {
-      T obj = objClass.newInstance();
+      T obj = objClass.getConstructor().newInstance();
       return Optional.of(reflectionFactory(objClass, obj, params));
-    } catch (InstantiationException | IllegalAccessException e) {
+    } catch (InstantiationException
+        | IllegalAccessException
+        | NoSuchMethodException
+        | InvocationTargetException e) {
       log.error("createWithReflection error", e);
     }
 
     return Optional.empty();
   }
 
+  public static <T> void invokeDeclaredMethod(T obj, String methodName)
+      throws ReflectionUtilsException {
+    invokeDeclaredMethod(obj, methodName, null, Void.class);
+  }
+
   public static <T> void invokeDeclaredMethod(T obj, String methodName, Object args)
+      throws ReflectionUtilsException {
+    invokeDeclaredMethod(obj, methodName, args, Void.class);
+  }
+
+  public static <T, U> U invokeDeclaredMethod(T obj, String methodName, Class<U> returnType)
+      throws ReflectionUtilsException {
+    return invokeDeclaredMethod(obj, methodName, null, returnType);
+  }
+
+  @SuppressWarnings("unchecked")
+  public static <T, U> U invokeDeclaredMethod(
+      T obj, String methodName, Object args, @SuppressWarnings("unused") Class<U> returnType)
       throws ReflectionUtilsException {
     Method method = null;
 
@@ -42,9 +62,9 @@ public class Reflections {
 
       try {
         if (nonNull(args)) {
-          method.invoke(obj, args);
+          return (U) method.invoke(obj, args);
         } else {
-          method.invoke(obj);
+          return (U) method.invoke(obj);
         }
       } catch (IllegalAccessException | InvocationTargetException e) {
         log.error(String.format("invoke error for method: %s", methodName), e);
@@ -52,11 +72,7 @@ public class Reflections {
     } else {
       throw new ReflectionUtilsException(String.format("Cannot access method: %s", methodName));
     }
-  }
-
-  public static <T> void invokeDeclaredMethod(T obj, String methodName)
-      throws ReflectionUtilsException {
-    invokeDeclaredMethod(obj, methodName, null);
+    return null;
   }
 
   public static Optional<ResponseStatus> findResponseStatusAnnotation(

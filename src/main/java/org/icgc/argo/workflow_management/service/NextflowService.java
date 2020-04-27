@@ -23,6 +23,7 @@ import lombok.val;
 import nextflow.cli.CliOptions;
 import nextflow.cli.CmdKubeRun;
 import nextflow.cli.Launcher;
+import nextflow.k8s.K8sDriverLauncher;
 import nextflow.script.ScriptBinding;
 import org.icgc.argo.workflow_management.controller.model.RunsResponse;
 import org.icgc.argo.workflow_management.exception.NextflowRunException;
@@ -270,9 +271,7 @@ public class NextflowService implements WorkflowExecutionService {
         .orElseThrow(ReflectionUtilsException::new);
   }
 
-  private NextFlowK8sDriverLauncher createDriver(@NonNull CmdKubeRun cmd)
-      throws ReflectionUtilsException {
-
+  private K8sDriverLauncher createDriver(@NonNull CmdKubeRun cmd) throws ReflectionUtilsException {
     invokeDeclaredMethod(cmd, "checkRunName");
 
     val k8sDriverLauncherParams = new HashMap<String, Object>();
@@ -280,7 +279,7 @@ public class NextflowService implements WorkflowExecutionService {
     k8sDriverLauncherParams.put("runName", cmd.getRunName());
     k8sDriverLauncherParams.put("background", true);
 
-    return createWithReflection(NextFlowK8sDriverLauncher.class, k8sDriverLauncherParams)
+    return createWithReflection(K8sDriverLauncher.class, k8sDriverLauncherParams)
         .orElseThrow(ReflectionUtilsException::new);
   }
 }
