@@ -21,6 +21,7 @@ import org.icgc.argo.workflow_management.service.model.NextflowMetadata;
 public class NextflowWorkflowMonitor implements Runnable {
   private DefaultKubernetesClient kubernetesClient;
   private Integer maxErrorLogLines;
+  private Integer sleepTime; // in ms
   private NextflowWebLogEventSender webLogSender;
   private NextflowMetadata metadata;
 
@@ -36,7 +37,7 @@ public class NextflowWorkflowMonitor implements Runnable {
       } catch (Exception e) {
         log.error(format("Workflow Status Monitor threw exception %s", e.getMessage()));
         try {
-          Thread.sleep(30000);
+          Thread.sleep(sleepTime);
         } catch (InterruptedException ex) {
           ex.printStackTrace();
         }

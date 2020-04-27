@@ -12,11 +12,10 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "nextflow")
 public class NextflowProperties {
   private K8sProperties k8s;
+  private MonitorProperties monitor;
   private String weblogUrl;
   private String masterUrl;
   private boolean trustCertificate;
-  private long sleepInterval;
-  private int maxErrorLogLines;
 
   @Data
   public static class K8sProperties {
@@ -25,5 +24,11 @@ public class NextflowProperties {
     private List<String> volMounts;
     private String masterUrl;
     private boolean trustCertificate;
+  }
+
+  @Data
+  public static class MonitorProperties {
+    private Integer sleepInterval;
+    private Integer maxErrorLogLines;
   }
 }

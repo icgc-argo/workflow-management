@@ -74,6 +74,7 @@ public class NextflowService implements WorkflowExecutionService {
   private String startRun(WESRunParams params)
       throws ReflectionUtilsException, IOException, NextflowRunException {
     val cmd = createCmd(createLauncher(), params);
+
     val driver = createDriver(cmd);
     driver.run(params.getWorkflowUrl(), Collections.emptyList());
     val exitStatus = driver.shutdown();
@@ -88,7 +89,12 @@ public class NextflowService implements WorkflowExecutionService {
               workflowMetadata, new ScriptBinding.ParamsMap(params.getWorkflowParams()));
       val sender = new NextflowWebLogEventSender(new URL(config.getWeblogUrl()));
       val monitor =
-          new NextflowWorkflowMonitor(getClient(), config.getMaxErrorLogLines(), sender, meta);
+          new NextflowWorkflowMonitor(
+              getClient(),
+              config.getMonitor().getMaxErrorLogLines(),
+              config.getMonitor().getSleepInterval(),
+              sender,
+              meta);
       scheduler.schedule(monitor);
       return cmd.getRunName();
     } else {
