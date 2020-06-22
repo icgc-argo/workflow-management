@@ -1,22 +1,8 @@
 package org.icgc.argo.workflow_management.service;
 
-import static java.lang.Boolean.parseBoolean;
-import static java.lang.String.format;
-import static java.util.Objects.nonNull;
-import static org.icgc.argo.workflow_management.service.model.KubernetesPhase.RUNNING;
-import static org.icgc.argo.workflow_management.service.model.KubernetesPhase.valueOf;
-import static org.icgc.argo.workflow_management.util.NextflowConfigFile.createNextflowConfigFile;
-import static org.icgc.argo.workflow_management.util.ParamsFile.createParamsFile;
-import static org.icgc.argo.workflow_management.util.Reflections.createWithReflection;
-import static org.icgc.argo.workflow_management.util.Reflections.invokeDeclaredMethod;
-
 import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
-import java.io.IOException;
-import java.net.URL;
-import java.util.*;
-import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -40,13 +26,28 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
+import java.io.IOException;
+import java.net.URL;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static java.lang.Boolean.parseBoolean;
+import static java.lang.String.format;
+import static java.util.Objects.nonNull;
+import static org.icgc.argo.workflow_management.service.model.KubernetesPhase.RUNNING;
+import static org.icgc.argo.workflow_management.service.model.KubernetesPhase.valueOf;
+import static org.icgc.argo.workflow_management.util.NextflowConfigFile.createNextflowConfigFile;
+import static org.icgc.argo.workflow_management.util.ParamsFile.createParamsFile;
+import static org.icgc.argo.workflow_management.util.Reflections.createWithReflection;
+import static org.icgc.argo.workflow_management.util.Reflections.invokeDeclaredMethod;
+
 @Slf4j
 @Service(value = "nextflow")
 public class NextflowService implements WorkflowExecutionService {
-  private final NextflowProperties config;
-  private final Scheduler scheduler;
   public static final String NEXTFLOW_PREFIX = "nf-";
   public static final String WES_PREFIX = "wes-";
+  private final NextflowProperties config;
+  private final Scheduler scheduler;
 
   @Autowired
   public NextflowService(NextflowProperties config) {
@@ -146,14 +147,14 @@ public class NextflowService implements WorkflowExecutionService {
               .collect(Collectors.toList());
       if (childPods.size() == 0) {
         throw new RuntimeException(
-            format("Cannot cancel run: pod with run name %s does not exist.", runId));
+            format("Cannot cancel run: pod with runId %s does not exist.", runId));
       } else {
         childPods.forEach(
             pod -> {
               client.pods().inNamespace(namespace).withName(pod.getMetadata().getName()).delete();
               log.info(
                   format(
-                      "Process pod %s with run name = %s has been deleted from namespace %s.",
+                      "Process pod %s with runId = %s has been deleted from namespace %s.",
                       pod.getMetadata().getName(), runId, namespace));
             });
       }
@@ -174,7 +175,7 @@ public class NextflowService implements WorkflowExecutionService {
             .orElseThrow(
                 () ->
                     new RuntimeException(
-                        format("Cannot found executor pod with run name %s.", runId)));
+                        format("Cannot found executor pod with runId: %s.", runId)));
     return valueOf(executorPod.getStatus().getPhase().toUpperCase());
   }
 
@@ -216,9 +217,14 @@ public class NextflowService implements WorkflowExecutionService {
     // UUID format ANYWHERE in the resume string, resulting in the incorrect assumption
     // that we are passing an runId when in fact we are passing a runName ...
     // thanks Nextflow ... this workaround solves that problem
+    //
+    // UPDATE: The glory of Nextflow knows no bounds ... resuming by runName while possible
+    // ends up reusing the run/session (yeah these are the same but still recorded separately) id
+    // from the "last" run ... wtv run that was ... resulting in multiple resumed runs sharing the
+    // same sessionId (we're going with this label) even though they have nothing to do with one
+    // another. This is a bug in NF and warrants a PR but for now we recommend only resuming runs
+    // with sessionId an never with runName
     val runName = format("wes-%s", UUID.randomUUID().toString().replace("-", ""));
-
-    // assign UUID as the run name
     cmdParams.put("runName", runName);
 
     // launcher and launcher options required by CmdKubeRun
