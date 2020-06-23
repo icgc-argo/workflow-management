@@ -67,12 +67,12 @@ public class Reflections {
           return (U) method.invoke(obj);
         }
       } catch (IllegalAccessException | InvocationTargetException e) {
-        log.error(String.format("invoke error for method: %s", methodName), e);
+        log.error("invokeDeclaredMethod exception", e);
+        throw new ReflectionUtilsException(String.format("Invoke error for method: %s", methodName));
       }
     } else {
       throw new ReflectionUtilsException(String.format("Cannot access method: %s", methodName));
     }
-    return null;
   }
 
   public static Optional<ResponseStatus> findResponseStatusAnnotation(
