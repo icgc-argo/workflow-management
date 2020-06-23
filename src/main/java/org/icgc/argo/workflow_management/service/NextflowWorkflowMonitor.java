@@ -46,21 +46,21 @@ public class NextflowWorkflowMonitor implements Runnable {
     // if the pod running nextflow has created children, we'll assume it started successfully, and
     // that it can handle it's own logging from here on in.
     if (podHasChildren(podName)) {
-      log.info(podName + " has children! Done!");
+      log.debug(podName + " has children! Done!");
       return true;
     }
 
     // if the pod failed to start up, we'll log the start and end events, so that we know
     // that the pod has started, and has failed, with the pod log as the error report.
     if (podFailed(pod)) {
-      log.info("Sending start event");
+      log.debug("Sending start event");
       webLogSender.sendStartEvent(metadata);
-      log.info("Updating the failure message");
+      log.debug("Updating the failure message");
       updateFailure(metadata, pod, podLog);
-      log.info("Sending completed event");
+      log.debug("Sending completed event");
       webLogSender.sendCompletedEvent(metadata);
-      log.info("Event sent");
-      log.info(podName + " failed! Done!");
+      log.debug("Event sent");
+      log.debug(podName + " failed! Done!");
       return true;
     }
 
