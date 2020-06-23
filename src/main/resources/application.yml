@@ -6,4 +6,7 @@ nextflow:
       - "pv-claim:/some/dir"
     masterUrl: "localhost:8080"
     trustCertificate: false
-  weblogUrl: ""
+  weblogUrl: "http://localhost"
+  monitor:
+    sleepInterval: 1000 # milliseconds
+    maxErrorLogLines: 50 # we put the last ${maxErrorLogLines} into the error message if a Pod fails

@@ -1,0 +1,13 @@
+{ 
+  "workflow_url": "icgc-argo/dna-seq-processing-wfs",
+  "workflow_params": {},
+  "workflow_engine_params": {
+      "defaultContainer": "",
+      "revision": "",
+      "resume": "",
+      "launchDir": "",
+      "projectDir": "",
+      "workDir": "",
+      "latest": ""
+  }
+}
