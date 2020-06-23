@@ -36,11 +36,7 @@ public class NextflowWorkflowMonitor implements Runnable {
         done = handlePod(metadata, p, log);
       } catch (Exception e) {
         log.error(format("Workflow Status Monitor threw exception %s", e.getMessage()));
-        try {
-          Thread.sleep(sleepTime);
-        } catch (InterruptedException ex) {
-          ex.printStackTrace();
-        }
+        throw new RuntimeException(e.getMessage());
       }
     }
   }
