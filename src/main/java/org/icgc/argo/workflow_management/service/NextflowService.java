@@ -223,7 +223,7 @@ public class NextflowService implements WorkflowExecutionService {
     // from the "last" run ... wtv run that was ... resulting in multiple resumed runs sharing the
     // same sessionId (we're going with this label) even though they have nothing to do with one
     // another. This is a bug in NF and warrants a PR but for now we recommend only resuming runs
-    // with sessionId an never with runName
+    // with sessionId and never with runName
     val runName = format("wes-%s", UUID.randomUUID().toString().replace("-", ""));
     cmdParams.put("runName", runName);
 
