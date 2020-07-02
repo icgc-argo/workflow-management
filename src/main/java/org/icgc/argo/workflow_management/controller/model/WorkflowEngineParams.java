@@ -7,6 +7,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -15,7 +17,7 @@ import lombok.NoArgsConstructor;
 public class WorkflowEngineParams {
   private String defaultContainer;
   private String revision;
-  private String resume;
+  private UUID resume;
   private String launchDir;
   private String projectDir;
   private String workDir;
