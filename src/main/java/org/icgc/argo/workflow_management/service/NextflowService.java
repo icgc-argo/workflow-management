@@ -247,7 +247,7 @@ public class NextflowService implements WorkflowExecutionService {
     cmdParams.put("withWebLog", webLogUrl);
 
     // Dynamic engine properties/config
-    val workflowEngineOptions = params.getWorkflowEngineParams();
+    val workflowEngineParams = params.getWorkflowEngineParams();
 
     // Write config file for run using required and optional arguments
     // Use launchDir, projectDir and/or workDir if provided in workflow_engine_options
@@ -255,26 +255,26 @@ public class NextflowService implements WorkflowExecutionService {
         createNextflowConfigFile(
             runName,
             k8sConfig.getRunAsUser(),
-            workflowEngineOptions.getLaunchDir(),
-            workflowEngineOptions.getProjectDir(),
-            workflowEngineOptions.getWorkDir());
+            workflowEngineParams.getLaunchDir(),
+            workflowEngineParams.getProjectDir(),
+            workflowEngineParams.getWorkDir());
     cmdParams.put("runConfig", List.of(config));
 
     // Resume workflow by name/id
-    cmdParams.put("resume", workflowEngineOptions.getResume().toString());
+    cmdParams.put("resume", workflowEngineParams.getResume().toString());
 
     // Use revision if provided in workflow_engine_options
-    cmdParams.put("revision", workflowEngineOptions.getRevision());
+    cmdParams.put("revision", workflowEngineParams.getRevision());
 
     // should pull latest code before running?
     // does not prevent us running a specific version (revision),
     // does enforce pulling of that branch/hash before running)
-    cmdParams.put("latest", workflowEngineOptions.getLatest(), v -> parseBoolean((String) v));
+    cmdParams.put("latest", workflowEngineParams.getLatest(), v -> parseBoolean((String) v));
 
     // Process options (default docker container to run for process if not specified)
-    if (nonNull(workflowEngineOptions.getDefaultContainer())) {
+    if (nonNull(workflowEngineParams.getDefaultContainer())) {
       val processOptions = new HashMap<String, String>();
-      processOptions.put("container", workflowEngineOptions.getDefaultContainer());
+      processOptions.put("container", workflowEngineParams.getDefaultContainer());
       cmdParams.put("process", processOptions);
     }
 
