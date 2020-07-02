@@ -141,7 +141,12 @@ public class NextflowService implements WorkflowExecutionService {
     try (final val client = getClient()) {
       isPodRunning(runId);
       val childPods =
-          client.pods().inNamespace(namespace).withLabel("runName", runId).list().getItems()
+          client
+              .pods()
+              .inNamespace(namespace)
+              .withLabel("runName", runId)
+              .list()
+              .getItems()
               .stream()
               .filter(pod -> pod.getMetadata().getName().startsWith(NEXTFLOW_PREFIX))
               .collect(Collectors.toList());
@@ -256,7 +261,7 @@ public class NextflowService implements WorkflowExecutionService {
     cmdParams.put("runConfig", List.of(config));
 
     // Resume workflow by name/id
-    cmdParams.put("resume", workflowEngineOptions.getResume());
+    cmdParams.put("resume", workflowEngineOptions.getResume().toString());
 
     // Use revision if provided in workflow_engine_options
     cmdParams.put("revision", workflowEngineOptions.getRevision());
