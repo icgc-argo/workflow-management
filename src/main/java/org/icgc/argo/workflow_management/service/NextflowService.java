@@ -261,7 +261,7 @@ public class NextflowService implements WorkflowExecutionService {
     cmdParams.put("runConfig", List.of(config));
 
     // Resume workflow by name/id
-    cmdParams.put("resume", workflowEngineParams.getResume().toString());
+    cmdParams.put("resume", workflowEngineParams.getResume(), Object::toString);
 
     // Use revision if provided in workflow_engine_options
     cmdParams.put("revision", workflowEngineParams.getRevision());
