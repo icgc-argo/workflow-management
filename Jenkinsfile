@@ -1,5 +1,5 @@
 def dockerHubRepo = "icgcargo/workflow-management"
-def githubRepo = "icgc-argo/workflow-management"
+def gitHubRepo = "icgc-argo/workflow-management"
 def chartVersion = "0.3.0"
 def commit = "UNKNOWN"
 def version = "UNKNOWN"
