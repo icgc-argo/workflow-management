@@ -33,6 +33,7 @@ public class NextflowConfigFile {
   public static String createNextflowConfigFile(
       @NonNull String filename,
       @NonNull Integer runAsUser,
+      String serviceAccount,
       String launchDir,
       String projectDir,
       String workDir)
@@ -49,6 +50,9 @@ public class NextflowConfigFile {
 
     // pod security
     fileContent.add(String.format("\trunAsUser = %s", runAsUser));
+
+    // k8s service account (optional)
+    writeFormattedLineIfValue(fileContent::add, "\tserviceAccount = '%s'", serviceAccount);
 
     // variable config passed in via WorkflowEngineParams
     writeFormattedLineIfValue(fileContent::add, "\tlaunchDir = '%s'", launchDir);
