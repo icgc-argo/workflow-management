@@ -38,6 +38,7 @@ public class NextflowProperties {
   @Data
   public static class K8sProperties {
     private Integer runAsUser;
+    private String serviceAccount;
     private String namespace;
     private List<String> volMounts;
     private String masterUrl;
