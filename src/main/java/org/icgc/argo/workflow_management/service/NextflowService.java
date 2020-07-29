@@ -18,9 +18,23 @@
 
 package org.icgc.argo.workflow_management.service;
 
+import static java.lang.Boolean.parseBoolean;
+import static java.lang.String.format;
+import static java.util.Objects.nonNull;
+import static org.icgc.argo.workflow_management.service.model.KubernetesPhase.RUNNING;
+import static org.icgc.argo.workflow_management.service.model.KubernetesPhase.valueOf;
+import static org.icgc.argo.workflow_management.util.NextflowConfigFile.createNextflowConfigFile;
+import static org.icgc.argo.workflow_management.util.ParamsFile.createParamsFile;
+import static org.icgc.argo.workflow_management.util.Reflections.createWithReflection;
+import static org.icgc.argo.workflow_management.util.Reflections.invokeDeclaredMethod;
+
 import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
+import java.io.IOException;
+import java.net.URL;
+import java.util.*;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -43,21 +57,6 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-
-import java.io.IOException;
-import java.net.URL;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static java.lang.Boolean.parseBoolean;
-import static java.lang.String.format;
-import static java.util.Objects.nonNull;
-import static org.icgc.argo.workflow_management.service.model.KubernetesPhase.RUNNING;
-import static org.icgc.argo.workflow_management.service.model.KubernetesPhase.valueOf;
-import static org.icgc.argo.workflow_management.util.NextflowConfigFile.createNextflowConfigFile;
-import static org.icgc.argo.workflow_management.util.ParamsFile.createParamsFile;
-import static org.icgc.argo.workflow_management.util.Reflections.createWithReflection;
-import static org.icgc.argo.workflow_management.util.Reflections.invokeDeclaredMethod;
 
 @Slf4j
 @Service(value = "nextflow")
@@ -159,12 +158,7 @@ public class NextflowService implements WorkflowExecutionService {
     try (final val client = getClient()) {
       isPodRunning(runId);
       val childPods =
-          client
-              .pods()
-              .inNamespace(namespace)
-              .withLabel("runName", runId)
-              .list()
-              .getItems()
+          client.pods().inNamespace(namespace).withLabel("runName", runId).list().getItems()
               .stream()
               .filter(pod -> pod.getMetadata().getName().startsWith(NEXTFLOW_PREFIX))
               .collect(Collectors.toList());
