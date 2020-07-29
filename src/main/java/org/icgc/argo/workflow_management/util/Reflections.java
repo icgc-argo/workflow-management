@@ -86,7 +86,8 @@ public class Reflections {
         }
       } catch (IllegalAccessException | InvocationTargetException e) {
         log.error("invokeDeclaredMethod exception", e);
-        throw new ReflectionUtilsException(String.format("Invoke error for method: %s", methodName));
+        throw new ReflectionUtilsException(
+            String.format("Invoke error for method: %s", methodName));
       }
     } else {
       throw new ReflectionUtilsException(String.format("Cannot access method: %s", methodName));
