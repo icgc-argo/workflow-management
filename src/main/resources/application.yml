@@ -10,3 +10,15 @@ nextflow:
   monitor:
     sleepInterval: 1000 # milliseconds
     maxErrorLogLines: 50 # we put the last ${maxErrorLogLines} into the error message if a Pod fails
+
+---
+spring.profiles: secure
+auth:
+  jwtPublicKeyUrl: ""
+  jwtPublicKeyStr: "-----BEGIN PUBLIC KEY-----\nSET ME IF YOU DONT HAVE A URL, BUT URL TAKES PRIORITY\n-----END PUBLIC KEY-----"
+  graphqlScopes:
+    queryOnly:
+      - RDPC-CA.READ
+    queryAndMutation:
+      - RDPC-CA.WRITE
+      - CLINICALSERVICE.WRITE
