@@ -2,6 +2,7 @@ nextflow:
   k8s:
     runAsUser: 9999
     namespace: "default"
+    serviceAccount: "default"
     volMounts:
       - "pv-claim:/some/dir"
     masterUrl: "localhost:8080"
