@@ -22,4 +22,3 @@ auth:
       - RDPC-CA.READ
     queryAndMutation:
       - RDPC-CA.WRITE
-      - CLINICALSERVICE.WRITE
