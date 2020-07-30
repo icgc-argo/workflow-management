@@ -16,25 +16,38 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.service;
+package org.icgc.argo.workflow_management.config.security;
 
-import org.icgc.argo.workflow_management.controller.model.RunsResponse;
-import org.icgc.argo.workflow_management.service.model.WESRunParams;
-import org.springframework.security.access.prepost.PreAuthorize;
-import reactor.core.publisher.Mono;
+import com.google.common.collect.ImmutableList;
+import lombok.Data;
+import lombok.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.ConstructorBinding;
+import org.springframework.context.annotation.Configuration;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
+import java.util.List;
 
-public interface WorkflowExecutionService {
-  @HasQueryAndMutationAccess
-  Mono<RunsResponse> run(WESRunParams params);
+@Data
+@Configuration
+@ConfigurationProperties(prefix = "auth")
+public class AuthProperties {
 
-  @HasQueryAndMutationAccess
-  Mono<RunsResponse> cancel(String runId);
+    String jwtPublicKeyUrl;
 
-  @Retention(RetentionPolicy.RUNTIME)
-  @PreAuthorize("@queryAndMutationScopeChecker.apply(authentication)")
-  @interface HasQueryAndMutationAccess {
-  }
+    String jwtPublicKeyStr;
+
+    GraphqlScopes graphqlScopes;
+
+    @Value
+    @ConstructorBinding
+    public static class GraphqlScopes {
+        ImmutableList<String> queryOnly;
+        ImmutableList<String> queryAndMutation;
+
+        public GraphqlScopes(List<String> queryOnly, List<String> queryAndMutation) {
+            this.queryOnly = ImmutableList.copyOf(queryOnly);
+            this.queryAndMutation = ImmutableList.copyOf(queryAndMutation);
+        }
+    }
+
 }
