@@ -16,36 +16,30 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.config.security;
+package org.icgc.argo.workflow_management.secret.impl;
 
-import com.google.common.collect.ImmutableList;
 import java.util.List;
-import lombok.Data;
-import lombok.Value;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.ConstructorBinding;
-import org.springframework.context.annotation.Configuration;
+import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
+import org.icgc.argo.workflow_management.secret.SecretProvider;
 
-@Data
-@Configuration
-@ConfigurationProperties(prefix = "auth")
-public class AuthProperties {
+@Slf4j
+public class NoSecretProvider extends SecretProvider {
 
-  String jwtPublicKeyUrl;
+  @Override
+  public Optional<String> generateSecret() {
+    log.debug("NoSecretProvider returning empty optional.");
+    return Optional.empty();
+  }
 
-  String jwtPublicKeyStr;
+  @Override
+  public Optional<String> generateSecretWithScopes(List<String> scopes) {
+    log.debug("NoSecretProvider returning empty optional.");
+    return Optional.empty();
+  }
 
-  GraphqlScopes graphqlScopes;
-
-  @Value
-  @ConstructorBinding
-  public static class GraphqlScopes {
-    ImmutableList<String> queryOnly;
-    ImmutableList<String> queryAndMutation;
-
-    public GraphqlScopes(List<String> queryOnly, List<String> queryAndMutation) {
-      this.queryOnly = ImmutableList.copyOf(queryOnly);
-      this.queryAndMutation = ImmutableList.copyOf(queryAndMutation);
-    }
+  @Override
+  public Boolean isEnabled() {
+    return false;
   }
 }

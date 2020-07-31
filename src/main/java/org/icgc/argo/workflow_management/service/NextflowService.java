@@ -46,6 +46,7 @@ import nextflow.script.ScriptBinding;
 import org.icgc.argo.workflow_management.controller.model.RunsResponse;
 import org.icgc.argo.workflow_management.exception.NextflowRunException;
 import org.icgc.argo.workflow_management.exception.ReflectionUtilsException;
+import org.icgc.argo.workflow_management.secret.SecretProvider;
 import org.icgc.argo.workflow_management.service.model.KubernetesPhase;
 import org.icgc.argo.workflow_management.service.model.NextflowMetadata;
 import org.icgc.argo.workflow_management.service.model.NextflowWorkflowMetadata;
@@ -61,14 +62,25 @@ import reactor.core.scheduler.Schedulers;
 @Slf4j
 @Service(value = "nextflow")
 public class NextflowService implements WorkflowExecutionService {
+
+  /** Constants */
   public static final String NEXTFLOW_PREFIX = "nf-";
+
   public static final String WES_PREFIX = "wes-";
+  public static final String SECRET_SUFFIX = "secret";
+
+  /** Dependencies */
   private final NextflowProperties config;
+
+  private final SecretProvider secretProvider;
+
+  /** State */
   private final Scheduler scheduler;
 
   @Autowired
-  public NextflowService(NextflowProperties config) {
+  public NextflowService(NextflowProperties config, SecretProvider secretProvider) {
     this.config = config;
+    this.secretProvider = secretProvider;
     this.scheduler = Schedulers.newElastic("nextflow-service");
   }
 
@@ -93,6 +105,32 @@ public class NextflowService implements WorkflowExecutionService {
   private String startRun(WESRunParams params)
       throws ReflectionUtilsException, IOException, NextflowRunException {
     val cmd = createCmd(createLauncher(), params);
+
+    // Kubernetes Secret Creation if enabled
+    secretProvider
+        .generateSecret()
+        .ifPresentOrElse(
+            secret -> {
+              val kubernetesSecret =
+                  getClient()
+                      .secrets()
+                      .createNew()
+                      .withType("Opaque")
+                      .withNewMetadata()
+                      .withNamespace("default")
+                      .withNewName(String.format("%s-%s", cmd.getRunName(), SECRET_SUFFIX))
+                      .endMetadata()
+                      .withData(Map.of("secret", secret))
+                      .done();
+              log.debug(
+                  "Secret {} in namespace {} created.",
+                  kubernetesSecret.getMetadata().getName(),
+                  kubernetesSecret.getMetadata().getNamespace());
+            },
+            () ->
+                log.debug(
+                    "No secret was generated, SecretProvider enabled status is: {}",
+                    secretProvider.isEnabled()));
 
     val driver = createDriver(cmd);
     driver.run(params.getWorkflowUrl(), Collections.emptyList());

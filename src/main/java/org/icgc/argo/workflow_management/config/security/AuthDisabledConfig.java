@@ -25,17 +25,13 @@ import org.springframework.security.config.annotation.web.reactive.EnableWebFlux
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 
-
 @EnableWebFluxSecurity
 @Slf4j
 @Profile("!secure")
 public class AuthDisabledConfig {
-    @Bean
-    public SecurityWebFilterChain securityFilterChain(ServerHttpSecurity http) {
-        http
-            .csrf().disable()
-            .authorizeExchange()
-            .pathMatchers("/**").permitAll();
-        return http.build();
-    }
+  @Bean
+  public SecurityWebFilterChain securityFilterChain(ServerHttpSecurity http) {
+    http.csrf().disable().authorizeExchange().pathMatchers("/**").permitAll();
+    return http.build();
+  }
 }

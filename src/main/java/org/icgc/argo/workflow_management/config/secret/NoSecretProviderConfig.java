@@ -16,36 +16,18 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.config.security;
+package org.icgc.argo.workflow_management.config.secret;
 
-import com.google.common.collect.ImmutableList;
-import java.util.List;
-import lombok.Data;
-import lombok.Value;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.ConstructorBinding;
+import org.icgc.argo.workflow_management.secret.SecretProvider;
+import org.icgc.argo.workflow_management.secret.impl.NoSecretProvider;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-@Data
 @Configuration
-@ConfigurationProperties(prefix = "auth")
-public class AuthProperties {
+public class NoSecretProviderConfig {
 
-  String jwtPublicKeyUrl;
-
-  String jwtPublicKeyStr;
-
-  GraphqlScopes graphqlScopes;
-
-  @Value
-  @ConstructorBinding
-  public static class GraphqlScopes {
-    ImmutableList<String> queryOnly;
-    ImmutableList<String> queryAndMutation;
-
-    public GraphqlScopes(List<String> queryOnly, List<String> queryAndMutation) {
-      this.queryOnly = ImmutableList.copyOf(queryOnly);
-      this.queryAndMutation = ImmutableList.copyOf(queryAndMutation);
-    }
+  @Bean
+  public SecretProvider noSecretProvider() {
+    return new NoSecretProvider();
   }
 }

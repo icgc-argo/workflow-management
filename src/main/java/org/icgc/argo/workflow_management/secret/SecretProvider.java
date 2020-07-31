@@ -16,36 +16,32 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.config.security;
+package org.icgc.argo.workflow_management.secret;
 
-import com.google.common.collect.ImmutableList;
 import java.util.List;
-import lombok.Data;
-import lombok.Value;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.ConstructorBinding;
-import org.springframework.context.annotation.Configuration;
+import java.util.Optional;
 
-@Data
-@Configuration
-@ConfigurationProperties(prefix = "auth")
-public class AuthProperties {
+public abstract class SecretProvider {
 
-  String jwtPublicKeyUrl;
+  /**
+   * Return a secret with default scopes
+   *
+   * @return Secret String
+   */
+  public abstract Optional<String> generateSecret();
 
-  String jwtPublicKeyStr;
+  /**
+   * Return secret scoped to requested scopes
+   *
+   * @param scopes Scopes to generate secret with
+   * @return Secret String
+   */
+  public abstract Optional<String> generateSecretWithScopes(List<String> scopes);
 
-  GraphqlScopes graphqlScopes;
-
-  @Value
-  @ConstructorBinding
-  public static class GraphqlScopes {
-    ImmutableList<String> queryOnly;
-    ImmutableList<String> queryAndMutation;
-
-    public GraphqlScopes(List<String> queryOnly, List<String> queryAndMutation) {
-      this.queryOnly = ImmutableList.copyOf(queryOnly);
-      this.queryAndMutation = ImmutableList.copyOf(queryAndMutation);
-    }
-  }
+  /**
+   * Is this secret provider enabled?
+   *
+   * @return Enabled state
+   */
+  public abstract Boolean isEnabled();
 }

@@ -16,36 +16,44 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.config.security;
+package org.icgc.argo.workflow_management.secret.impl;
 
-import com.google.common.collect.ImmutableList;
 import java.util.List;
-import lombok.Data;
-import lombok.Value;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.ConstructorBinding;
-import org.springframework.context.annotation.Configuration;
+import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.icgc.argo.workflow_management.secret.SecretProvider;
 
-@Data
-@Configuration
-@ConfigurationProperties(prefix = "auth")
-public class AuthProperties {
+@Slf4j
+@RequiredArgsConstructor
+public class ApiKeyProvider extends SecretProvider {
 
-  String jwtPublicKeyUrl;
+  /** Dependencies */
+  private final Boolean enabled;
 
-  String jwtPublicKeyStr;
+  private final String apiKey;
 
-  GraphqlScopes graphqlScopes;
+  @Override
+  public Optional<String> generateSecret() {
+    log.debug("ApiKeyProvider returning secret.");
+    return enabled ? Optional.of(apiKey) : Optional.empty();
+  }
 
-  @Value
-  @ConstructorBinding
-  public static class GraphqlScopes {
-    ImmutableList<String> queryOnly;
-    ImmutableList<String> queryAndMutation;
+  /**
+   * API Keys do not have the ability to have their scopes modified as they are already issued at
+   * call time.
+   *
+   * @return API Key
+   */
+  @Override
+  public Optional<String> generateSecretWithScopes(List<String> scopes) {
+    log.debug("ApiKeyProvider returning secret.");
+    log.warn("Trying to generate API key that is scoped. API Keys cannot be dynamically scoped!");
+    return generateSecret();
+  }
 
-    public GraphqlScopes(List<String> queryOnly, List<String> queryAndMutation) {
-      this.queryOnly = ImmutableList.copyOf(queryOnly);
-      this.queryAndMutation = ImmutableList.copyOf(queryAndMutation);
-    }
+  @Override
+  public Boolean isEnabled() {
+    return enabled;
   }
 }

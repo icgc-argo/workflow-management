@@ -18,13 +18,12 @@
 
 package org.icgc.argo.workflow_management.service;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import org.icgc.argo.workflow_management.controller.model.RunsResponse;
 import org.icgc.argo.workflow_management.service.model.WESRunParams;
 import org.springframework.security.access.prepost.PreAuthorize;
 import reactor.core.publisher.Mono;
-
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
 
 public interface WorkflowExecutionService {
   @HasQueryAndMutationAccess
@@ -35,6 +34,5 @@ public interface WorkflowExecutionService {
 
   @Retention(RetentionPolicy.RUNTIME)
   @PreAuthorize("@queryAndMutationScopeChecker.apply(authentication)")
-  @interface HasQueryAndMutationAccess {
-  }
+  @interface HasQueryAndMutationAccess {}
 }
