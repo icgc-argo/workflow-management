@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.util.Map;
 import lombok.val;
 import org.icgc.argo.workflow_management.controller.model.WorkflowEngineParams;
+import org.icgc.argo.workflow_management.secret.SecretProvider;
+import org.icgc.argo.workflow_management.secret.impl.NoSecretProvider;
 import org.icgc.argo.workflow_management.service.NextflowService;
 import org.icgc.argo.workflow_management.service.model.WESRunParams;
 import org.icgc.argo.workflow_management.service.properties.NextflowProperties;
@@ -41,7 +43,8 @@ public class WorkflowTest {
 
   static void runTest(WESRunParams params) {
     NextflowProperties config = new NextflowProperties();
-    val service = new NextflowService(config);
+    SecretProvider secretProvider = new NoSecretProvider();
+    val service = new NextflowService(config, secretProvider);
     val result = service.run(params);
     System.err.println(result.toString());
   }

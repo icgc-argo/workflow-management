@@ -34,9 +34,13 @@ import reactor.core.publisher.Mono;
 @RequestMapping("/runs")
 public class RunsApiController implements RunsApi {
 
+  /** Dependencies */
+  private final WorkflowExecutionService nextflowService;
+
   @Autowired
-  @Qualifier("nextflow")
-  private WorkflowExecutionService nextflowService;
+  public RunsApiController(@Qualifier("nextflow") WorkflowExecutionService nextflowService) {
+    this.nextflowService = nextflowService;
+  }
 
   @PostMapping
   public Mono<RunsResponse> postRun(@Valid @RequestBody RunsRequest runsRequest) {

@@ -49,6 +49,7 @@ import nextflow.exception.AbortRunException;
 import nextflow.exception.DuplicateProcessInvocation;
 import nextflow.exception.IllegalFileException;
 import nextflow.exception.MissingFileException;
+import org.icgc.argo.workflow_management.config.secret.NoSecretProviderConfig;
 import org.icgc.argo.workflow_management.config.security.AuthDisabledConfig;
 import org.icgc.argo.workflow_management.controller.impl.RunsApiController;
 import org.icgc.argo.workflow_management.controller.model.RunsRequest;
@@ -76,7 +77,14 @@ import org.springframework.web.server.ResponseStatusException;
 // TODO: rtisma    create test for
 // https://github.com/${owner}/${repo}/blob/${branch}/${path-to-file}
 @Slf4j
-@Import(value = {NextflowService.class, NextflowProperties.class, GlobalExceptionHandler.class, AuthDisabledConfig.class})
+@Import(
+    value = {
+      NoSecretProviderConfig.class,
+      NextflowService.class,
+      NextflowProperties.class,
+      GlobalExceptionHandler.class,
+      AuthDisabledConfig.class
+    })
 @RunWith(SpringRunner.class)
 @ExtendWith(SpringExtension.class)
 @WebFluxTest(controllers = RunsApiController.class)

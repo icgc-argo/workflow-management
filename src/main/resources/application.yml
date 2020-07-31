@@ -12,6 +12,9 @@ nextflow:
     sleepInterval: 1000 # milliseconds
     maxErrorLogLines: 50 # we put the last ${maxErrorLogLines} into the error message if a Pod fails
 
+secret:
+  enabled: false
+
 ---
 spring.profiles: secure
 auth:
@@ -22,3 +25,19 @@ auth:
       - RDPC-CA.READ
     queryAndMutation:
       - RDPC-CA.WRITE
+
+---
+spring.profiles: apiKey
+
+secret:
+  enabled: true
+  apiKey: testapikeytotallylegit
+
+---
+spring.profile: oauth2Token
+
+secret:
+  enabled: true
+  clientId: testId
+  clientSecret: testSecret
+  tokenUri: http://localhost:8080/oauth/token
