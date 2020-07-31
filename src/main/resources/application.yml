@@ -4,7 +4,7 @@ nextflow:
     namespace: "default"
     serviceAccount: "default"
     volMounts:
-      - "task-pv-claim:/mnt/data"
+      - "pv-claim:/some/dir"
     masterUrl: "localhost:8080"
     trustCertificate: false
   weblogUrl: "http://localhost"
