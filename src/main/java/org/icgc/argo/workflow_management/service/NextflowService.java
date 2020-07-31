@@ -18,9 +18,23 @@
 
 package org.icgc.argo.workflow_management.service;
 
+import static java.lang.Boolean.parseBoolean;
+import static java.lang.String.format;
+import static java.util.Objects.nonNull;
+import static org.icgc.argo.workflow_management.service.model.KubernetesPhase.RUNNING;
+import static org.icgc.argo.workflow_management.service.model.KubernetesPhase.valueOf;
+import static org.icgc.argo.workflow_management.util.NextflowConfigFile.createNextflowConfigFile;
+import static org.icgc.argo.workflow_management.util.ParamsFile.createParamsFile;
+import static org.icgc.argo.workflow_management.util.Reflections.createWithReflection;
+import static org.icgc.argo.workflow_management.util.Reflections.invokeDeclaredMethod;
+
 import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
+import java.io.IOException;
+import java.net.URL;
+import java.util.*;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -32,6 +46,7 @@ import nextflow.script.ScriptBinding;
 import org.icgc.argo.workflow_management.controller.model.RunsResponse;
 import org.icgc.argo.workflow_management.exception.NextflowRunException;
 import org.icgc.argo.workflow_management.exception.ReflectionUtilsException;
+import org.icgc.argo.workflow_management.secret.SecretProvider;
 import org.icgc.argo.workflow_management.service.model.KubernetesPhase;
 import org.icgc.argo.workflow_management.service.model.NextflowMetadata;
 import org.icgc.argo.workflow_management.service.model.NextflowWorkflowMetadata;
@@ -44,32 +59,28 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
-import java.io.IOException;
-import java.net.URL;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static java.lang.Boolean.parseBoolean;
-import static java.lang.String.format;
-import static java.util.Objects.nonNull;
-import static org.icgc.argo.workflow_management.service.model.KubernetesPhase.RUNNING;
-import static org.icgc.argo.workflow_management.service.model.KubernetesPhase.valueOf;
-import static org.icgc.argo.workflow_management.util.NextflowConfigFile.createNextflowConfigFile;
-import static org.icgc.argo.workflow_management.util.ParamsFile.createParamsFile;
-import static org.icgc.argo.workflow_management.util.Reflections.createWithReflection;
-import static org.icgc.argo.workflow_management.util.Reflections.invokeDeclaredMethod;
-
 @Slf4j
 @Service(value = "nextflow")
 public class NextflowService implements WorkflowExecutionService {
+
+  /** Constants */
   public static final String NEXTFLOW_PREFIX = "nf-";
+
   public static final String WES_PREFIX = "wes-";
+  public static final String SECRET_SUFFIX = "secret";
+
+  /** Dependencies */
   private final NextflowProperties config;
+
+  private final SecretProvider secretProvider;
+
+  /** State */
   private final Scheduler scheduler;
 
   @Autowired
-  public NextflowService(NextflowProperties config) {
+  public NextflowService(NextflowProperties config, SecretProvider secretProvider) {
     this.config = config;
+    this.secretProvider = secretProvider;
     this.scheduler = Schedulers.newElastic("nextflow-service");
   }
 
@@ -94,6 +105,32 @@ public class NextflowService implements WorkflowExecutionService {
   private String startRun(WESRunParams params)
       throws ReflectionUtilsException, IOException, NextflowRunException {
     val cmd = createCmd(createLauncher(), params);
+
+    // Kubernetes Secret Creation if enabled
+    secretProvider
+        .generateSecret()
+        .ifPresentOrElse(
+            secret -> {
+              val kubernetesSecret =
+                  getClient()
+                      .secrets()
+                      .createNew()
+                      .withType("Opaque")
+                      .withNewMetadata()
+                      .withNamespace("default")
+                      .withNewName(String.format("%s-%s", cmd.getRunName(), SECRET_SUFFIX))
+                      .endMetadata()
+                      .withData(Map.of("secret", secret))
+                      .done();
+              log.debug(
+                  "Secret {} in namespace {} created.",
+                  kubernetesSecret.getMetadata().getName(),
+                  kubernetesSecret.getMetadata().getNamespace());
+            },
+            () ->
+                log.debug(
+                    "No secret was generated, SecretProvider enabled status is: {}",
+                    secretProvider.isEnabled()));
 
     val driver = createDriver(cmd);
     driver.run(params.getWorkflowUrl(), Collections.emptyList());
@@ -159,12 +196,7 @@ public class NextflowService implements WorkflowExecutionService {
     try (final val client = getClient()) {
       isPodRunning(runId);
       val childPods =
-          client
-              .pods()
-              .inNamespace(namespace)
-              .withLabel("runName", runId)
-              .list()
-              .getItems()
+          client.pods().inNamespace(namespace).withLabel("runName", runId).list().getItems()
               .stream()
               .filter(pod -> pod.getMetadata().getName().startsWith(NEXTFLOW_PREFIX))
               .collect(Collectors.toList());

@@ -16,34 +16,36 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.controller.model;
+package org.icgc.argo.workflow_management.config.security;
 
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
-import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import io.swagger.annotations.ApiModel;
-import java.util.HashMap;
-import java.util.Map;
-import javax.validation.constraints.NotBlank;
-import lombok.AllArgsConstructor;
+import com.google.common.collect.ImmutableList;
+import java.util.List;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.ConstructorBinding;
+import org.springframework.context.annotation.Configuration;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
-@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
-@ApiModel(description = "A JSON of required and optional fields to run a workflow")
-public class RunsRequest {
-  @NotBlank(message = "workflow_url is a required field!")
-  private String workflowUrl;
+@Configuration
+@ConfigurationProperties(prefix = "auth")
+public class AuthProperties {
 
-  private Map<String, Object> workflowParams = new HashMap<String, Object>();
-  private WorkflowEngineParams workflowEngineParams = new WorkflowEngineParams();
+  String jwtPublicKeyUrl;
 
-  private Map<String, Object> workflowType;
-  private String[] workflowTypeVersion;
-  private Map<String, Object> tags;
+  String jwtPublicKeyStr;
 
-  // we will not be accepting this (at least to start)
-  private String[] workflowAttachment;
+  GraphqlScopes graphqlScopes;
+
+  @Value
+  @ConstructorBinding
+  public static class GraphqlScopes {
+    ImmutableList<String> queryOnly;
+    ImmutableList<String> queryAndMutation;
+
+    public GraphqlScopes(List<String> queryOnly, List<String> queryAndMutation) {
+      this.queryOnly = ImmutableList.copyOf(queryOnly);
+      this.queryAndMutation = ImmutableList.copyOf(queryAndMutation);
+    }
+  }
 }

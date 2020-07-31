@@ -16,34 +16,30 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.controller.model;
+package org.icgc.argo.workflow_management.secret.impl;
 
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
-import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import io.swagger.annotations.ApiModel;
-import java.util.HashMap;
-import java.util.Map;
-import javax.validation.constraints.NotBlank;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import java.util.List;
+import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
+import org.icgc.argo.workflow_management.secret.SecretProvider;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
-@ApiModel(description = "A JSON of required and optional fields to run a workflow")
-public class RunsRequest {
-  @NotBlank(message = "workflow_url is a required field!")
-  private String workflowUrl;
+@Slf4j
+public class NoSecretProvider extends SecretProvider {
 
-  private Map<String, Object> workflowParams = new HashMap<String, Object>();
-  private WorkflowEngineParams workflowEngineParams = new WorkflowEngineParams();
+  @Override
+  public Optional<String> generateSecret() {
+    log.debug("NoSecretProvider returning empty optional.");
+    return Optional.empty();
+  }
 
-  private Map<String, Object> workflowType;
-  private String[] workflowTypeVersion;
-  private Map<String, Object> tags;
+  @Override
+  public Optional<String> generateSecretWithScopes(List<String> scopes) {
+    log.debug("NoSecretProvider returning empty optional.");
+    return Optional.empty();
+  }
 
-  // we will not be accepting this (at least to start)
-  private String[] workflowAttachment;
+  @Override
+  public Boolean isEnabled() {
+    return false;
+  }
 }

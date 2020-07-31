@@ -16,34 +16,27 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.controller.model;
+package org.icgc.argo.workflow_management.config.secret;
 
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
-import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import io.swagger.annotations.ApiModel;
-import java.util.HashMap;
-import java.util.Map;
-import javax.validation.constraints.NotBlank;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import org.icgc.argo.workflow_management.secret.SecretProvider;
+import org.icgc.argo.workflow_management.secret.impl.ApiKeyProvider;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
-@ApiModel(description = "A JSON of required and optional fields to run a workflow")
-public class RunsRequest {
-  @NotBlank(message = "workflow_url is a required field!")
-  private String workflowUrl;
+@Profile("apiKey")
+@Configuration
+public class ApiKeyConfig {
 
-  private Map<String, Object> workflowParams = new HashMap<String, Object>();
-  private WorkflowEngineParams workflowEngineParams = new WorkflowEngineParams();
+  @Value("${secret.enabled}")
+  private Boolean enabled;
 
-  private Map<String, Object> workflowType;
-  private String[] workflowTypeVersion;
-  private Map<String, Object> tags;
+  @Value("${secret.apiKey}")
+  private String apiKey;
 
-  // we will not be accepting this (at least to start)
-  private String[] workflowAttachment;
+  @Bean
+  public SecretProvider getApiKeyProvider() {
+    return new ApiKeyProvider(enabled, apiKey);
+  }
 }

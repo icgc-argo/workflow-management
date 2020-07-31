@@ -16,34 +16,33 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.controller.model;
+package org.icgc.argo.workflow_management.config.secret;
 
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
-import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import io.swagger.annotations.ApiModel;
-import java.util.HashMap;
-import java.util.Map;
-import javax.validation.constraints.NotBlank;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import org.icgc.argo.workflow_management.secret.SecretProvider;
+import org.icgc.argo.workflow_management.secret.impl.OAuth2BearerTokenProvider;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
-@ApiModel(description = "A JSON of required and optional fields to run a workflow")
-public class RunsRequest {
-  @NotBlank(message = "workflow_url is a required field!")
-  private String workflowUrl;
+@Profile("oauth2Token")
+@Configuration
+public class OAuth2TokenConfig {
 
-  private Map<String, Object> workflowParams = new HashMap<String, Object>();
-  private WorkflowEngineParams workflowEngineParams = new WorkflowEngineParams();
+  @Value("${secret.enabled}")
+  private Boolean enabled;
 
-  private Map<String, Object> workflowType;
-  private String[] workflowTypeVersion;
-  private Map<String, Object> tags;
+  @Value("${secret.clientId}")
+  private String clientId;
 
-  // we will not be accepting this (at least to start)
-  private String[] workflowAttachment;
+  @Value("${secret.clientSecret}")
+  private String clientSecret;
+
+  @Value("${secret.tokenUri}")
+  private String tokenUri;
+
+  @Bean
+  public SecretProvider getOAuth2BearerTokenProvider() {
+    return new OAuth2BearerTokenProvider(enabled, clientId, clientSecret, tokenUri);
+  }
 }
