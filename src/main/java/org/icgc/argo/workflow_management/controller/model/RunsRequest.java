@@ -27,17 +27,19 @@ import javax.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @ApiModel(description = "A JSON of required and optional fields to run a workflow")
 public class RunsRequest {
   @NotBlank(message = "workflow_url is a required field!")
   private String workflowUrl;
 
-  private Map<String, Object> workflowParams = new HashMap<String, Object>();
+  private Map<String, Object> workflowParams = new HashMap<>();
   private WorkflowEngineParams workflowEngineParams = new WorkflowEngineParams();
 
   private Map<String, Object> workflowType;

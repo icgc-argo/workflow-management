@@ -19,7 +19,7 @@
 package org.icgc.argo.workflow_management.service;
 
 import static org.icgc.argo.workflow_management.service.NextflowWebLogEventSender.Event.*;
-import static org.icgc.argo.workflow_management.util.JsonUtils.toJsonString;
+import static org.icgc.argo.workflow_management.util.JacksonUtils.toJsonString;
 
 import java.net.URL;
 import java.util.Date;
@@ -78,7 +78,7 @@ public class NextflowWebLogEventSender {
     sendTraceEvent(ERROR, traceRecord);
   }
 
-  public void sendTraceEvent(Event event, TraceRecord traceRecord) {};
+  public void sendTraceEvent(Event event, TraceRecord traceRecord) {}
 
   public HashMap<String, Object> getHash(Event event, String runName) {
     var message = new HashMap<String, Object>();

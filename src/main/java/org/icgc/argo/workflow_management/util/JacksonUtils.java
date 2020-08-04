@@ -21,11 +21,16 @@ package org.icgc.argo.workflow_management.util;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 
-public class JsonUtils {
+public class JacksonUtils {
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   @SneakyThrows
   public static String toJsonString(Object o) {
     return OBJECT_MAPPER.writeValueAsString(o);
+  }
+
+  @SneakyThrows
+  public static <T> T convertValue(Object fromValue, Class<T> toValueType) {
+    return OBJECT_MAPPER.convertValue(fromValue, toValueType);
   }
 }

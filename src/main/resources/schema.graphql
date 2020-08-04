@@ -1,0 +1,31 @@
+scalar JSON
+
+type RunsResponse {
+    runId: ID
+}
+
+input WorkflowEngineParams {
+  default_container: String
+  revision: String
+  resume: ID
+  launch_dir: String
+  project_dir: String
+  work_dir: String
+  latest: String
+}
+
+input RunsRequest {
+  workflow_url: String!
+  workflow_engine_params: WorkflowEngineParams
+  workflow_params: JSON
+  workflow_type: JSON
+  workflow_type_version: [String]
+  tags: JSON
+  workflow_attachment: [String]
+}
+
+
+type Mutation {
+    postRun(request: RunsRequest!): RunsResponse
+    cancelRun(runId: ID!): RunsResponse
+}
