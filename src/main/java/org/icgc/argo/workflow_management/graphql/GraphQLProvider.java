@@ -48,9 +48,7 @@ public class GraphQLProvider {
         return RuntimeWiring.newRuntimeWiring()
                .scalar(ExtendedScalars.Json)
                .type(
-                   newTypeWiring("Mutation")
-                           .dataFetcher("cancelRun", mutationDataFetcher.cancelRunResolver())
-                           .dataFetcher("postRun", mutationDataFetcher.postRunResolver())
+                   newTypeWiring("Mutation").dataFetchers(mutationDataFetcher.mutationResolvers())
                ).build();
     }
 
