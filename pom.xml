@@ -119,7 +119,6 @@
             <artifactId>graphql-java</artifactId>
             <version>15.0</version>
         </dependency>
-
         <dependency>
             <groupId>com.graphql-java</groupId>
             <artifactId>graphql-java-spring-boot-starter-webflux</artifactId>
@@ -131,12 +130,12 @@
             <version>1.0</version>
         </dependency>
 
+        <!-- GraphQL Apollo Federation -->
         <dependency>
             <groupId>com.apollographql.federation</groupId>
             <artifactId>federation-graphql-java-support</artifactId>
             <version>0.5.0</version>
         </dependency>
-
     </dependencies>
 
     <build>
