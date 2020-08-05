@@ -1,8 +1,8 @@
 package org.icgc.argo.workflow_management.graphql;
 
+import com.google.common.collect.ImmutableMap;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
-import lombok.NonNull;
 import lombok.val;
 import org.icgc.argo.workflow_management.controller.model.RunsRequest;
 import org.icgc.argo.workflow_management.controller.model.RunsResponse;
@@ -15,7 +15,6 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -33,18 +32,19 @@ public class MutationDataFetcher {
     }
 
     private final MonoDataFetcher<RunsResponse> cancelRunResolver = env -> {
-        Map<String, Object>  args = env.getArguments();
+        val args = env.getArguments();
         String runId = String.valueOf(args.get("runId"));
         return getWorkflowService().cancel(runId);
     };
 
     private final MonoDataFetcher<RunsResponse> postRunResolver = env -> {
-        Map<String, Object>  args = env.getArguments();
+        val args = env.getArguments();
 
-        // TODO - check error handling needed??
-        LinkedHashMap requestMap = (LinkedHashMap) args.get("request");
+        val requestMap = ImmutableMap.<String, Object>builder();
 
-        RunsRequest runsRequest = convertValue(requestMap, RunsRequest.class);
+        if (args.get("request") != null) requestMap.putAll((Map<String, Object>) args.get("request"));
+
+        RunsRequest runsRequest = convertValue(requestMap.build(), RunsRequest.class);
 
         val runConfig =WESRunParams.builder()
                                .workflowUrl(runsRequest.getWorkflowUrl())
@@ -57,15 +57,15 @@ public class MutationDataFetcher {
 
     public Map<String, DataFetcher> mutationResolvers() {
         return Map.of(
-                "cancelRun", securityContextAppliedFetcher(cancelRunResolver),
-                "postRun", securityContextAppliedFetcher(postRunResolver)
+                "cancelRun", securityContextAddedFetcher(cancelRunResolver),
+                "postRun", securityContextAddedFetcher(postRunResolver)
         );
     }
 
 
-    private <T> DataFetcher<CompletableFuture<T>> securityContextAppliedFetcher(MonoDataFetcher<T> monoDataFetcher) {
+    private <T> DataFetcher<CompletableFuture<T>> securityContextAddedFetcher(MonoDataFetcher<T> monoDataFetcher) {
         return environment -> {
-            // add reactive security context to mono subscriberContext so subscribers (i.e. method security) can access it
+            // add reactive security context to mono subscriberContext so subscribers (i.e. method security) have access
             if (environment.getContext() instanceof SecurityContext) {
                 SecurityContext context = environment.getContext();
                 return monoDataFetcher.apply(environment)

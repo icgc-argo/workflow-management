@@ -14,7 +14,7 @@ import reactor.core.publisher.Mono;
 @Slf4j
 @Component
 @Primary
-@Profile("jwt")
+@Profile("secure")
 public class AddReactiveContextInputCustomizer implements ExecutionInputCustomizer {
     @Override
     public Mono<ExecutionInput> customizeExecutionInput(ExecutionInput executionInput, ServerWebExchange serverWebExchange) {
