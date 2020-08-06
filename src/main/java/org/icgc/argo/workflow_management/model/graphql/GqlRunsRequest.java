@@ -16,12 +16,12 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.graphql.model;
+package org.icgc.argo.workflow_management.model.graphql;
 
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import lombok.Data;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
-import org.icgc.argo.workflow_management.controller.model.RunsRequest;
+import org.icgc.argo.workflow_management.model.wes.RunsRequest;
 
 @Data
 @JsonNaming()

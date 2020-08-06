@@ -16,29 +16,13 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.controller.model;
+package org.icgc.argo.workflow_management.model.graphql;
 
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import io.swagger.annotations.ApiModel;
-import java.util.UUID;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
+import org.icgc.argo.workflow_management.model.wes.WorkflowEngineParams;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+@JsonNaming()
 @JsonIgnoreProperties(ignoreUnknown = true)
-@ApiModel(description = "Describes valid workflow engine parameters (part of RunsRequest)")
-public class WorkflowEngineParams {
-  private String defaultContainer;
-  private String revision;
-  private UUID resume;
-  private String launchDir;
-  private String projectDir;
-  private String workDir;
-  private String latest;
+public class GqlWorkflowEngineParams extends WorkflowEngineParams {
 }

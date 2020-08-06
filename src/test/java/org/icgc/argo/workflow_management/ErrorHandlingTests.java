@@ -52,7 +52,7 @@ import nextflow.exception.MissingFileException;
 import org.icgc.argo.workflow_management.config.secret.NoSecretProviderConfig;
 import org.icgc.argo.workflow_management.config.security.AuthDisabledConfig;
 import org.icgc.argo.workflow_management.controller.impl.RunsApiController;
-import org.icgc.argo.workflow_management.controller.model.RunsRequest;
+import org.icgc.argo.workflow_management.model.wes.RunsRequest;
 import org.icgc.argo.workflow_management.exception.GlobalExceptionHandler;
 import org.icgc.argo.workflow_management.service.NextflowService;
 import org.icgc.argo.workflow_management.service.properties.NextflowProperties;
