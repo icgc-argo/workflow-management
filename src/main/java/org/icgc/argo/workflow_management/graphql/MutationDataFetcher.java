@@ -24,6 +24,7 @@ import graphql.schema.DataFetchingEnvironment;
 import lombok.val;
 import org.icgc.argo.workflow_management.controller.model.RunsRequest;
 import org.icgc.argo.workflow_management.controller.model.RunsResponse;
+import org.icgc.argo.workflow_management.graphql.model.GqlRunsRequest;
 import org.icgc.argo.workflow_management.service.WorkflowExecutionService;
 import org.icgc.argo.workflow_management.service.model.WESRunParams;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,16 +56,16 @@ public class MutationDataFetcher {
         return getWorkflowService().cancel(runId);
     };
 
-    private final MonoDataFetcher<RunsResponse> postRunResolver = env -> {
+    private final MonoDataFetcher<RunsResponse> startRunResolver = env -> {
         val args = env.getArguments();
 
         val requestMap = ImmutableMap.<String, Object>builder();
 
         if (args.get("request") != null) requestMap.putAll((Map<String, Object>) args.get("request"));
 
-        RunsRequest runsRequest = convertValue(requestMap.build(), RunsRequest.class);
+        RunsRequest runsRequest = convertValue(requestMap.build(), GqlRunsRequest.class);
 
-        val runConfig =WESRunParams.builder()
+        val runConfig = WESRunParams.builder()
                                .workflowUrl(runsRequest.getWorkflowUrl())
                                .workflowParams(runsRequest.getWorkflowParams())
                                .workflowEngineParams(runsRequest.getWorkflowEngineParams())
@@ -76,7 +77,7 @@ public class MutationDataFetcher {
     public Map<String, DataFetcher> mutationResolvers() {
         return Map.of(
                 "cancelRun", securityContextAddedFetcher(cancelRunResolver),
-                "postRun", securityContextAddedFetcher(postRunResolver)
+                "startRun", securityContextAddedFetcher(startRunResolver)
         );
     }
 
