@@ -16,13 +16,16 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.controller.model.graphql;
+package org.icgc.argo.workflow_management.graphql.model;
 
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import lombok.Data;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
-import org.icgc.argo.workflow_management.controller.model.wes.WorkflowEngineParams;
+import org.icgc.argo.workflow_management.wes.controller.model.RunsRequest;
 
+@Data
 @JsonNaming()
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class GqlWorkflowEngineParams extends WorkflowEngineParams {
+public class GqlRunsRequest extends RunsRequest {
+  private GqlWorkflowEngineParams workflowEngineParams = new GqlWorkflowEngineParams();
 }

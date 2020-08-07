@@ -22,11 +22,11 @@ import com.google.common.collect.ImmutableMap;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import lombok.val;
-import org.icgc.argo.workflow_management.controller.model.wes.RunsRequest;
-import org.icgc.argo.workflow_management.controller.model.wes.RunsResponse;
-import org.icgc.argo.workflow_management.controller.model.graphql.GqlRunsRequest;
+import org.icgc.argo.workflow_management.wes.controller.model.RunsRequest;
+import org.icgc.argo.workflow_management.wes.controller.model.RunsResponse;
+import org.icgc.argo.workflow_management.graphql.model.GqlRunsRequest;
 import org.icgc.argo.workflow_management.service.WorkflowExecutionService;
-import org.icgc.argo.workflow_management.service.model.WESRunParams;
+import org.icgc.argo.workflow_management.service.model.RunParams;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
@@ -65,7 +65,7 @@ public class MutationDataFetcher {
 
         RunsRequest runsRequest = convertValue(requestMap.build(), GqlRunsRequest.class);
 
-        val runConfig = WESRunParams.builder()
+        val runConfig = RunParams.builder()
                                .workflowUrl(runsRequest.getWorkflowUrl())
                                .workflowParams(runsRequest.getWorkflowParams())
                                .workflowEngineParams(runsRequest.getWorkflowEngineParams())

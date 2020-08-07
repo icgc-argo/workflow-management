@@ -16,15 +16,15 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.controller;
+package org.icgc.argo.workflow_management.wes.controller;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import javax.validation.Valid;
-import org.icgc.argo.workflow_management.controller.model.wes.RunsRequest;
-import org.icgc.argo.workflow_management.controller.model.wes.RunsResponse;
+import org.icgc.argo.workflow_management.wes.controller.model.RunsRequest;
+import org.icgc.argo.workflow_management.wes.controller.model.RunsResponse;
 import org.icgc.argo.workflow_management.exception.model.ErrorResponse;
 import org.springframework.web.bind.annotation.RequestBody;
 import reactor.core.publisher.Mono;

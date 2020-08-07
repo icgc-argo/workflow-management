@@ -43,14 +43,14 @@ import nextflow.cli.CmdKubeRun;
 import nextflow.cli.Launcher;
 import nextflow.k8s.K8sDriverLauncher;
 import nextflow.script.ScriptBinding;
-import org.icgc.argo.workflow_management.controller.model.wes.RunsResponse;
+import org.icgc.argo.workflow_management.wes.controller.model.RunsResponse;
 import org.icgc.argo.workflow_management.exception.NextflowRunException;
 import org.icgc.argo.workflow_management.exception.ReflectionUtilsException;
 import org.icgc.argo.workflow_management.secret.SecretProvider;
 import org.icgc.argo.workflow_management.service.model.KubernetesPhase;
 import org.icgc.argo.workflow_management.service.model.NextflowMetadata;
 import org.icgc.argo.workflow_management.service.model.NextflowWorkflowMetadata;
-import org.icgc.argo.workflow_management.service.model.WESRunParams;
+import org.icgc.argo.workflow_management.service.model.RunParams;
 import org.icgc.argo.workflow_management.service.properties.NextflowProperties;
 import org.icgc.argo.workflow_management.util.ConditionalPutMap;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -84,7 +84,7 @@ public class NextflowService implements WorkflowExecutionService {
     this.scheduler = Schedulers.newElastic("nextflow-service");
   }
 
-  public Mono<RunsResponse> run(WESRunParams params) {
+  public Mono<RunsResponse> run(RunParams params) {
     return Mono.fromSupplier(
             () -> {
               try {
@@ -102,7 +102,7 @@ public class NextflowService implements WorkflowExecutionService {
         .subscribeOn(scheduler);
   }
 
-  private String startRun(WESRunParams params)
+  private String startRun(RunParams params)
       throws ReflectionUtilsException, IOException, NextflowRunException {
     val cmd = createCmd(createLauncher(), params);
 
@@ -256,7 +256,7 @@ public class NextflowService implements WorkflowExecutionService {
         .orElseThrow(ReflectionUtilsException::new);
   }
 
-  private CmdKubeRun createCmd(@NonNull Launcher launcher, @NonNull WESRunParams params)
+  private CmdKubeRun createCmd(@NonNull Launcher launcher, @NonNull RunParams params)
       throws ReflectionUtilsException, IOException {
 
     // Config from application.yml
