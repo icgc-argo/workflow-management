@@ -73,6 +73,8 @@ public class AuthEnabledConfig {
     http.csrf()
         .disable()
         .authorizeExchange()
+        .pathMatchers("/graphql/**")
+        .permitAll()
         .pathMatchers("/actuator/**")
         .permitAll()
         .pathMatchers("/runs/**")

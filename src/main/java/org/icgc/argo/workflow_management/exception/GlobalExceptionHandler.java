@@ -20,7 +20,7 @@ package org.icgc.argo.workflow_management.exception;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.lang.String.format;
-import static org.icgc.argo.workflow_management.util.JsonUtils.toJsonString;
+import static org.icgc.argo.workflow_management.util.JacksonUtils.toJsonString;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.CONFLICT;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
