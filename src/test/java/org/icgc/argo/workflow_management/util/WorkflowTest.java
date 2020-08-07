@@ -21,7 +21,7 @@ package org.icgc.argo.workflow_management.util;
 import java.io.IOException;
 import java.util.Map;
 import lombok.val;
-import org.icgc.argo.workflow_management.model.wes.WorkflowEngineParams;
+import org.icgc.argo.workflow_management.controller.model.wes.WorkflowEngineParams;
 import org.icgc.argo.workflow_management.secret.SecretProvider;
 import org.icgc.argo.workflow_management.secret.impl.NoSecretProvider;
 import org.icgc.argo.workflow_management.service.NextflowService;

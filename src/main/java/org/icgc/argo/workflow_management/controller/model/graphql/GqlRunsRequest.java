@@ -16,23 +16,16 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.model.wes;
+package org.icgc.argo.workflow_management.controller.model.graphql;
 
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import io.swagger.annotations.ApiModel;
-import javax.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+import org.codehaus.jackson.annotate.JsonIgnoreProperties;
+import org.icgc.argo.workflow_management.controller.model.wes.RunsRequest;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
-@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
-@ApiModel(
-    description =
-        "A successful run will return the runId which can be used to get info about that run")
-public class RunsResponse {
-  @NotNull private String runId;
+@JsonNaming()
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class GqlRunsRequest extends RunsRequest {
+  private GqlWorkflowEngineParams workflowEngineParams = new GqlWorkflowEngineParams();
 }

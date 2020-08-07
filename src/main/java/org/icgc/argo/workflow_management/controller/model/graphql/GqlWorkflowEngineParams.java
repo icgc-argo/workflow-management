@@ -16,11 +16,11 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.model.graphql;
+package org.icgc.argo.workflow_management.controller.model.graphql;
 
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
-import org.icgc.argo.workflow_management.model.wes.WorkflowEngineParams;
+import org.icgc.argo.workflow_management.controller.model.wes.WorkflowEngineParams;
 
 @JsonNaming()
 @JsonIgnoreProperties(ignoreUnknown = true)

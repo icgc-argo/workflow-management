@@ -23,7 +23,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import org.icgc.argo.workflow_management.model.wes.WorkflowEngineParams;
+import org.icgc.argo.workflow_management.controller.model.wes.WorkflowEngineParams;
 
 @Data
 @Builder
