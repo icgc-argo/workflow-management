@@ -16,15 +16,15 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.controller.impl;
+package org.icgc.argo.workflow_management.wes.controller.impl;
 
 import javax.validation.Valid;
 import lombok.val;
-import org.icgc.argo.workflow_management.controller.RunsApi;
-import org.icgc.argo.workflow_management.controller.model.RunsRequest;
-import org.icgc.argo.workflow_management.controller.model.RunsResponse;
+import org.icgc.argo.workflow_management.wes.controller.RunsApi;
+import org.icgc.argo.workflow_management.wes.controller.model.RunsRequest;
+import org.icgc.argo.workflow_management.wes.controller.model.RunsResponse;
 import org.icgc.argo.workflow_management.service.WorkflowExecutionService;
-import org.icgc.argo.workflow_management.service.model.WESRunParams;
+import org.icgc.argo.workflow_management.service.model.RunParams;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.*;
@@ -49,7 +49,7 @@ public class RunsApiController implements RunsApi {
 
     // create run config from request
     val runConfig =
-        WESRunParams.builder()
+        RunParams.builder()
             .workflowUrl(runsRequest.getWorkflowUrl())
             .workflowParams(runsRequest.getWorkflowParams())
             .workflowEngineParams(runsRequest.getWorkflowEngineParams())

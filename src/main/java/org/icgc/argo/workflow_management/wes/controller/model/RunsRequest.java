@@ -16,20 +16,36 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.service.model;
+package org.icgc.argo.workflow_management.wes.controller.model;
 
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import io.swagger.annotations.ApiModel;
+import java.util.HashMap;
 import java.util.Map;
-import lombok.Builder;
+import javax.validation.constraints.NotBlank;
+import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import org.icgc.argo.workflow_management.controller.model.WorkflowEngineParams;
+import lombok.NoArgsConstructor;
+import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 
 @Data
-@Builder
-@RequiredArgsConstructor
-public class WESRunParams {
-  @NonNull private final Map<String, Object> workflowParams;
-  @NonNull private final String workflowUrl;
-  private final WorkflowEngineParams workflowEngineParams;
+@AllArgsConstructor
+@NoArgsConstructor
+@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+@JsonIgnoreProperties(ignoreUnknown = true)
+@ApiModel(description = "A JSON of required and optional fields to run a workflow")
+public class RunsRequest {
+  @NotBlank(message = "workflow_url is a required field!")
+  private String workflowUrl;
+
+  private Map<String, Object> workflowParams = new HashMap<>();
+  private WorkflowEngineParams workflowEngineParams = new WorkflowEngineParams();
+
+  private Map<String, Object> workflowType;
+  private String[] workflowTypeVersion;
+  private Map<String, Object> tags;
+
+  // we will not be accepting this (at least to start)
+  private String[] workflowAttachment;
 }

@@ -16,23 +16,21 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.service;
+package org.icgc.argo.workflow_management.util;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import org.icgc.argo.workflow_management.wes.controller.model.RunsResponse;
-import org.icgc.argo.workflow_management.service.model.RunParams;
-import org.springframework.security.access.prepost.PreAuthorize;
-import reactor.core.publisher.Mono;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.SneakyThrows;
 
-public interface WorkflowExecutionService {
-  @HasQueryAndMutationAccess
-  Mono<RunsResponse> run(RunParams params);
+public class JacksonUtils {
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-  @HasQueryAndMutationAccess
-  Mono<RunsResponse> cancel(String runId);
+  @SneakyThrows
+  public static String toJsonString(Object o) {
+    return OBJECT_MAPPER.writeValueAsString(o);
+  }
 
-  @Retention(RetentionPolicy.RUNTIME)
-  @PreAuthorize("@queryAndMutationScopeChecker.apply(authentication)")
-  @interface HasQueryAndMutationAccess {}
+  @SneakyThrows
+  public static <T> T convertValue(Object fromValue, Class<T> toValueType) {
+    return OBJECT_MAPPER.convertValue(fromValue, toValueType);
+  }
 }
