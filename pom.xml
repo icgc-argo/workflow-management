@@ -57,7 +57,7 @@
         <dependency>
             <groupId>io.nextflow</groupId>
             <artifactId>nextflow</artifactId>
-            <version>20.01.0</version>
+            <version>20.07.1</version>
         </dependency>
 
         <!-- Health Check -->
