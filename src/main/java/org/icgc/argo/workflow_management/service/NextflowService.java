@@ -117,7 +117,6 @@ public class NextflowService implements WorkflowExecutionService {
                       .createNew()
                       .withType("Opaque")
                       .withNewMetadata()
-                      .withNamespace("default")
                       .withNewName(String.format("%s-%s", cmd.getRunName(), SECRET_SUFFIX))
                       .endMetadata()
                       .withData(Map.of("secret", secret))
