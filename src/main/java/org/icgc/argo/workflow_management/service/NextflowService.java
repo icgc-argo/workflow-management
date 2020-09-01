@@ -18,23 +18,9 @@
 
 package org.icgc.argo.workflow_management.service;
 
-import static java.lang.Boolean.parseBoolean;
-import static java.lang.String.format;
-import static java.util.Objects.nonNull;
-import static org.icgc.argo.workflow_management.service.model.KubernetesPhase.RUNNING;
-import static org.icgc.argo.workflow_management.service.model.KubernetesPhase.valueOf;
-import static org.icgc.argo.workflow_management.util.NextflowConfigFile.createNextflowConfigFile;
-import static org.icgc.argo.workflow_management.util.ParamsFile.createParamsFile;
-import static org.icgc.argo.workflow_management.util.Reflections.createWithReflection;
-import static org.icgc.argo.workflow_management.util.Reflections.invokeDeclaredMethod;
-
 import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
-import java.io.IOException;
-import java.net.URL;
-import java.util.*;
-import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -43,7 +29,6 @@ import nextflow.cli.CmdKubeRun;
 import nextflow.cli.Launcher;
 import nextflow.k8s.K8sDriverLauncher;
 import nextflow.script.ScriptBinding;
-import org.icgc.argo.workflow_management.wes.controller.model.RunsResponse;
 import org.icgc.argo.workflow_management.exception.NextflowRunException;
 import org.icgc.argo.workflow_management.exception.ReflectionUtilsException;
 import org.icgc.argo.workflow_management.secret.SecretProvider;
@@ -53,11 +38,26 @@ import org.icgc.argo.workflow_management.service.model.NextflowWorkflowMetadata;
 import org.icgc.argo.workflow_management.service.model.RunParams;
 import org.icgc.argo.workflow_management.service.properties.NextflowProperties;
 import org.icgc.argo.workflow_management.util.ConditionalPutMap;
+import org.icgc.argo.workflow_management.wes.controller.model.RunsResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+
+import java.io.IOException;
+import java.net.URL;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static java.lang.Boolean.parseBoolean;
+import static java.lang.String.format;
+import static java.util.Objects.nonNull;
+import static org.icgc.argo.workflow_management.service.model.KubernetesPhase.*;
+import static org.icgc.argo.workflow_management.util.NextflowConfigFile.createNextflowConfigFile;
+import static org.icgc.argo.workflow_management.util.ParamsFile.createParamsFile;
+import static org.icgc.argo.workflow_management.util.Reflections.createWithReflection;
+import static org.icgc.argo.workflow_management.util.Reflections.invokeDeclaredMethod;
 
 @Slf4j
 @Service(value = "nextflow")
@@ -73,14 +73,19 @@ public class NextflowService implements WorkflowExecutionService {
   private final NextflowProperties config;
 
   private final SecretProvider secretProvider;
+  private final NextflowWebLogEventSender webLogSender;
 
   /** State */
   private final Scheduler scheduler;
 
   @Autowired
-  public NextflowService(NextflowProperties config, SecretProvider secretProvider) {
+  public NextflowService(
+      NextflowProperties config,
+      SecretProvider secretProvider,
+      NextflowWebLogEventSender webLogSender) {
     this.config = config;
     this.secretProvider = secretProvider;
+    this.webLogSender = webLogSender;
     this.scheduler = Schedulers.newElastic("nextflow-service");
   }
 
@@ -193,9 +198,14 @@ public class NextflowService implements WorkflowExecutionService {
   private String cancelRun(@NonNull String runId) {
     val namespace = config.getK8s().getNamespace();
     try (final val client = getClient()) {
-      isPodRunning(runId);
+      verifyPodRunning(runId);
       val childPods =
-          client.pods().inNamespace(namespace).withLabel("runName", runId).list().getItems()
+          client
+              .pods()
+              .inNamespace(namespace)
+              .withLabel("runName", runId)
+              .list()
+              .getItems()
               .stream()
               .filter(pod -> pod.getMetadata().getName().startsWith(NEXTFLOW_PREFIX))
               .collect(Collectors.toList());
@@ -233,14 +243,26 @@ public class NextflowService implements WorkflowExecutionService {
     return valueOf(executorPod.getStatus().getPhase().toUpperCase());
   }
 
-  private void isPodRunning(String runId) {
-    val state = getPhase(runId);
-    // can only cancel when executor pod is in running state
+  private void verifyPodRunning(String podName) {
+    val state = getPhase(podName);
 
+    // if pod is in failed state we want to send a failed event to weblog, then throw
+    // a cancel error as job is not running but was stuck in a false running state
+    if (state.equals(FAILED)) {
+      log.debug(podName + " is in a failed state, sending failed pod event to weblog ...");
+      webLogSender.sendFailedPodEvent(podName);
+      throw new RuntimeException(
+          format(
+              "Executor pod %s is in %s state, a pod failed event has been sent to weblog, expect an updated job status momentarily",
+              podName, state));
+    }
+
+    // can only cancel when executor pod is in running state
     if (!state.equals(RUNNING)) {
       throw new RuntimeException(
           format(
-              "Executor pod %s is in %s state, can only cancel a running workflow.", runId, state));
+              "Executor pod %s is in %s state, can only cancel a running workflow.",
+              podName, state));
     }
   }
 
