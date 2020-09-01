@@ -26,6 +26,8 @@ import io.fabric8.kubernetes.api.model.DoneablePod;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.dsl.PodResource;
+
+import java.time.ZoneOffset;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -104,12 +106,11 @@ public class NextflowWorkflowMonitor implements Runnable {
     val workflow = metadata.getWorkflow();
     workflow.update(pod);
 
-    workflow.setComplete(now());
+    workflow.setComplete(now(ZoneOffset.UTC));
     workflow.setDuration(Duration.between(workflow.getStart(), workflow.getComplete()));
     workflow.setErrorReport(podLog);
     workflow.setErrorMessage("Nextflow pod failed to start");
     workflow.setSuccess(false);
-    workflow.setResume(false);
   }
 
   public KubernetesPhase getPhase(Pod pod) {
