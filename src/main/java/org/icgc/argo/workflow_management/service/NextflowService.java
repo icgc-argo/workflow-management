@@ -46,7 +46,6 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
 import java.io.IOException;
-import java.net.URL;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -148,13 +147,11 @@ public class NextflowService implements WorkflowExecutionService {
       val meta =
           new NextflowMetadata(
               workflowMetadata, new ScriptBinding.ParamsMap(params.getWorkflowParams()));
-      val sender = new NextflowWebLogEventSender(new URL(config.getWeblogUrl()));
       val monitor =
           new NextflowWorkflowMonitor(
               getClient(),
               config.getMonitor().getMaxErrorLogLines(),
               config.getMonitor().getSleepInterval(),
-              sender,
               meta);
       scheduler.schedule(monitor);
       return cmd.getRunName();

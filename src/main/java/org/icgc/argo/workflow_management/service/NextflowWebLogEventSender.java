@@ -19,12 +19,15 @@
 package org.icgc.argo.workflow_management.service;
 
 import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import lombok.val;
 import nextflow.Const;
 import nextflow.extension.Bolts;
 import nextflow.trace.TraceRecord;
 import nextflow.util.SimpleHttpClient;
 import org.icgc.argo.workflow_management.service.model.NextflowMetadata;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 
 import java.net.URL;
 import java.util.Date;
@@ -34,12 +37,14 @@ import java.util.TimeZone;
 import static org.icgc.argo.workflow_management.service.NextflowWebLogEventSender.Event.*;
 import static org.icgc.argo.workflow_management.util.JacksonUtils.toJsonString;
 
+@Service
 @AllArgsConstructor
+@NoArgsConstructor
 public class NextflowWebLogEventSender {
-  private final SimpleHttpClient httpClient;
-  private final URL endpoint;
+  private SimpleHttpClient httpClient;
+  private URL endpoint;
 
-  public NextflowWebLogEventSender(URL endpoint) {
+  public NextflowWebLogEventSender(@Value("nextflow.k8s.weblogUrl") URL endpoint) {
     this.endpoint = endpoint;
     this.httpClient = new SimpleHttpClient();
   }
