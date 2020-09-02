@@ -29,7 +29,6 @@ import org.icgc.argo.workflow_management.service.properties.NextflowProperties;
 import org.icgc.argo.workflow_management.wes.controller.model.WorkflowEngineParams;
 
 import java.io.IOException;
-import java.net.URL;
 import java.util.Map;
 
 public class WorkflowTest {
@@ -51,7 +50,7 @@ public class WorkflowTest {
   static void runTest(RunParams params) {
     NextflowProperties config = new NextflowProperties();
     SecretProvider secretProvider = new NoSecretProvider();
-    NextflowWebLogEventSender webLogEventSender = new NextflowWebLogEventSender(new URL(weblogUrl));
+    NextflowWebLogEventSender webLogEventSender = new NextflowWebLogEventSender();
     val service = new NextflowService(config, secretProvider, webLogEventSender);
     val result = service.run(params);
     System.err.println(result.toString());

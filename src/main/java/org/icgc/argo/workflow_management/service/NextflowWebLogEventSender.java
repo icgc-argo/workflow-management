@@ -29,7 +29,6 @@ import org.icgc.argo.workflow_management.service.model.NextflowMetadata;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.net.URL;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.TimeZone;
@@ -41,13 +40,10 @@ import static org.icgc.argo.workflow_management.util.JacksonUtils.toJsonString;
 @AllArgsConstructor
 @NoArgsConstructor
 public class NextflowWebLogEventSender {
-  private SimpleHttpClient httpClient;
-  private URL endpoint;
+  private final SimpleHttpClient httpClient = new SimpleHttpClient();
 
-  public NextflowWebLogEventSender(@Value("nextflow.k8s.weblogUrl") URL endpoint) {
-    this.endpoint = endpoint;
-    this.httpClient = new SimpleHttpClient();
-  }
+  @Value("${nextflow.weblogUrl}")
+  private String endpoint;
 
   public void sendStartEvent(NextflowMetadata meta) {
     sendWorkflowEvent(STARTED, meta);
@@ -81,7 +77,7 @@ public class NextflowWebLogEventSender {
     message.put("event", FAILED.toString());
     message.put("utcTime", time);
 
-    this.httpClient.sendHttpMessage(this.endpoint.toString(), toJsonString(message));
+    httpClient.sendHttpMessage(endpoint, toJsonString(message));
   }
 
   public void sendTraceEvent(Event event, TraceRecord traceRecord) {}
@@ -99,7 +95,7 @@ public class NextflowWebLogEventSender {
   }
 
   public void sendWorkflowEvent(Event event, NextflowMetadata meta) {
-    this.httpClient.sendHttpMessage(this.endpoint.toString(), createWorkflowMessageJSON(event, meta));
+    httpClient.sendHttpMessage(endpoint, createWorkflowMessageJSON(event, meta));
   }
 
   public String createWorkflowMessageJSON(Event event, NextflowMetadata logMessage) {
