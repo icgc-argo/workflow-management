@@ -18,44 +18,18 @@
 
 package org.icgc.argo.workflow_management;
 
-import static java.lang.String.format;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.emptyOrNullString;
-import static org.hamcrest.Matchers.not;
-import static org.icgc.argo.workflow_management.util.RandomGenerator.createRandomGenerator;
-import static org.icgc.argo.workflow_management.util.Reflections.findResponseStatusAnnotation;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.reset;
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
-import static org.springframework.http.HttpStatus.BANDWIDTH_LIMIT_EXCEEDED;
-import static org.springframework.http.HttpStatus.CONFLICT;
-import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
-import static org.springframework.http.HttpStatus.UNPROCESSABLE_ENTITY;
-import static org.springframework.http.MediaType.APPLICATION_JSON;
-import static org.springframework.web.reactive.function.BodyInserters.fromValue;
-
 import com.google.common.collect.Maps;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.util.Optional;
-import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import nextflow.exception.AbortOperationException;
-import nextflow.exception.AbortRunException;
-import nextflow.exception.DuplicateProcessInvocation;
-import nextflow.exception.IllegalFileException;
-import nextflow.exception.MissingFileException;
+import nextflow.exception.*;
 import org.icgc.argo.workflow_management.config.secret.NoSecretProviderConfig;
 import org.icgc.argo.workflow_management.config.security.AuthDisabledConfig;
-import org.icgc.argo.workflow_management.wes.controller.impl.RunsApiController;
-import org.icgc.argo.workflow_management.wes.controller.model.RunsRequest;
 import org.icgc.argo.workflow_management.exception.GlobalExceptionHandler;
 import org.icgc.argo.workflow_management.service.NextflowService;
+import org.icgc.argo.workflow_management.service.NextflowWebLogEventSender;
 import org.icgc.argo.workflow_management.service.properties.NextflowProperties;
+import org.icgc.argo.workflow_management.wes.controller.impl.RunsApiController;
+import org.icgc.argo.workflow_management.wes.controller.model.RunsRequest;
 import org.junit.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.runner.RunWith;
@@ -74,6 +48,23 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.util.Optional;
+import java.util.function.Supplier;
+
+import static java.lang.String.format;
+import static org.hamcrest.Matchers.*;
+import static org.icgc.argo.workflow_management.util.RandomGenerator.createRandomGenerator;
+import static org.icgc.argo.workflow_management.util.Reflections.findResponseStatusAnnotation;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.reset;
+import static org.springframework.http.HttpStatus.*;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.web.reactive.function.BodyInserters.fromValue;
+
 // TODO: rtisma    create test for
 // https://github.com/${owner}/${repo}/blob/${branch}/${path-to-file}
 @Slf4j
@@ -81,6 +72,7 @@ import org.springframework.web.server.ResponseStatusException;
     value = {
       NoSecretProviderConfig.class,
       NextflowService.class,
+      NextflowWebLogEventSender.class,
       NextflowProperties.class,
       GlobalExceptionHandler.class,
       AuthDisabledConfig.class
@@ -95,6 +87,23 @@ public class ErrorHandlingTests {
   @Autowired private RunsApiController controller;
 
   @Autowired private WebTestClient webClient;
+
+  private static <T extends Throwable> Optional<Constructor<T>> getStringConstructor(
+      Class<T> klazz) {
+    try {
+      return Optional.of(klazz.getDeclaredConstructor(String.class));
+    } catch (NoSuchMethodException e) {
+      return Optional.empty();
+    }
+  }
+
+  private static boolean hasArgumentlessConstructor(Class<?> clazz) {
+    try {
+      return clazz.getConstructor().getParameterCount() == 0;
+    } catch (NoSuchMethodException e) {
+      return false;
+    }
+  }
 
   /**
    * Test when a Netflow exception mapped as NOT_FOUND is thrown, the server responds with an
@@ -335,23 +344,6 @@ public class ErrorHandlingTests {
         .expectBody()
         .jsonPath("$.status_code")
         .isEqualTo(expectedErrorStatus.value());
-  }
-
-  private static <T extends Throwable> Optional<Constructor<T>> getStringConstructor(
-      Class<T> klazz) {
-    try {
-      return Optional.of(klazz.getDeclaredConstructor(String.class));
-    } catch (NoSuchMethodException e) {
-      return Optional.empty();
-    }
-  }
-
-  private static boolean hasArgumentlessConstructor(Class<?> clazz) {
-    try {
-      return clazz.getConstructor().getParameterCount() == 0;
-    } catch (NoSuchMethodException e) {
-      return false;
-    }
   }
 
   public static class SomeUnhandledTestException extends RuntimeException {
