@@ -122,10 +122,10 @@ public class NextflowWorkflowMonitor implements Runnable {
 
   public void updateFailure(NextflowMetadata metadata, Pod pod, String podLog) {
     val workflow = metadata.getWorkflow();
+    val completeTime = now(ZoneOffset.UTC);
     workflow.update(pod);
-
-    workflow.setComplete(now(ZoneOffset.UTC));
-    workflow.setDuration(Duration.between(workflow.getStart(), workflow.getComplete()));
+    workflow.setComplete(completeTime);
+    workflow.setDuration(Duration.between(workflow.getStart(), completeTime));
     workflow.setErrorReport(podLog);
     workflow.setErrorMessage("Nextflow pod failed to start");
     workflow.setSuccess(false);

@@ -79,13 +79,14 @@ public class NextflowWebLogEventSender {
         Bolts.format(new Date(), Const.ISO_8601_DATETIME_FORMAT, TimeZone.getTimeZone("UTC"));
     message.put("runName", podName);
     message.put("event", FAILED.toString());
+    message.put("utcTime", time);
 
     this.httpClient.sendHttpMessage(this.endpoint.toString(), toJsonString(message));
   }
 
   public void sendTraceEvent(Event event, TraceRecord traceRecord) {}
 
-  public HashMap<String, Object> getHash(Event event, String runName) {
+  public HashMap<String, Object> createMessage(Event event, String runName) {
     val message = new HashMap<String, Object>();
     String time =
         Bolts.format(new Date(), Const.ISO_8601_DATETIME_FORMAT, TimeZone.getTimeZone("UTC"));
@@ -98,12 +99,12 @@ public class NextflowWebLogEventSender {
   }
 
   public void sendWorkflowEvent(Event event, NextflowMetadata meta) {
-    this.httpClient.sendHttpMessage(this.endpoint.toString(), getWorkflowMessage(event, meta));
+    this.httpClient.sendHttpMessage(this.endpoint.toString(), createWorkflowMessageJSON(event, meta));
   }
 
-  public String getWorkflowMessage(Event event, NextflowMetadata logMessage) {
+  public String createWorkflowMessageJSON(Event event, NextflowMetadata logMessage) {
     val runName = logMessage.getWorkflow().getRunName();
-    val message = getHash(event, runName);
+    val message = createMessage(event, runName);
 
     message.put("metadata", logMessage);
 
