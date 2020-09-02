@@ -63,8 +63,8 @@ public class NextflowWorkflowMonitor implements Runnable {
     while (!done) {
       try {
         PodResource<Pod, DoneablePod> pod = kubernetesClient.pods().withName(podName);
-        var p = pod.get();
-        var log = pod.tailingLines(maxErrorLogLines).getLog();
+        val p = pod.get();
+        val log = pod.tailingLines(maxErrorLogLines).getLog();
         done = handlePod(metadata, p, log);
       } catch (Exception e) {
         log.error(format("Workflow Status Monitor threw exception %s", e.getMessage()));
