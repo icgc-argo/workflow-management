@@ -40,6 +40,7 @@ import static org.icgc.argo.workflow_management.service.NextflowService.NEXTFLOW
 public class NextflowWorkflowMonitor implements Runnable {
   private final DefaultKubernetesClient kubernetesClient;
   private final Integer maxErrorLogLines;
+  //  TODO: look into why this isn't used
   private final Integer sleepTime; // in ms
   private final NextflowMetadata metadata;
 
