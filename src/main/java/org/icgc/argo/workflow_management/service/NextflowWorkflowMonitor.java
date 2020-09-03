@@ -18,30 +18,45 @@
 
 package org.icgc.argo.workflow_management.service;
 
-import static java.lang.String.format;
-import static java.time.OffsetDateTime.now;
-import static org.icgc.argo.workflow_management.service.NextflowService.NEXTFLOW_PREFIX;
-
 import io.fabric8.kubernetes.api.model.DoneablePod;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.dsl.PodResource;
-import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import nextflow.util.Duration;
 import org.icgc.argo.workflow_management.service.model.KubernetesPhase;
 import org.icgc.argo.workflow_management.service.model.NextflowMetadata;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import java.time.ZoneOffset;
+import java.util.stream.Collectors;
+
+import static java.lang.String.format;
+import static java.time.OffsetDateTime.now;
+import static org.icgc.argo.workflow_management.service.NextflowService.NEXTFLOW_PREFIX;
 
 @Slf4j
-@AllArgsConstructor
 public class NextflowWorkflowMonitor implements Runnable {
-  private DefaultKubernetesClient kubernetesClient;
-  private Integer maxErrorLogLines;
-  private Integer sleepTime; // in ms
-  private NextflowWebLogEventSender webLogSender;
-  private NextflowMetadata metadata;
+  private final DefaultKubernetesClient kubernetesClient;
+  private final Integer maxErrorLogLines;
+  //  TODO: look into why this isn't used
+  private final Integer sleepTime; // in ms
+  private final NextflowMetadata metadata;
+
+  // dependencies
+  @Autowired private NextflowWebLogEventSender webLogSender;
+
+  public NextflowWorkflowMonitor(
+      DefaultKubernetesClient kubernetesClient,
+      Integer maxErrorLogLines,
+      Integer sleepTime,
+      NextflowMetadata metadata) {
+    this.kubernetesClient = kubernetesClient;
+    this.maxErrorLogLines = maxErrorLogLines;
+    this.sleepTime = sleepTime;
+    this.metadata = metadata;
+  }
 
   public void run() {
     boolean done = false;
@@ -49,8 +64,8 @@ public class NextflowWorkflowMonitor implements Runnable {
     while (!done) {
       try {
         PodResource<Pod, DoneablePod> pod = kubernetesClient.pods().withName(podName);
-        var p = pod.get();
-        var log = pod.tailingLines(maxErrorLogLines).getLog();
+        val p = pod.get();
+        val log = pod.tailingLines(maxErrorLogLines).getLog();
         done = handlePod(metadata, p, log);
       } catch (Exception e) {
         log.error(format("Workflow Status Monitor threw exception %s", e.getMessage()));
@@ -88,8 +103,13 @@ public class NextflowWorkflowMonitor implements Runnable {
 
   private boolean podHasChildren(String podName) {
     val childPods =
-        kubernetesClient.pods().inNamespace(kubernetesClient.getNamespace())
-            .withLabel("runName", podName).list().getItems().stream()
+        kubernetesClient
+            .pods()
+            .inNamespace(kubernetesClient.getNamespace())
+            .withLabel("runName", podName)
+            .list()
+            .getItems()
+            .stream()
             .filter(pod -> pod.getMetadata().getName().startsWith(NEXTFLOW_PREFIX))
             .collect(Collectors.toList());
 
@@ -102,14 +122,13 @@ public class NextflowWorkflowMonitor implements Runnable {
 
   public void updateFailure(NextflowMetadata metadata, Pod pod, String podLog) {
     val workflow = metadata.getWorkflow();
+    val completeTime = now(ZoneOffset.UTC);
     workflow.update(pod);
-
-    workflow.setComplete(now());
-    workflow.setDuration(Duration.between(workflow.getStart(), workflow.getComplete()));
+    workflow.setComplete(completeTime);
+    workflow.setDuration(Duration.between(workflow.getStart(), completeTime));
     workflow.setErrorReport(podLog);
     workflow.setErrorMessage("Nextflow pod failed to start");
     workflow.setSuccess(false);
-    workflow.setResume(false);
   }
 
   public KubernetesPhase getPhase(Pod pod) {
