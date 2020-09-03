@@ -194,8 +194,21 @@ public class NextflowService implements WorkflowExecutionService {
 
   private String cancelRun(@NonNull String runId) {
     val namespace = config.getK8s().getNamespace();
+    val state = getPhase(runId);
+
+    if (state.equals(FAILED)) {
+      return handleFailedPod(runId);
+    }
+
+    // can only cancel when executor pod is in running or failed state
+    // so throw an exception if not either of those two states
+    if (!state.equals(RUNNING)) {
+      throw new RuntimeException(
+          format(
+              "Executor pod %s is in %s state, can only cancel a running workflow.", runId, state));
+    }
+
     try (final val client = getClient()) {
-      verifyPodRunning(runId);
       val childPods =
           client
               .pods()
@@ -223,6 +236,7 @@ public class NextflowService implements WorkflowExecutionService {
       log.error(e.getMessage(), e);
       throw e;
     }
+
     return runId;
   }
 
@@ -240,27 +254,11 @@ public class NextflowService implements WorkflowExecutionService {
     return valueOf(executorPod.getStatus().getPhase().toUpperCase());
   }
 
-  private void verifyPodRunning(String podName) {
-    val state = getPhase(podName);
-
-    // if pod is in failed state we want to send a failed event to weblog, then throw
-    // a cancel error as job is not running but was stuck in a false running state
-    if (state.equals(FAILED)) {
-      log.debug(podName + " is in a failed state, sending failed pod event to weblog ...");
-      webLogSender.sendFailedPodEvent(podName);
-      throw new RuntimeException(
-          format(
-              "Executor pod %s is in %s state, a pod failed event has been sent to weblog, expect an updated job status momentarily",
-              podName, state));
-    }
-
-    // can only cancel when executor pod is in running state
-    if (!state.equals(RUNNING)) {
-      throw new RuntimeException(
-          format(
-              "Executor pod %s is in %s state, can only cancel a running workflow.",
-              podName, state));
-    }
+  private String handleFailedPod(String podName) {
+    log.info(format("Executor pod %s is in a failed state, sending failed pod event to weblog ...", podName));
+    webLogSender.sendFailedPodEvent(podName);
+    log.info(format("Cancellation event for pod %s has been sent to weblog.", podName));
+    return podName;
   }
 
   private Launcher createLauncher() throws ReflectionUtilsException {
