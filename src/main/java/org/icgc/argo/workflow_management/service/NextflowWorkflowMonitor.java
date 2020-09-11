@@ -22,12 +22,12 @@ import io.fabric8.kubernetes.api.model.DoneablePod;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.dsl.PodResource;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import nextflow.util.Duration;
 import org.icgc.argo.workflow_management.service.model.KubernetesPhase;
 import org.icgc.argo.workflow_management.service.model.NextflowMetadata;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.ZoneOffset;
 import java.util.stream.Collectors;
@@ -37,26 +37,13 @@ import static java.time.OffsetDateTime.now;
 import static org.icgc.argo.workflow_management.service.NextflowService.NEXTFLOW_PREFIX;
 
 @Slf4j
+@AllArgsConstructor
 public class NextflowWorkflowMonitor implements Runnable {
-  private final DefaultKubernetesClient kubernetesClient;
-  private final Integer maxErrorLogLines;
-  //  TODO: look into why this isn't used
-  private final Integer sleepTime; // in ms
+
+  private final NextflowWebLogEventSender webLogSender;
   private final NextflowMetadata metadata;
-
-  // dependencies
-  @Autowired private NextflowWebLogEventSender webLogSender;
-
-  public NextflowWorkflowMonitor(
-      DefaultKubernetesClient kubernetesClient,
-      Integer maxErrorLogLines,
-      Integer sleepTime,
-      NextflowMetadata metadata) {
-    this.kubernetesClient = kubernetesClient;
-    this.maxErrorLogLines = maxErrorLogLines;
-    this.sleepTime = sleepTime;
-    this.metadata = metadata;
-  }
+  private final Integer maxErrorLogLines;
+  private DefaultKubernetesClient kubernetesClient;
 
   public void run() {
     boolean done = false;
@@ -78,7 +65,8 @@ public class NextflowWorkflowMonitor implements Runnable {
     val podName = pod.getMetadata().getName();
     // if the pod running nextflow has created children, we'll assume it started successfully, and
     // that it can handle it's own logging from here on in.
-    if (podHasChildren(podName)) {
+    if (podHasChildren(podName) || podSucceeded(pod)) {
+      // state and not attempt to emit events until that is in an error state
       log.debug(podName + " has children! Done!");
       return true;
     }
@@ -114,6 +102,10 @@ public class NextflowWorkflowMonitor implements Runnable {
             .collect(Collectors.toList());
 
     return childPods.size() > 0;
+  }
+
+  private boolean podSucceeded(Pod pod) {
+    return getPhase(pod).equals(KubernetesPhase.SUCCEEDED);
   }
 
   private boolean podFailed(Pod pod) {

@@ -47,6 +47,7 @@ import reactor.core.scheduler.Schedulers;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static java.lang.Boolean.parseBoolean;
@@ -140,20 +141,20 @@ public class NextflowService implements WorkflowExecutionService {
     val exitStatus = driver.shutdown();
 
     if (exitStatus == 0) {
-      // Schedule a workflow monitor to watch over our nextflow pod and make sure that we report an
-      // error to our web-log service if it fails to run.
 
+      // Build required objects for monitoring THIS run.
       val workflowMetadata = NextflowWorkflowMetadata.create(cmd, driver);
       val meta =
           new NextflowMetadata(
               workflowMetadata, new ScriptBinding.ParamsMap(params.getWorkflowParams()));
       val monitor =
           new NextflowWorkflowMonitor(
-              getClient(),
-              config.getMonitor().getMaxErrorLogLines(),
-              config.getMonitor().getSleepInterval(),
-              meta);
-      scheduler.schedule(monitor);
+              webLogSender, meta, config.getMonitor().getMaxErrorLogLines(), getClient());
+
+      // Schedule a workflow monitor to watch over our nextflow pod and make sure
+      // that we report an error to our web-log service if it fails to run.
+      scheduler.schedule(monitor, config.getMonitor().getSleepInterval(), TimeUnit.MILLISECONDS);
+
       return cmd.getRunName();
     } else {
       throw new NextflowRunException(
@@ -255,7 +256,10 @@ public class NextflowService implements WorkflowExecutionService {
   }
 
   private String handleFailedPod(String podName) {
-    log.info(format("Executor pod %s is in a failed state, sending failed pod event to weblog ...", podName));
+    log.info(
+        format(
+            "Executor pod %s is in a failed state, sending failed pod event to weblog ...",
+            podName));
     webLogSender.sendFailedPodEvent(podName);
     log.info(format("Cancellation event for pod %s has been sent to weblog.", podName));
     return podName;
