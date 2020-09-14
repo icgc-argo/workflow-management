@@ -111,31 +111,6 @@ public class NextflowService implements WorkflowExecutionService {
       throws ReflectionUtilsException, IOException, NextflowRunException {
     val cmd = createCmd(createLauncher(), params);
 
-    // Kubernetes Secret Creation if enabled
-    secretProvider
-        .generateSecret()
-        .ifPresentOrElse(
-            secret -> {
-              val kubernetesSecret =
-                  getClient()
-                      .secrets()
-                      .createNew()
-                      .withType("Opaque")
-                      .withNewMetadata()
-                      .withNewName(String.format("%s-%s", cmd.getRunName(), SECRET_SUFFIX))
-                      .endMetadata()
-                      .withData(Map.of("secret", secret))
-                      .done();
-              log.debug(
-                  "Secret {} in namespace {} created.",
-                  kubernetesSecret.getMetadata().getName(),
-                  kubernetesSecret.getMetadata().getNamespace());
-            },
-            () ->
-                log.debug(
-                    "No secret was generated, SecretProvider enabled status is: {}",
-                    secretProvider.isEnabled()));
-
     val driver = createDriver(cmd);
     driver.run(params.getWorkflowUrl(), Collections.emptyList());
     val exitStatus = driver.shutdown();
@@ -319,6 +294,32 @@ public class NextflowService implements WorkflowExecutionService {
     // Dynamic engine properties/config
     val workflowEngineParams = params.getWorkflowEngineParams();
 
+    // Create SecretName and K8s Secret
+    val rdpcSecretName =  String.format("%s-%s", SECRET_SUFFIX, UUID.randomUUID());
+    secretProvider
+      .generateSecret()
+      .ifPresentOrElse(
+        secret -> {
+          val kubernetesSecret =
+            getClient()
+              .secrets()
+              .createNew()
+              .withType("Opaque")
+              .withNewMetadata()
+              .withNewName(rdpcSecretName)
+              .endMetadata()
+              .withData(Map.of("secret", secret))
+              .done();
+          log.debug(
+            "Secret {} in namespace {} created.",
+            kubernetesSecret.getMetadata().getName(),
+            kubernetesSecret.getMetadata().getNamespace());
+        },
+        () ->
+          log.debug(
+            "No secret was generated, SecretProvider enabled status is: {}",
+            secretProvider.isEnabled()));
+
     // Write config file for run using required and optional arguments
     // Use launchDir, projectDir and/or workDir if provided in workflow_engine_options
     val config =
@@ -328,7 +329,8 @@ public class NextflowService implements WorkflowExecutionService {
             k8sConfig.getServiceAccount(),
             workflowEngineParams.getLaunchDir(),
             workflowEngineParams.getProjectDir(),
-            workflowEngineParams.getWorkDir());
+            workflowEngineParams.getWorkDir(),
+            rdpcSecretName);
     cmdParams.put("runConfig", List.of(config));
 
     // Resume workflow by name/id
