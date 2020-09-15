@@ -18,7 +18,23 @@
 
 package org.icgc.argo.workflow_management;
 
+import static java.lang.String.format;
+import static org.hamcrest.Matchers.*;
+import static org.icgc.argo.workflow_management.util.RandomGenerator.createRandomGenerator;
+import static org.icgc.argo.workflow_management.util.Reflections.findResponseStatusAnnotation;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.reset;
+import static org.springframework.http.HttpStatus.*;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.web.reactive.function.BodyInserters.fromValue;
+
 import com.google.common.collect.Maps;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.util.Optional;
+import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import nextflow.exception.*;
@@ -47,23 +63,6 @@ import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.server.ResponseStatusException;
-
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.util.Optional;
-import java.util.function.Supplier;
-
-import static java.lang.String.format;
-import static org.hamcrest.Matchers.*;
-import static org.icgc.argo.workflow_management.util.RandomGenerator.createRandomGenerator;
-import static org.icgc.argo.workflow_management.util.Reflections.findResponseStatusAnnotation;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.reset;
-import static org.springframework.http.HttpStatus.*;
-import static org.springframework.http.MediaType.APPLICATION_JSON;
-import static org.springframework.web.reactive.function.BodyInserters.fromValue;
 
 // TODO: rtisma    create test for
 // https://github.com/${owner}/${repo}/blob/${branch}/${path-to-file}

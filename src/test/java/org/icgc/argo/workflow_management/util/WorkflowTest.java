@@ -18,6 +18,8 @@
 
 package org.icgc.argo.workflow_management.util;
 
+import java.io.IOException;
+import java.util.Map;
 import lombok.SneakyThrows;
 import lombok.val;
 import org.icgc.argo.workflow_management.secret.SecretProvider;
@@ -27,9 +29,6 @@ import org.icgc.argo.workflow_management.service.NextflowWebLogEventSender;
 import org.icgc.argo.workflow_management.service.model.RunParams;
 import org.icgc.argo.workflow_management.service.properties.NextflowProperties;
 import org.icgc.argo.workflow_management.wes.controller.model.WorkflowEngineParams;
-
-import java.io.IOException;
-import java.util.Map;
 
 public class WorkflowTest {
 

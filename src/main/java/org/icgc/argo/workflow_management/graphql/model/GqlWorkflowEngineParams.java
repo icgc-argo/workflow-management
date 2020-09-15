@@ -24,5 +24,4 @@ import org.icgc.argo.workflow_management.wes.controller.model.WorkflowEnginePara
 
 @JsonNaming()
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class GqlWorkflowEngineParams extends WorkflowEngineParams {
-}
+public class GqlWorkflowEngineParams extends WorkflowEngineParams {}

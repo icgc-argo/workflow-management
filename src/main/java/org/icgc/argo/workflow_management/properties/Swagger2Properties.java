@@ -47,7 +47,8 @@ public class Swagger2Properties {
   public Docket api(SwaggerProperties properties) {
     return new Docket(DocumentationType.SWAGGER_2)
         .select()
-        .apis(RequestHandlerSelectors.basePackage("org.icgc.argo.workflow_management.wes.controller"))
+        .apis(
+            RequestHandlerSelectors.basePackage("org.icgc.argo.workflow_management.wes.controller"))
         .paths(PathSelectors.any())
         .build()
         .host(properties.host)
