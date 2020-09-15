@@ -65,7 +65,7 @@ public class NextflowConfigFile {
 
     // Add K8s Secret Name
     fileContent.add("params {");
-    writeFormattedLineIfValue(fileContent::add, "\trdpcSecretName = '%s'", rdpcSecretName);
+    writeFormattedLineIfValue(fileContent::add, "\trdpc_secret_name = '%s'", rdpcSecretName);
     fileContent.add("}");
 
     // Write contents to file
