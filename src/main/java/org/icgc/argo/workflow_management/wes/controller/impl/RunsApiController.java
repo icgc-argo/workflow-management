@@ -20,11 +20,11 @@ package org.icgc.argo.workflow_management.wes.controller.impl;
 
 import javax.validation.Valid;
 import lombok.val;
+import org.icgc.argo.workflow_management.service.WorkflowExecutionService;
+import org.icgc.argo.workflow_management.service.model.RunParams;
 import org.icgc.argo.workflow_management.wes.controller.RunsApi;
 import org.icgc.argo.workflow_management.wes.controller.model.RunsRequest;
 import org.icgc.argo.workflow_management.wes.controller.model.RunsResponse;
-import org.icgc.argo.workflow_management.service.WorkflowExecutionService;
-import org.icgc.argo.workflow_management.service.model.RunParams;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.*;

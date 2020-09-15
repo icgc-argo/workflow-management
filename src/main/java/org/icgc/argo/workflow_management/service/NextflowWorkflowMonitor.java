@@ -18,23 +18,22 @@
 
 package org.icgc.argo.workflow_management.service;
 
+import static java.lang.String.format;
+import static java.time.OffsetDateTime.now;
+import static org.icgc.argo.workflow_management.service.NextflowService.NEXTFLOW_PREFIX;
+
 import io.fabric8.kubernetes.api.model.DoneablePod;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.dsl.PodResource;
+import java.time.ZoneOffset;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import nextflow.util.Duration;
 import org.icgc.argo.workflow_management.service.model.KubernetesPhase;
 import org.icgc.argo.workflow_management.service.model.NextflowMetadata;
-
-import java.time.ZoneOffset;
-import java.util.stream.Collectors;
-
-import static java.lang.String.format;
-import static java.time.OffsetDateTime.now;
-import static org.icgc.argo.workflow_management.service.NextflowService.NEXTFLOW_PREFIX;
 
 @Slf4j
 @AllArgsConstructor
@@ -91,13 +90,8 @@ public class NextflowWorkflowMonitor implements Runnable {
 
   private boolean podHasChildren(String podName) {
     val childPods =
-        kubernetesClient
-            .pods()
-            .inNamespace(kubernetesClient.getNamespace())
-            .withLabel("runName", podName)
-            .list()
-            .getItems()
-            .stream()
+        kubernetesClient.pods().inNamespace(kubernetesClient.getNamespace())
+            .withLabel("runName", podName).list().getItems().stream()
             .filter(pod -> pod.getMetadata().getName().startsWith(NEXTFLOW_PREFIX))
             .collect(Collectors.toList());
 

@@ -29,9 +29,12 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
-// This class is a work around for this issue: https://github.com/graphql-java/graphql-java-spring/issues/8
-// The problem at a high level is that the graphql-java engine looses the ReactiveSecurityContext when it executes async.
-// This work around, adds the security context to the graphql execution context so it's not lost and can be used for auth check.
+// This class is a work around for this issue:
+// https://github.com/graphql-java/graphql-java-spring/issues/8
+// The problem at a high level is that the graphql-java engine looses the ReactiveSecurityContext
+// when it executes async.
+// This work around, adds the security context to the graphql execution context so it's not lost and
+// can be used for auth check.
 // This only occurs if auth is enabled.
 
 @Slf4j
@@ -39,13 +42,16 @@ import reactor.core.publisher.Mono;
 @Primary
 @Profile("secure")
 public class AddReactiveContextInputCustomizer implements ExecutionInputCustomizer {
-    @Override
-    public Mono<ExecutionInput> customizeExecutionInput(ExecutionInput executionInput, ServerWebExchange serverWebExchange) {
-        log.debug("Adding Reactive Security Context To Execution Input");
-        Mono<SecurityContext> securityContextMono = ReactiveSecurityContextHolder.getContext();
+  @Override
+  public Mono<ExecutionInput> customizeExecutionInput(
+      ExecutionInput executionInput, ServerWebExchange serverWebExchange) {
+    log.debug("Adding Reactive Security Context To Execution Input");
+    Mono<SecurityContext> securityContextMono = ReactiveSecurityContextHolder.getContext();
 
-        return securityContextMono
-                       .map(securityContext ->  executionInput.transform(builder -> builder.context(securityContext)))
-                       .switchIfEmpty(Mono.just(executionInput));
-    }
+    return securityContextMono
+        .map(
+            securityContext ->
+                executionInput.transform(builder -> builder.context(securityContext)))
+        .switchIfEmpty(Mono.just(executionInput));
+  }
 }

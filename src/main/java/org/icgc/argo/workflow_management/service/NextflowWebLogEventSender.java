@@ -18,6 +18,12 @@
 
 package org.icgc.argo.workflow_management.service;
 
+import static org.icgc.argo.workflow_management.service.NextflowWebLogEventSender.Event.*;
+import static org.icgc.argo.workflow_management.util.JacksonUtils.toJsonString;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.TimeZone;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.val;
@@ -28,13 +34,6 @@ import nextflow.util.SimpleHttpClient;
 import org.icgc.argo.workflow_management.service.model.NextflowMetadata;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
-import java.util.Date;
-import java.util.HashMap;
-import java.util.TimeZone;
-
-import static org.icgc.argo.workflow_management.service.NextflowWebLogEventSender.Event.*;
-import static org.icgc.argo.workflow_management.util.JacksonUtils.toJsonString;
 
 @Service
 @AllArgsConstructor

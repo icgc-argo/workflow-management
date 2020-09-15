@@ -20,8 +20,8 @@ package org.icgc.argo.workflow_management.service;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-import org.icgc.argo.workflow_management.wes.controller.model.RunsResponse;
 import org.icgc.argo.workflow_management.service.model.RunParams;
+import org.icgc.argo.workflow_management.wes.controller.model.RunsResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
 import reactor.core.publisher.Mono;
 
