@@ -36,8 +36,7 @@ public class NextflowConfigFile {
       String serviceAccount,
       String launchDir,
       String projectDir,
-      String workDir,
-      String rdpcSecretName)
+      String workDir)
       throws IOException {
     val filePath = String.format("/tmp/%s.config", filename);
 
@@ -61,11 +60,6 @@ public class NextflowConfigFile {
     writeFormattedLineIfValue(fileContent::add, "\tworkDir = '%s'", workDir);
 
     // close it off
-    fileContent.add("}");
-
-    // Add K8s Secret Name
-    fileContent.add("params {");
-    writeFormattedLineIfValue(fileContent::add, "\trdpc_secret_name = '%s'", rdpcSecretName);
     fileContent.add("}");
 
     // Write contents to file
