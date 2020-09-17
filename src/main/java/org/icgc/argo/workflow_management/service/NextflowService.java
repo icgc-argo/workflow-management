@@ -289,7 +289,7 @@ public class NextflowService implements WorkflowExecutionService {
     val workflowEngineParams = params.getWorkflowEngineParams();
 
     // Create SecretName and K8s Secret
-    val rdpcSecretName = String.format("%s-%s", UUID.randomUUID(), runName);
+    val rdpcSecretName = String.format("%s-%s", runName, SECRET_SUFFIX);
     secretProvider
         .generateSecret()
         .ifPresentOrElse(
