@@ -258,6 +258,8 @@ public class NextflowService implements WorkflowExecutionService {
     cmdParams.put("paramsFile", createParamsFile(runName, params.getWorkflowParams()));
 
     // K8s options from application.yml
+    System.out.println(format("ROB___NAMESPACE: %s", k8sConfig.getNamespace()));
+    System.out.println(format("ROB___SERVICE_ACCOUNT: %s", k8sConfig.getServiceAccount()));
     cmdParams.put("namespace", k8sConfig.getNamespace());
     cmdParams.put("volMounts", k8sConfig.getVolMounts());
 
