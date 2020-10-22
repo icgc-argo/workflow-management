@@ -40,6 +40,7 @@ public class NextflowProperties {
     private Integer runAsUser;
     private String serviceAccount;
     private String namespace;
+    private String runNamespace;
     private List<String> volMounts;
     private String masterUrl;
     private boolean trustCertificate;

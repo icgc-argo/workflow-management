@@ -1,7 +1,8 @@
 nextflow:
   k8s:
     runAsUser: 9999
-    namespace: "default"
+    namespace: "default" # Namespace where app will be running
+    runNamespace: "default" # Namespace where wes and nf pods will live
     serviceAccount: "default"
     volMounts:
       - "pv-claim:/some/dir"

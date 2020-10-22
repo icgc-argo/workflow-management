@@ -34,6 +34,7 @@ public class NextflowConfigFile {
       @NonNull String filename,
       @NonNull Integer runAsUser,
       String serviceAccount,
+      String runNamespace,
       String launchDir,
       String projectDir,
       String workDir)
@@ -52,6 +53,7 @@ public class NextflowConfigFile {
     fileContent.add(String.format("\trunAsUser = %s", runAsUser));
 
     // k8s service account (optional)
+    writeFormattedLineIfValue(fileContent::add, "\tnamespace= '%s'", runNamespace);
     writeFormattedLineIfValue(fileContent::add, "\tserviceAccount = '%s'", serviceAccount);
 
     // variable config passed in via WorkflowEngineParams

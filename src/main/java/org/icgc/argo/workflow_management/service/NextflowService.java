@@ -321,6 +321,7 @@ public class NextflowService implements WorkflowExecutionService {
             runName,
             k8sConfig.getRunAsUser(),
             k8sConfig.getServiceAccount(),
+            k8sConfig.getRunNamespace(),
             workflowEngineParams.getLaunchDir(),
             workflowEngineParams.getProjectDir(),
             workflowEngineParams.getWorkDir());
