@@ -220,7 +220,7 @@ public class NextflowService implements WorkflowExecutionService {
             .orElseThrow(
                 () ->
                     new RuntimeException(
-                        format("Cannot found executor pod with runId: %s.", runId)));
+                        format("Cannot find executor pod with runId: %s.", runId)));
     return valueOf(executorPod.getStatus().getPhase().toUpperCase());
   }
 
@@ -321,6 +321,7 @@ public class NextflowService implements WorkflowExecutionService {
             runName,
             k8sConfig.getRunAsUser(),
             k8sConfig.getServiceAccount(),
+            k8sConfig.getRunNamespace(),
             workflowEngineParams.getLaunchDir(),
             workflowEngineParams.getProjectDir(),
             workflowEngineParams.getWorkDir());
