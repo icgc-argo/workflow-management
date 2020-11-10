@@ -42,7 +42,7 @@ public class NextflowWorkflowMonitor implements Runnable {
   private final NextflowWebLogEventSender webLogSender;
   private final NextflowMetadata metadata;
   private final Integer maxErrorLogLines;
-  private DefaultKubernetesClient kubernetesClient;
+  private final DefaultKubernetesClient kubernetesClient;
 
   public void run() {
     boolean done = false;
@@ -55,7 +55,6 @@ public class NextflowWorkflowMonitor implements Runnable {
         done = handlePod(metadata, p, log);
       } catch (Exception e) {
         log.error(format("Workflow Status Monitor threw exception %s", e.getMessage()));
-        throw new RuntimeException(e.getMessage());
       }
     }
   }
@@ -90,8 +89,7 @@ public class NextflowWorkflowMonitor implements Runnable {
 
   private boolean podHasChildren(String podName) {
     val childPods =
-        kubernetesClient.pods().inNamespace(kubernetesClient.getNamespace())
-            .withLabel("runName", podName).list().getItems().stream()
+        kubernetesClient.pods().withLabel("runName", podName).list().getItems().stream()
             .filter(pod -> pod.getMetadata().getName().startsWith(NEXTFLOW_PREFIX))
             .collect(Collectors.toList());
 
