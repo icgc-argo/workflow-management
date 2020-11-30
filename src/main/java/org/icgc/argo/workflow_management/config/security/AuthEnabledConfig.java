@@ -79,6 +79,12 @@ public class AuthEnabledConfig {
         .permitAll()
         .pathMatchers("/runs/**")
         .permitAll()
+        .pathMatchers("/v2/api-docs",
+                "/configuration/ui",
+                "/swagger-resources/**",
+                "/configuration/security",
+                "/swagger-ui.html",
+                "/webjars/**").permitAll()
         .and()
         .authorizeExchange()
         .anyExchange()
