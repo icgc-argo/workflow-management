@@ -304,7 +304,8 @@ public class NextflowService implements WorkflowExecutionService {
                       .withNewMetadata()
                       .withNewName(rdpcSecretName)
                       .endMetadata()
-                      .withData(Map.of("secret", secret))
+                      .withData(
+                          Map.of("secret", Base64.getEncoder().encodeToString(secret.getBytes())))
                       .done();
               log.debug(
                   "Secret {} in namespace {} created.",
