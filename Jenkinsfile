@@ -1,6 +1,6 @@
 def dockerRepo = "ghcr.io/icgc-argo/workflow-management"
 def gitHubRepo = "icgc-argo/workflow-management"
-def chartVersion = "0.7.0"
+def chartVersion = "0.11.0"
 def commit = "UNKNOWN"
 def version = "UNKNOWN"
 
