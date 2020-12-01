@@ -62,19 +62,19 @@ import reactor.core.scheduler.Schedulers;
 @Service(value = "nextflow")
 public class NextflowService implements WorkflowExecutionService {
 
-  /** Constants */
+  // Constants
   public static final String NEXTFLOW_PREFIX = "nf-";
-
   public static final String WES_PREFIX = "wes-";
   public static final String SECRET_SUFFIX = "secret";
 
-  /** Dependencies */
+  // Dependencies
   private final NextflowProperties config;
-
   private final SecretProvider secretProvider;
   private final NextflowWebLogEventSender webLogSender;
 
-  /** State */
+  // State
+  private final DefaultKubernetesClient workflowRunK8sClient;
+
   private final Scheduler scheduler;
 
   @Autowired
@@ -85,6 +85,7 @@ public class NextflowService implements WorkflowExecutionService {
     this.config = config;
     this.secretProvider = secretProvider;
     this.webLogSender = webLogSender;
+    this.workflowRunK8sClient = createWorkflowRunK8sClient();
     this.scheduler = Schedulers.newElastic("nextflow-service");
   }
 
@@ -123,7 +124,7 @@ public class NextflowService implements WorkflowExecutionService {
               workflowMetadata, new ScriptBinding.ParamsMap(params.getWorkflowParams()));
       val monitor =
           new NextflowWorkflowMonitor(
-              webLogSender, meta, config.getMonitor().getMaxErrorLogLines(), getClient());
+              webLogSender, meta, config.getMonitor().getMaxErrorLogLines(), workflowRunK8sClient);
 
       // Schedule a workflow monitor to watch over our nextflow pod and make sure
       // that we report an error to our web-log service if it fails to run.
@@ -154,21 +155,30 @@ public class NextflowService implements WorkflowExecutionService {
         .subscribeOn(scheduler);
   }
 
-  DefaultKubernetesClient getClient() {
-    val masterUrl = config.getK8s().getMasterUrl();
-    val namespace = config.getK8s().getNamespace();
-    val trustCertificate = config.getK8s().isTrustCertificate();
-    val config =
-        new ConfigBuilder()
-            .withTrustCerts(trustCertificate)
-            .withMasterUrl(masterUrl)
-            .withNamespace(namespace)
-            .build();
-    return new DefaultKubernetesClient(config);
+  /**
+   * Creates a k8s client to introspect and interact with wes-* and nf-* pods
+   *
+   * @return the kube client to be used to interact with deployed workflow pods
+   */
+  private DefaultKubernetesClient createWorkflowRunK8sClient() {
+    try {
+      val masterUrl = config.getK8s().getMasterUrl();
+      val namespace = config.getK8s().getRunNamespace();
+      val trustCertificate = config.getK8s().isTrustCertificate();
+      val config =
+          new ConfigBuilder()
+              .withTrustCerts(trustCertificate)
+              .withMasterUrl(masterUrl)
+              .withNamespace(namespace)
+              .build();
+      return new DefaultKubernetesClient(config);
+    } catch (KubernetesClientException e) {
+      log.error(e.getMessage(), e);
+      throw new RuntimeException(e.getLocalizedMessage());
+    }
   }
 
   private String cancelRun(@NonNull String runId) {
-    val namespace = config.getK8s().getNamespace();
     val state = getPhase(runId);
 
     if (state.equals(FAILED)) {
@@ -183,38 +193,30 @@ public class NextflowService implements WorkflowExecutionService {
               "Executor pod %s is in %s state, can only cancel a running workflow.", runId, state));
     }
 
-    try (final val client = getClient()) {
-      val childPods =
-          client.pods().inNamespace(namespace).withLabel("runName", runId).list().getItems()
-              .stream()
-              .filter(pod -> pod.getMetadata().getName().startsWith(NEXTFLOW_PREFIX))
-              .collect(Collectors.toList());
-      if (childPods.size() == 0) {
-        throw new RuntimeException(
-            format("Cannot cancel run: pod with runId %s does not exist.", runId));
-      } else {
-        childPods.forEach(
-            pod -> {
-              client.pods().inNamespace(namespace).withName(pod.getMetadata().getName()).delete();
-              log.info(
-                  format(
-                      "Process pod %s with runId = %s has been deleted from namespace %s.",
-                      pod.getMetadata().getName(), runId, namespace));
-            });
-      }
-    } catch (KubernetesClientException e) {
-      log.error(e.getMessage(), e);
-      throw e;
+    val childPods =
+        workflowRunK8sClient.pods().withLabel("runName", runId).list().getItems().stream()
+            .filter(pod -> pod.getMetadata().getName().startsWith(NEXTFLOW_PREFIX))
+            .collect(Collectors.toList());
+    if (childPods.size() == 0) {
+      throw new RuntimeException(
+          format("Cannot cancel run: pod with runId %s does not exist.", runId));
+    } else {
+      childPods.forEach(
+          pod -> {
+            workflowRunK8sClient.pods().withName(pod.getMetadata().getName()).delete();
+            log.info(
+                format(
+                    "Process pod %s with runId = %s has been deleted from namespace %s.",
+                    pod.getMetadata().getName(), runId, workflowRunK8sClient.getNamespace()));
+          });
     }
 
     return runId;
   }
 
   private KubernetesPhase getPhase(String runId) {
-    val client = getClient();
-    val namespace = config.getK8s().getNamespace();
     val executorPod =
-        client.pods().inNamespace(namespace).withLabel("runName", runId).list().getItems().stream()
+        workflowRunK8sClient.pods().withLabel("runName", runId).list().getItems().stream()
             .filter(pod -> pod.getMetadata().getName().startsWith(WES_PREFIX))
             .findFirst()
             .orElseThrow(
@@ -295,14 +297,15 @@ public class NextflowService implements WorkflowExecutionService {
         .ifPresentOrElse(
             secret -> {
               val kubernetesSecret =
-                  getClient()
+                  workflowRunK8sClient
                       .secrets()
                       .createNew()
                       .withType("Opaque")
                       .withNewMetadata()
                       .withNewName(rdpcSecretName)
                       .endMetadata()
-                      .withData(Map.of("secret", secret))
+                      .withData(
+                          Map.of("secret", Base64.getEncoder().encodeToString(secret.getBytes())))
                       .done();
               log.debug(
                   "Secret {} in namespace {} created.",
