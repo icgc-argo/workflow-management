@@ -20,7 +20,7 @@ package org.icgc.argo.workflow_management.service;
 
 import static java.lang.String.format;
 import static java.time.OffsetDateTime.now;
-import static org.icgc.argo.workflow_management.service.NextflowService.NEXTFLOW_PREFIX;
+import static org.icgc.argo.workflow_management.service.model.Constants.NEXTFLOW_PREFIX;
 
 import io.fabric8.kubernetes.api.model.DoneablePod;
 import io.fabric8.kubernetes.api.model.Pod;
@@ -39,7 +39,7 @@ import org.icgc.argo.workflow_management.service.model.NextflowMetadata;
 @AllArgsConstructor
 public class NextflowWorkflowMonitor implements Runnable {
 
-  private final NextflowWebLogEventSender webLogSender;
+  private final WebLogEventSender webLogSender;
   private final NextflowMetadata metadata;
   private final Integer maxErrorLogLines;
   private final DefaultKubernetesClient kubernetesClient;

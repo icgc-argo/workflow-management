@@ -35,10 +35,36 @@ secret:
   apiKey: testapikeytotallylegit
 
 ---
-spring.profile: oauth2Token
+spring.profiles: oauth2Token
 
 secret:
   enabled: true
   clientId: testId
   clientSecret: testSecret
   tokenUri: http://localhost:8080/oauth/token
+
+---
+spring.profiles: queued-to-start
+
+spring.cloud.stream:
+  function.definition: queudToStartConsumer
+  bindings:
+    queudToStartConsumer-in-0:
+      group: mgmt-queue
+      destination: wfmgmtevent # kafka topic to listen to
+      binder: kafka
+
+spring.cloud.stream.kafka:
+  binder.brokers: localhost:9092
+  bindings:
+    queued-in-0:
+      consumer:
+        enableDlq: true
+        dlqName: queued-in-0_dlq
+        autoCommitOnError: true
+        autoCommitOffset: true
+#        resetOffsets: true
+#        startOffset: earliest
+
+---
+spring.profiles: start-is-queued

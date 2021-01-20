@@ -41,8 +41,9 @@ import nextflow.exception.*;
 import org.icgc.argo.workflow_management.config.secret.NoSecretProviderConfig;
 import org.icgc.argo.workflow_management.config.security.AuthDisabledConfig;
 import org.icgc.argo.workflow_management.exception.GlobalExceptionHandler;
-import org.icgc.argo.workflow_management.service.NextflowService;
-import org.icgc.argo.workflow_management.service.NextflowWebLogEventSender;
+import org.icgc.argo.workflow_management.service.WebLogEventSender;
+import org.icgc.argo.workflow_management.service.WesFunctionsComposer;
+import org.icgc.argo.workflow_management.service.WorkflowExecutionService;
 import org.icgc.argo.workflow_management.service.properties.NextflowProperties;
 import org.icgc.argo.workflow_management.wes.controller.impl.RunsApiController;
 import org.icgc.argo.workflow_management.wes.controller.model.RunsRequest;
@@ -70,8 +71,9 @@ import org.springframework.web.server.ResponseStatusException;
 @Import(
     value = {
       NoSecretProviderConfig.class,
-      NextflowService.class,
-      NextflowWebLogEventSender.class,
+      WebLogEventSender.class,
+      WesFunctionsComposer.class,
+      WorkflowExecutionService.class,
       NextflowProperties.class,
       GlobalExceptionHandler.class,
       AuthDisabledConfig.class
@@ -81,7 +83,7 @@ import org.springframework.web.server.ResponseStatusException;
 @WebFluxTest(controllers = RunsApiController.class)
 public class ErrorHandlingTests {
 
-  @Mock private NextflowService mockNextflowService;
+  @Mock private WorkflowExecutionService mockWes;
 
   @Autowired private RunsApiController controller;
 
@@ -290,11 +292,11 @@ public class ErrorHandlingTests {
 
   private void setup(Supplier<? extends Throwable> exceptionSupplier) {
     // Replace nextflowService dependency in the controller with a mock
-    ReflectionTestUtils.setField(controller, "nextflowService", mockNextflowService);
+    ReflectionTestUtils.setField(controller, "wes", mockWes);
 
     // Setup the mock to throw an exception
-    reset(mockNextflowService);
-    given(mockNextflowService.run(Mockito.any()))
+    reset(mockWes);
+    given(mockWes.run(Mockito.any()))
         .willAnswer(
             i -> {
               throw exceptionSupplier.get();

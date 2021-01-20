@@ -18,7 +18,7 @@
 
 package org.icgc.argo.workflow_management.service;
 
-import static org.icgc.argo.workflow_management.service.NextflowWebLogEventSender.Event.*;
+import static org.icgc.argo.workflow_management.service.WebLogEventSender.Event.*;
 import static org.icgc.argo.workflow_management.util.JacksonUtils.toJsonString;
 
 import java.util.Date;
@@ -32,13 +32,15 @@ import nextflow.extension.Bolts;
 import nextflow.trace.TraceRecord;
 import nextflow.util.SimpleHttpClient;
 import org.icgc.argo.workflow_management.service.model.NextflowMetadata;
+import org.icgc.argo.workflow_management.service.model.RunParams;
+import org.icgc.argo.workflow_management.service.model.WorkflowManagementEvent;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
 @AllArgsConstructor
 @NoArgsConstructor
-public class NextflowWebLogEventSender {
+public class WebLogEventSender {
   private final SimpleHttpClient httpClient = new SimpleHttpClient();
 
   @Value("${nextflow.weblogUrl}")
@@ -79,6 +81,21 @@ public class NextflowWebLogEventSender {
     httpClient.sendHttpMessage(endpoint, toJsonString(message));
   }
 
+  public void sendManagementEvent(RunParams params, Event event) {
+    String time =
+        Bolts.format(new Date(), Const.ISO_8601_DATETIME_FORMAT, TimeZone.getTimeZone("UTC"));
+
+    val queueMessage =
+        WorkflowManagementEvent.builder()
+            .event(event.name())
+            .runName(params.getRunName())
+            .runParams(params)
+            .utcTime(time)
+            .build();
+
+    httpClient.sendHttpMessage(endpoint, toJsonString(queueMessage));
+  }
+
   public void sendTraceEvent(Event event, TraceRecord traceRecord) {}
 
   public HashMap<String, Object> createMessage(Event event, String runName) {
@@ -106,9 +123,11 @@ public class NextflowWebLogEventSender {
     return toJsonString(message);
   }
 
-  enum Event {
+  public enum Event {
     STARTED,
     COMPLETED,
+    QUEUED,
+    INITIALIZED,
     PROCESS_SUBMITTED,
     PROCESS_STARTED,
     PROCESS_COMPLETED,

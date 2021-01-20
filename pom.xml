@@ -29,12 +29,18 @@
     <properties>
         <java.version>11</java.version>
         <springfox.version>3.0.0-SNAPSHOT</springfox.version>
+        <spring-cloud.version>3.0.1.RELEASE</spring-cloud.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-stream-kafka</artifactId>
+            <version>${spring-cloud.version}</version>
         </dependency>
 
         <dependency>

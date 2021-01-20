@@ -26,7 +26,6 @@ import org.icgc.argo.workflow_management.wes.controller.RunsApi;
 import org.icgc.argo.workflow_management.wes.controller.model.RunsRequest;
 import org.icgc.argo.workflow_management.wes.controller.model.RunsResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
@@ -35,39 +34,32 @@ import reactor.core.publisher.Mono;
 public class RunsApiController implements RunsApi {
 
   /** Dependencies */
-  private final WorkflowExecutionService nextflowService;
+  private final WorkflowExecutionService wes;
 
   @Autowired
-  public RunsApiController(@Qualifier("nextflow") WorkflowExecutionService nextflowService) {
-    this.nextflowService = nextflowService;
+  public RunsApiController(WorkflowExecutionService wes) {
+    this.wes = wes;
   }
 
   @PostMapping
   public Mono<RunsResponse> postRun(@Valid @RequestBody RunsRequest runsRequest) {
-
-    val wesService = resolveWesType("nextflow");
-
     // create run config from request
     val runConfig =
         RunParams.builder()
             .workflowUrl(runsRequest.getWorkflowUrl())
             .workflowParams(runsRequest.getWorkflowParams())
             .workflowEngineParams(runsRequest.getWorkflowEngineParams())
+            .workflowType(runsRequest.getWorkflowType())
+            .workflowTypeVersion(runsRequest.getWorkflowTypeVersion())
             .build();
 
-    return wesService.run(runConfig);
+    return wes.run(runConfig);
   }
 
   @PostMapping(
       path = "/{run_id}/cancel",
       produces = {"application/json"})
   public Mono<RunsResponse> cancelRun(@Valid @PathVariable("run_id") String runId) {
-    val wesService = resolveWesType("nextflow");
-    return wesService.cancel(runId);
-  }
-
-  // This method will eventually be responsible for which workflow service we run
-  private WorkflowExecutionService resolveWesType(String workflowType) {
-    return nextflowService;
+    return wes.cancel(runId);
   }
 }

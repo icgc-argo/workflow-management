@@ -18,6 +18,8 @@
 
 package org.icgc.argo.workflow_management.wes.controller.model;
 
+import static org.icgc.argo.workflow_management.service.model.Constants.NEXTFLOW_ENGINE_TYPE;
+
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import io.swagger.annotations.ApiModel;
@@ -42,9 +44,9 @@ public class RunsRequest {
   private Map<String, Object> workflowParams = new HashMap<>();
   private WorkflowEngineParams workflowEngineParams = new WorkflowEngineParams();
 
-  private Map<String, Object> workflowType;
-  private String[] workflowTypeVersion;
-  private Map<String, Object> tags;
+  private String workflowType = NEXTFLOW_ENGINE_TYPE;
+  private String workflowTypeVersion;
+  private Map<String, String> tags;
 
   // we will not be accepting this (at least to start)
   private String[] workflowAttachment;

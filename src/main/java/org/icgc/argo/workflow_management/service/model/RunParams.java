@@ -26,10 +26,13 @@ import lombok.RequiredArgsConstructor;
 import org.icgc.argo.workflow_management.wes.controller.model.WorkflowEngineParams;
 
 @Data
-@Builder
+@Builder(toBuilder = true)
 @RequiredArgsConstructor
 public class RunParams {
   @NonNull private final Map<String, Object> workflowParams;
   @NonNull private final String workflowUrl;
   private final WorkflowEngineParams workflowEngineParams;
+  private final String workflowType;
+  private final String workflowTypeVersion;
+  private final String runName;
 }

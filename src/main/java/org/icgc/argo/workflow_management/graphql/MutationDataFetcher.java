@@ -33,7 +33,6 @@ import org.icgc.argo.workflow_management.service.model.RunParams;
 import org.icgc.argo.workflow_management.wes.controller.model.RunsRequest;
 import org.icgc.argo.workflow_management.wes.controller.model.RunsResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.stereotype.Component;
@@ -45,7 +44,7 @@ public class MutationDataFetcher {
   private final WorkflowExecutionService nextflowService;
 
   @Autowired
-  public MutationDataFetcher(@Qualifier("nextflow") WorkflowExecutionService nextflowService) {
+  public MutationDataFetcher(WorkflowExecutionService nextflowService) {
     this.nextflowService = nextflowService;
   }
 

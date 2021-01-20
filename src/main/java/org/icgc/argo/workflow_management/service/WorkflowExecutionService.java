@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 The Ontario Institute for Cancer Research. All rights reserved
+ * Copyright (c) 2021 The Ontario Institute for Cancer Research. All rights reserved
  *
  * This program and the accompanying materials are made available under the terms of the GNU Affero General Public License v3.0.
  * You should have received a copy of the GNU Affero General Public License along with
@@ -20,17 +20,35 @@ package org.icgc.argo.workflow_management.service;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import org.icgc.argo.workflow_management.service.functions.CancelRunFunc;
+import org.icgc.argo.workflow_management.service.functions.StartRunFunc;
 import org.icgc.argo.workflow_management.service.model.RunParams;
 import org.icgc.argo.workflow_management.wes.controller.model.RunsResponse;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
-public interface WorkflowExecutionService {
-  @HasQueryAndMutationAccess
-  Mono<RunsResponse> run(RunParams params);
+@Service
+public class WorkflowExecutionService {
+  private final StartRunFunc startRunFunc;
+  private final CancelRunFunc cancelRunFunc;
+
+  @Autowired
+  public WorkflowExecutionService(StartRunFunc startRunFunc, CancelRunFunc cancelRunFunc) {
+    this.startRunFunc = startRunFunc;
+    this.cancelRunFunc = cancelRunFunc;
+  }
 
   @HasQueryAndMutationAccess
-  Mono<RunsResponse> cancel(String runId);
+  public Mono<RunsResponse> run(RunParams params) {
+    return startRunFunc.apply(params);
+  }
+
+  @HasQueryAndMutationAccess
+  public Mono<RunsResponse> cancel(String runId) {
+    return cancelRunFunc.apply(runId);
+  }
 
   @Retention(RetentionPolicy.RUNTIME)
   @PreAuthorize("@queryAndMutationScopeChecker.apply(authentication)")

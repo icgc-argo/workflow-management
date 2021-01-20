@@ -1,40 +1,24 @@
-/*
- * Copyright (c) 2020 The Ontario Institute for Cancer Research. All rights reserved
- *
- * This program and the accompanying materials are made available under the terms of the GNU Affero General Public License v3.0.
- * You should have received a copy of the GNU Affero General Public License along with
- * this program. If not, see <http://www.gnu.org/licenses/>.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
- * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
- * SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
- * TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
- * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
- * IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
-
-package org.icgc.argo.workflow_management.service;
+package org.icgc.argo.workflow_management.service.functions.start;
 
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.String.format;
 import static java.util.Objects.nonNull;
-import static org.icgc.argo.workflow_management.service.model.KubernetesPhase.*;
+import static org.icgc.argo.workflow_management.service.WebLogEventSender.Event.INITIALIZED;
+import static org.icgc.argo.workflow_management.service.model.Constants.SECRET_SUFFIX;
 import static org.icgc.argo.workflow_management.util.NextflowConfigFile.createNextflowConfigFile;
 import static org.icgc.argo.workflow_management.util.ParamsFile.createParamsFile;
 import static org.icgc.argo.workflow_management.util.Reflections.createWithReflection;
 import static org.icgc.argo.workflow_management.util.Reflections.invokeDeclaredMethod;
+import static org.icgc.argo.workflow_management.util.WesUtils.generateWesRunName;
+import static org.icgc.argo.workflow_management.util.WesUtils.isValidWesRunName;
 
 import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
-import io.fabric8.kubernetes.client.KubernetesClientException;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import nextflow.cli.CliOptions;
@@ -45,51 +29,36 @@ import nextflow.script.ScriptBinding;
 import org.icgc.argo.workflow_management.exception.NextflowRunException;
 import org.icgc.argo.workflow_management.exception.ReflectionUtilsException;
 import org.icgc.argo.workflow_management.secret.SecretProvider;
-import org.icgc.argo.workflow_management.service.model.KubernetesPhase;
+import org.icgc.argo.workflow_management.service.NextflowWorkflowMonitor;
+import org.icgc.argo.workflow_management.service.WebLogEventSender;
+import org.icgc.argo.workflow_management.service.functions.StartRunFunc;
 import org.icgc.argo.workflow_management.service.model.NextflowMetadata;
 import org.icgc.argo.workflow_management.service.model.NextflowWorkflowMetadata;
 import org.icgc.argo.workflow_management.service.model.RunParams;
 import org.icgc.argo.workflow_management.service.properties.NextflowProperties;
 import org.icgc.argo.workflow_management.util.ConditionalPutMap;
 import org.icgc.argo.workflow_management.wes.controller.model.RunsResponse;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
-import reactor.core.scheduler.Schedulers;
 
+/**
+ * Nextflow specific implementation of a StartRunFunc. Creates nextflow command, sets up weblog
+ * monitor, sends weblog INITIALIZED message to weblog and starts the run in Kubernetes
+ */
 @Slf4j
-@Service(value = "nextflow")
-public class NextflowService implements WorkflowExecutionService {
-
-  // Constants
-  public static final String NEXTFLOW_PREFIX = "nf-";
-  public static final String WES_PREFIX = "wes-";
-  public static final String SECRET_SUFFIX = "secret";
-
-  // Dependencies
+@RequiredArgsConstructor
+public class NextflowStartRun implements StartRunFunc {
+  /** Dependencies */
   private final NextflowProperties config;
+
   private final SecretProvider secretProvider;
-  private final NextflowWebLogEventSender webLogSender;
+  private final WebLogEventSender webLogSender;
 
-  // State
-  private final DefaultKubernetesClient workflowRunK8sClient;
-
+  /** State */
   private final Scheduler scheduler;
 
-  @Autowired
-  public NextflowService(
-      NextflowProperties config,
-      SecretProvider secretProvider,
-      NextflowWebLogEventSender webLogSender) {
-    this.config = config;
-    this.secretProvider = secretProvider;
-    this.webLogSender = webLogSender;
-    this.workflowRunK8sClient = createWorkflowRunK8sClient();
-    this.scheduler = Schedulers.newElastic("nextflow-service");
-  }
-
-  public Mono<RunsResponse> run(RunParams params) {
+  @Override
+  public Mono<RunsResponse> apply(RunParams params) {
     return Mono.fromSupplier(
             () -> {
               try {
@@ -124,11 +93,14 @@ public class NextflowService implements WorkflowExecutionService {
               workflowMetadata, new ScriptBinding.ParamsMap(params.getWorkflowParams()));
       val monitor =
           new NextflowWorkflowMonitor(
-              webLogSender, meta, config.getMonitor().getMaxErrorLogLines(), workflowRunK8sClient);
+              webLogSender, meta, config.getMonitor().getMaxErrorLogLines(), getClient());
 
       // Schedule a workflow monitor to watch over our nextflow pod and make sure
       // that we report an error to our web-log service if it fails to run.
       scheduler.schedule(monitor, config.getMonitor().getSleepInterval(), TimeUnit.MILLISECONDS);
+
+      // send message to relay saying run is initialized
+      webLogSender.sendManagementEvent(params, INITIALIZED);
 
       return cmd.getRunName();
     } else {
@@ -137,103 +109,17 @@ public class NextflowService implements WorkflowExecutionService {
     }
   }
 
-  public Mono<RunsResponse> cancel(@NonNull String runId) {
-    return Mono.fromSupplier(
-            () -> {
-              try {
-                return this.cancelRun(runId);
-              } catch (RuntimeException e) {
-                // rethrow runtime exception for GlobalExceptionHandler
-                log.error("nextflow runtime exception", e);
-                throw e;
-              } catch (Exception e) {
-                log.error("cancelRun exception", e);
-                throw new RuntimeException(e.getMessage());
-              }
-            })
-        .map(RunsResponse::new)
-        .subscribeOn(scheduler);
-  }
-
-  /**
-   * Creates a k8s client to introspect and interact with wes-* and nf-* pods
-   *
-   * @return the kube client to be used to interact with deployed workflow pods
-   */
-  private DefaultKubernetesClient createWorkflowRunK8sClient() {
-    try {
-      val masterUrl = config.getK8s().getMasterUrl();
-      val namespace = config.getK8s().getRunNamespace();
-      val trustCertificate = config.getK8s().isTrustCertificate();
-      val config =
-          new ConfigBuilder()
-              .withTrustCerts(trustCertificate)
-              .withMasterUrl(masterUrl)
-              .withNamespace(namespace)
-              .build();
-      return new DefaultKubernetesClient(config);
-    } catch (KubernetesClientException e) {
-      log.error(e.getMessage(), e);
-      throw new RuntimeException(e.getLocalizedMessage());
-    }
-  }
-
-  private String cancelRun(@NonNull String runId) {
-    val state = getPhase(runId);
-
-    if (state.equals(FAILED)) {
-      return handleFailedPod(runId);
-    }
-
-    // can only cancel when executor pod is in running or failed state
-    // so throw an exception if not either of those two states
-    if (!state.equals(RUNNING)) {
-      throw new RuntimeException(
-          format(
-              "Executor pod %s is in %s state, can only cancel a running workflow.", runId, state));
-    }
-
-    val childPods =
-        workflowRunK8sClient.pods().withLabel("runName", runId).list().getItems().stream()
-            .filter(pod -> pod.getMetadata().getName().startsWith(NEXTFLOW_PREFIX))
-            .collect(Collectors.toList());
-    if (childPods.size() == 0) {
-      throw new RuntimeException(
-          format("Cannot cancel run: pod with runId %s does not exist.", runId));
-    } else {
-      childPods.forEach(
-          pod -> {
-            workflowRunK8sClient.pods().withName(pod.getMetadata().getName()).delete();
-            log.info(
-                format(
-                    "Process pod %s with runId = %s has been deleted from namespace %s.",
-                    pod.getMetadata().getName(), runId, workflowRunK8sClient.getNamespace()));
-          });
-    }
-
-    return runId;
-  }
-
-  private KubernetesPhase getPhase(String runId) {
-    val executorPod =
-        workflowRunK8sClient.pods().withLabel("runName", runId).list().getItems().stream()
-            .filter(pod -> pod.getMetadata().getName().startsWith(WES_PREFIX))
-            .findFirst()
-            .orElseThrow(
-                () ->
-                    new RuntimeException(
-                        format("Cannot find executor pod with runId: %s.", runId)));
-    return valueOf(executorPod.getStatus().getPhase().toUpperCase());
-  }
-
-  private String handleFailedPod(String podName) {
-    log.info(
-        format(
-            "Executor pod %s is in a failed state, sending failed pod event to weblog ...",
-            podName));
-    webLogSender.sendFailedPodEvent(podName);
-    log.info(format("Cancellation event for pod %s has been sent to weblog.", podName));
-    return podName;
+  DefaultKubernetesClient getClient() {
+    val masterUrl = config.getK8s().getMasterUrl();
+    val namespace = config.getK8s().getNamespace();
+    val trustCertificate = config.getK8s().isTrustCertificate();
+    val config =
+        new ConfigBuilder()
+            .withTrustCerts(trustCertificate)
+            .withMasterUrl(masterUrl)
+            .withNamespace(namespace)
+            .build();
+    return new DefaultKubernetesClient(config);
   }
 
   private Launcher createLauncher() throws ReflectionUtilsException {
@@ -257,20 +143,8 @@ public class NextflowService implements WorkflowExecutionService {
     // params map to build CmdKubeRun (put if val not null)
     val cmdParams = new ConditionalPutMap<String, Object>(Objects::nonNull, new HashMap<>());
 
-    // run name (used for paramsFile as well)
-    // You may be asking yourself, why is he replacing the "-" in the UUID, this is a valid
-    // question, well unfortunately when trying to resume a job, Nextflow searches for the
-    // UUID format ANYWHERE in the resume string, resulting in the incorrect assumption
-    // that we are passing an runId when in fact we are passing a runName ...
-    // thanks Nextflow ... this workaround solves that problem
-    //
-    // UPDATE: The glory of Nextflow knows no bounds ... resuming by runName while possible
-    // ends up reusing the run/session (yeah these are the same but still recorded separately) id
-    // from the "last" run ... wtv run that was ... resulting in multiple resumed runs sharing the
-    // same sessionId (we're going with this label) even though they have nothing to do with one
-    // another. This is a bug in NF and warrants a PR but for now we recommend only resuming runs
-    // with sessionId and never with runName
-    val runName = format("wes-%s", UUID.randomUUID().toString().replace("-", ""));
+    val runName =
+        isValidWesRunName(params.getRunName()) ? params.getRunName() : generateWesRunName();
     cmdParams.put("runName", runName);
 
     // launcher and launcher options required by CmdKubeRun
@@ -297,15 +171,14 @@ public class NextflowService implements WorkflowExecutionService {
         .ifPresentOrElse(
             secret -> {
               val kubernetesSecret =
-                  workflowRunK8sClient
+                  getClient()
                       .secrets()
                       .createNew()
                       .withType("Opaque")
                       .withNewMetadata()
                       .withNewName(rdpcSecretName)
                       .endMetadata()
-                      .withData(
-                          Map.of("secret", Base64.getEncoder().encodeToString(secret.getBytes())))
+                      .withData(Map.of("secret", secret))
                       .done();
               log.debug(
                   "Secret {} in namespace {} created.",
