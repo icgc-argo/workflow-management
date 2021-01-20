@@ -38,7 +38,6 @@ public class WesStartRun implements StartRunFunc {
 
   @Override
   public Mono<RunsResponse> apply(RunParams runParams) {
-    // send message to relay saying run is initialized
     webLogEventSender.sendManagementEvent(runParams, WebLogEventSender.Event.INITIALIZED);
     return resolveStartRunFunc(runParams.getWorkflowType(), runParams.getWorkflowTypeVersion())
         .apply(runParams);

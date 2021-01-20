@@ -41,7 +41,6 @@ public class QueuedStartRun implements StartRunFunc {
   @Override
   public Mono<RunsResponse> apply(RunParams runParams) {
     webLogSender.sendManagementEvent(runParams, QUEUED);
-    log.debug("QUEUED run {}", runParams.getRunName());
     return Mono.just(new RunsResponse(runParams.getRunName()));
   }
 }

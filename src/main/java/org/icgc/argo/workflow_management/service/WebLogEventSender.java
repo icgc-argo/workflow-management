@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.TimeZone;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import nextflow.Const;
 import nextflow.extension.Bolts;
@@ -37,6 +38,7 @@ import org.icgc.argo.workflow_management.service.model.WorkflowManagementEvent;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @AllArgsConstructor
 @NoArgsConstructor
@@ -93,6 +95,7 @@ public class WebLogEventSender {
             .utcTime(time)
             .build();
 
+    log.info("Sending management event to weblog: Event {} runName {}", event, params.getRunName());
     httpClient.sendHttpMessage(endpoint, toJsonString(queueMessage));
   }
 
