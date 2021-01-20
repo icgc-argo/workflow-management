@@ -30,7 +30,7 @@ import reactor.core.publisher.Mono;
  * Currently only has one engine, Nextflow.
  */
 @RequiredArgsConstructor
-public class WorkflowStartRun implements StartRunFunc {
+public class WesStartRun implements StartRunFunc {
   // For future, replace with ImmutableMap that maps workflowType & workflowTypeVersions to
   // appropriate engine startRunFuncs, for now just nextflow
   private final StartRunFunc defaultStartRunFunc;

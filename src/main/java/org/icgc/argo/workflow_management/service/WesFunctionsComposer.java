@@ -9,7 +9,7 @@ import lombok.val;
 import org.icgc.argo.workflow_management.secret.SecretProvider;
 import org.icgc.argo.workflow_management.service.functions.CancelRunFunc;
 import org.icgc.argo.workflow_management.service.functions.StartRunFunc;
-import org.icgc.argo.workflow_management.service.functions.cancel.CancelRunImpl;
+import org.icgc.argo.workflow_management.service.functions.cancel.WesCancelRun;
 import org.icgc.argo.workflow_management.service.functions.cancel.CancelRunUnavailable;
 import org.icgc.argo.workflow_management.service.functions.start.*;
 import org.icgc.argo.workflow_management.service.model.WorkflowManagementEvent;
@@ -67,7 +67,7 @@ public class WesFunctionsComposer {
   @Bean
   @Profile({"!start-is-queued & !queued-to-start", "start-is-queued"})
   public CancelRunFunc cancelRunFunc() {
-    return new CancelRunImpl(config, webLogSender, scheduler, workflowk8sClient);
+    return new WesCancelRun(config, webLogSender, scheduler, workflowk8sClient);
   }
 
   @Bean
@@ -93,13 +93,13 @@ public class WesFunctionsComposer {
     };
   }
 
-  private WorkflowStartRun workflowStartRunFunction() {
+  private WesStartRun workflowStartRunFunction() {
     // Only one engine with fixed version for now, so just using that
     // Eventually generate ImmutableMap of workflowType & workflowTypeVersions to appropriate engine
     // startRunFuncs
     val defaultNextflowStartFunc =
         new NextflowStartRun(config, secretProvider, webLogSender, workflowk8sClient, scheduler);
-    return new WorkflowStartRun(defaultNextflowStartFunc, webLogSender);
+    return new WesStartRun(defaultNextflowStartFunc, webLogSender);
   }
 
   /**

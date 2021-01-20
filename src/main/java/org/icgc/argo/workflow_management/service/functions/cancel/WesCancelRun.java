@@ -43,7 +43,7 @@ import reactor.core.scheduler.Scheduler;
  */
 @Slf4j
 @RequiredArgsConstructor
-public class CancelRunImpl implements CancelRunFunc {
+public class WesCancelRun implements CancelRunFunc {
   private final NextflowProperties config;
   private final WebLogEventSender webLogSender;
   private final Scheduler scheduler;

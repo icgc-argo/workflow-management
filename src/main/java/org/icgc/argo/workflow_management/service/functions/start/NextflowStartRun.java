@@ -62,14 +62,13 @@ import reactor.core.scheduler.Scheduler;
 @Slf4j
 @RequiredArgsConstructor
 public class NextflowStartRun implements StartRunFunc {
-  /** Dependencies */
+  // Dependencies
   private final NextflowProperties config;
-
   private final SecretProvider secretProvider;
   private final WebLogEventSender webLogSender;
-  private final DefaultKubernetesClient workflowRunK8sClient;
 
-  /** State */
+  // State
+  private final DefaultKubernetesClient workflowRunK8sClient;
   private final Scheduler scheduler;
 
   @Override

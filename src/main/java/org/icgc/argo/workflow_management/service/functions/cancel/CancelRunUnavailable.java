@@ -25,6 +25,6 @@ import reactor.core.publisher.Mono;
 public class CancelRunUnavailable implements CancelRunFunc {
   @Override
   public Mono<RunsResponse> apply(String param) {
-    return Mono.error(new Exception("Function currently not supported"));
+    return Mono.error(new Exception("Cancel run currently unavailable."));
   }
 }

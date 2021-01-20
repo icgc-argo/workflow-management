@@ -26,6 +26,6 @@ import reactor.core.publisher.Mono;
 public class StartRunUnavailable implements StartRunFunc {
   @Override
   public Mono<RunsResponse> apply(RunParams param) {
-    return Mono.error(new Exception("Function currently unavailable"));
+    return Mono.error(new Exception("Start run currently unavailable."));
   }
 }
