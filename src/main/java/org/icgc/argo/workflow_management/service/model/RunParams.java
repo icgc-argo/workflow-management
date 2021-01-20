@@ -34,5 +34,5 @@ public class RunParams {
   private final WorkflowEngineParams workflowEngineParams;
   private final String workflowType;
   private final String workflowTypeVersion;
-  private final String runName;
+  @NonNull private final String runName;
 }

@@ -1,3 +1,21 @@
+/*
+ * Copyright (c) 2021 The Ontario Institute for Cancer Research. All rights reserved
+ *
+ * This program and the accompanying materials are made available under the terms of the GNU Affero General Public License v3.0.
+ * You should have received a copy of the GNU Affero General Public License along with
+ * this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
+ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
+ * SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+ * TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+ * IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 package org.icgc.argo.workflow_management.service.functions.cancel;
 
 import static java.lang.String.format;
@@ -5,9 +23,7 @@ import static org.icgc.argo.workflow_management.service.model.Constants.NEXTFLOW
 import static org.icgc.argo.workflow_management.service.model.Constants.WES_PREFIX;
 import static org.icgc.argo.workflow_management.service.model.KubernetesPhase.*;
 
-import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
-import io.fabric8.kubernetes.client.KubernetesClientException;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +47,7 @@ public class CancelRunImpl implements CancelRunFunc {
   private final NextflowProperties config;
   private final WebLogEventSender webLogSender;
   private final Scheduler scheduler;
+  private final DefaultKubernetesClient workflowRunK8sClient;
 
   @Override
   public Mono<RunsResponse> apply(String runId) {
@@ -51,21 +68,7 @@ public class CancelRunImpl implements CancelRunFunc {
         .subscribeOn(scheduler);
   }
 
-  DefaultKubernetesClient getClient() {
-    val masterUrl = config.getK8s().getMasterUrl();
-    val namespace = config.getK8s().getNamespace();
-    val trustCertificate = config.getK8s().isTrustCertificate();
-    val config =
-        new ConfigBuilder()
-            .withTrustCerts(trustCertificate)
-            .withMasterUrl(masterUrl)
-            .withNamespace(namespace)
-            .build();
-    return new DefaultKubernetesClient(config);
-  }
-
   private String cancelRun(@NonNull String runId) {
-    val namespace = config.getK8s().getNamespace();
     val state = getPhase(runId);
 
     if (state.equals(FAILED)) {
@@ -80,38 +83,30 @@ public class CancelRunImpl implements CancelRunFunc {
               "Executor pod %s is in %s state, can only cancel a running workflow.", runId, state));
     }
 
-    try (final val client = getClient()) {
-      val childPods =
-          client.pods().inNamespace(namespace).withLabel("runName", runId).list().getItems()
-              .stream()
-              .filter(pod -> pod.getMetadata().getName().startsWith(NEXTFLOW_PREFIX))
-              .collect(Collectors.toList());
-      if (childPods.size() == 0) {
-        throw new RuntimeException(
-            format("Cannot cancel run: pod with runId %s does not exist.", runId));
-      } else {
-        childPods.forEach(
-            pod -> {
-              client.pods().inNamespace(namespace).withName(pod.getMetadata().getName()).delete();
-              log.info(
-                  format(
-                      "Process pod %s with runId = %s has been deleted from namespace %s.",
-                      pod.getMetadata().getName(), runId, namespace));
-            });
-      }
-    } catch (KubernetesClientException e) {
-      log.error(e.getMessage(), e);
-      throw e;
+    val childPods =
+        workflowRunK8sClient.pods().withLabel("runName", runId).list().getItems().stream()
+            .filter(pod -> pod.getMetadata().getName().startsWith(NEXTFLOW_PREFIX))
+            .collect(Collectors.toList());
+    if (childPods.size() == 0) {
+      throw new RuntimeException(
+          format("Cannot cancel run: pod with runId %s does not exist.", runId));
+    } else {
+      childPods.forEach(
+          pod -> {
+            workflowRunK8sClient.pods().withName(pod.getMetadata().getName()).delete();
+            log.info(
+                format(
+                    "Process pod %s with runId = %s has been deleted from namespace %s.",
+                    pod.getMetadata().getName(), runId, workflowRunK8sClient.getNamespace()));
+          });
     }
 
     return runId;
   }
 
   private KubernetesPhase getPhase(String runId) {
-    val client = getClient();
-    val namespace = config.getK8s().getNamespace();
     val executorPod =
-        client.pods().inNamespace(namespace).withLabel("runName", runId).list().getItems().stream()
+        workflowRunK8sClient.pods().withLabel("runName", runId).list().getItems().stream()
             .filter(pod -> pod.getMetadata().getName().startsWith(WES_PREFIX))
             .findFirst()
             .orElseThrow(

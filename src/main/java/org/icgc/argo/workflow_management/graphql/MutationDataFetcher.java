@@ -29,7 +29,6 @@ import java.util.function.Function;
 import lombok.val;
 import org.icgc.argo.workflow_management.graphql.model.GqlRunsRequest;
 import org.icgc.argo.workflow_management.service.WorkflowExecutionService;
-import org.icgc.argo.workflow_management.service.model.RunParams;
 import org.icgc.argo.workflow_management.wes.controller.model.RunsRequest;
 import org.icgc.argo.workflow_management.wes.controller.model.RunsResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,14 +65,7 @@ public class MutationDataFetcher {
 
         RunsRequest runsRequest = convertValue(requestMap.build(), GqlRunsRequest.class);
 
-        val runConfig =
-            RunParams.builder()
-                .workflowUrl(runsRequest.getWorkflowUrl())
-                .workflowParams(runsRequest.getWorkflowParams())
-                .workflowEngineParams(runsRequest.getWorkflowEngineParams())
-                .build();
-
-        return getWorkflowService().run(runConfig);
+        return getWorkflowService().run(runsRequest);
       };
 
   public Map<String, DataFetcher> mutationResolvers() {

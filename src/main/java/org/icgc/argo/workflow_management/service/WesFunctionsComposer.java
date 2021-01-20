@@ -1,17 +1,17 @@
 package org.icgc.argo.workflow_management.service;
 
+import io.fabric8.kubernetes.client.ConfigBuilder;
+import io.fabric8.kubernetes.client.DefaultKubernetesClient;
+import io.fabric8.kubernetes.client.KubernetesClientException;
 import java.util.function.Consumer;
-import java.util.function.Function;
-
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.icgc.argo.workflow_management.secret.SecretProvider;
 import org.icgc.argo.workflow_management.service.functions.CancelRunFunc;
 import org.icgc.argo.workflow_management.service.functions.StartRunFunc;
 import org.icgc.argo.workflow_management.service.functions.cancel.CancelRunImpl;
-import org.icgc.argo.workflow_management.service.functions.cancel.CancelRunUnsupported;
+import org.icgc.argo.workflow_management.service.functions.cancel.CancelRunUnavailable;
 import org.icgc.argo.workflow_management.service.functions.start.*;
-import org.icgc.argo.workflow_management.service.model.RunParams;
 import org.icgc.argo.workflow_management.service.model.WorkflowManagementEvent;
 import org.icgc.argo.workflow_management.service.properties.NextflowProperties;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,9 +20,6 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-
-import static org.icgc.argo.workflow_management.util.WesUtils.generateWesRunName;
-import static org.icgc.argo.workflow_management.util.WesUtils.isValidWesRunName;
 
 /**
  * Component responsible for creating functional beans queudToStartConsumer, StartRunFunc and
@@ -36,6 +33,7 @@ public class WesFunctionsComposer {
   private final NextflowProperties config;
   private final SecretProvider secretProvider;
   private final WebLogEventSender webLogSender;
+  private final DefaultKubernetesClient workflowk8sClient;
 
   @Autowired
   public WesFunctionsComposer(
@@ -43,30 +41,33 @@ public class WesFunctionsComposer {
     this.config = config;
     this.secretProvider = secretProvider;
     this.webLogSender = webLogSender;
+    this.workflowk8sClient = createWorkflowRunK8sClient();
   }
 
   // Wes startRun functional bean resolution
   @Bean
   @Profile("!start-is-queued & !queued-to-start") // Default setup
   public StartRunFunc startRun() {
-    return ensureValidRunNameDecorator(workflowStartRunFunction());
+    return workflowStartRunFunction();
   }
 
   @Bean
   @Profile("start-is-queued")
   public StartRunFunc queueStartRun() {
-    return ensureValidRunNameDecorator(new QueuedStartRun(webLogSender));
+    return new QueuedStartRun(webLogSender);
   }
 
   @Bean
   @Profile("queued-to-start & !start-is-queued")
-  public StartRunFunc initializeOnly() { return new StartRunUnsupported(); }
+  public StartRunFunc initializeOnly() {
+    return new StartRunUnavailable();
+  }
 
   // Wes cancelRun functional bean resolution
   @Bean
   @Profile({"!start-is-queued & !queued-to-start", "start-is-queued"})
   public CancelRunFunc cancelRunFunc() {
-    return new CancelRunImpl(config, webLogSender, scheduler);
+    return new CancelRunImpl(config, webLogSender, scheduler, workflowk8sClient);
   }
 
   @Bean
@@ -74,7 +75,7 @@ public class WesFunctionsComposer {
   public CancelRunFunc unsupportedCancelRunFunc() {
     // profiles indicate only want to have queued-to-start consumer functionality so disable cancel
     // operation
-    return new CancelRunUnsupported();
+    return new CancelRunUnavailable();
   }
 
   @Bean
@@ -97,22 +98,30 @@ public class WesFunctionsComposer {
     // Eventually generate ImmutableMap of workflowType & workflowTypeVersions to appropriate engine
     // startRunFuncs
     val defaultNextflowStartFunc =
-        new NextflowStartRun(config, secretProvider, webLogSender, scheduler);
+        new NextflowStartRun(config, secretProvider, webLogSender, workflowk8sClient, scheduler);
     return new WorkflowStartRun(defaultNextflowStartFunc, webLogSender);
   }
 
-  private StartRunFunc ensureValidRunNameDecorator(StartRunFunc startRunFunc) {
-    // inject the RunName into RunParams before we start run the startRunFunc
-    Function<RunParams, RunParams> ensureValidRunNameFunc = runParams -> {
-      String runName = runParams.getRunName();
-      if (!isValidWesRunName(runName)) {
-        runName = generateWesRunName();
-        runParams = runParams.toBuilder().runName(runName).build();
-      }
-      return runParams;
-    };
-
-    // Cast because java can't resolve, but return type of andThen() matches StartRunFunc interface
-    return (StartRunFunc) ensureValidRunNameFunc.andThen(startRunFunc);
+  /**
+   * Creates a k8s client to introspect and interact with wes-* and nf-* pods
+   *
+   * @return the kube client to be used to interact with deployed workflow pods
+   */
+  private DefaultKubernetesClient createWorkflowRunK8sClient() {
+    try {
+      val masterUrl = config.getK8s().getMasterUrl();
+      val namespace = config.getK8s().getRunNamespace();
+      val trustCertificate = config.getK8s().isTrustCertificate();
+      val config =
+          new ConfigBuilder()
+              .withTrustCerts(trustCertificate)
+              .withMasterUrl(masterUrl)
+              .withNamespace(namespace)
+              .build();
+      return new DefaultKubernetesClient(config);
+    } catch (KubernetesClientException e) {
+      log.error(e.getMessage(), e);
+      throw new RuntimeException(e.getLocalizedMessage());
+    }
   }
 }

@@ -1,18 +1,32 @@
+/*
+ * Copyright (c) 2021 The Ontario Institute for Cancer Research. All rights reserved
+ *
+ * This program and the accompanying materials are made available under the terms of the GNU Affero General Public License v3.0.
+ * You should have received a copy of the GNU Affero General Public License along with
+ * this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
+ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
+ * SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+ * TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+ * IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 package org.icgc.argo.workflow_management.service.functions.start;
 
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.String.format;
 import static java.util.Objects.nonNull;
-import static org.icgc.argo.workflow_management.service.WebLogEventSender.Event.INITIALIZED;
 import static org.icgc.argo.workflow_management.service.model.Constants.SECRET_SUFFIX;
 import static org.icgc.argo.workflow_management.util.NextflowConfigFile.createNextflowConfigFile;
 import static org.icgc.argo.workflow_management.util.ParamsFile.createParamsFile;
 import static org.icgc.argo.workflow_management.util.Reflections.createWithReflection;
 import static org.icgc.argo.workflow_management.util.Reflections.invokeDeclaredMethod;
-import static org.icgc.argo.workflow_management.util.WesUtils.generateWesRunName;
-import static org.icgc.argo.workflow_management.util.WesUtils.isValidWesRunName;
 
-import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import java.io.IOException;
 import java.util.*;
@@ -53,6 +67,7 @@ public class NextflowStartRun implements StartRunFunc {
 
   private final SecretProvider secretProvider;
   private final WebLogEventSender webLogSender;
+  private final DefaultKubernetesClient workflowRunK8sClient;
 
   /** State */
   private final Scheduler scheduler;
@@ -93,7 +108,7 @@ public class NextflowStartRun implements StartRunFunc {
               workflowMetadata, new ScriptBinding.ParamsMap(params.getWorkflowParams()));
       val monitor =
           new NextflowWorkflowMonitor(
-              webLogSender, meta, config.getMonitor().getMaxErrorLogLines(), getClient());
+              webLogSender, meta, config.getMonitor().getMaxErrorLogLines(), workflowRunK8sClient);
 
       // Schedule a workflow monitor to watch over our nextflow pod and make sure
       // that we report an error to our web-log service if it fails to run.
@@ -104,19 +119,6 @@ public class NextflowStartRun implements StartRunFunc {
       throw new NextflowRunException(
           format("Invalid exit status (%d) from run %s", exitStatus, cmd.getRunName()));
     }
-  }
-
-  DefaultKubernetesClient getClient() {
-    val masterUrl = config.getK8s().getMasterUrl();
-    val namespace = config.getK8s().getNamespace();
-    val trustCertificate = config.getK8s().isTrustCertificate();
-    val config =
-        new ConfigBuilder()
-            .withTrustCerts(trustCertificate)
-            .withMasterUrl(masterUrl)
-            .withNamespace(namespace)
-            .build();
-    return new DefaultKubernetesClient(config);
   }
 
   private Launcher createLauncher() throws ReflectionUtilsException {
@@ -167,14 +169,15 @@ public class NextflowStartRun implements StartRunFunc {
         .ifPresentOrElse(
             secret -> {
               val kubernetesSecret =
-                  getClient()
+                  workflowRunK8sClient
                       .secrets()
                       .createNew()
                       .withType("Opaque")
                       .withNewMetadata()
                       .withNewName(rdpcSecretName)
                       .endMetadata()
-                      .withData(Map.of("secret", secret))
+                      .withData(
+                          Map.of("secret", Base64.getEncoder().encodeToString(secret.getBytes())))
                       .done();
               log.debug(
                   "Secret {} in namespace {} created.",

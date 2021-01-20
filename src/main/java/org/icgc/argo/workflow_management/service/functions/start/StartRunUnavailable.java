@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 The Ontario Institute for Cancer Research. All rights reserved
+ * Copyright (c) 2021 The Ontario Institute for Cancer Research. All rights reserved
  *
  * This program and the accompanying materials are made available under the terms of the GNU Affero General Public License v3.0.
  * You should have received a copy of the GNU Affero General Public License along with
@@ -16,38 +16,16 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.wes.controller.impl;
+package org.icgc.argo.workflow_management.service.functions.start;
 
-import javax.validation.Valid;
-import org.icgc.argo.workflow_management.service.WorkflowExecutionService;
-import org.icgc.argo.workflow_management.wes.controller.RunsApi;
-import org.icgc.argo.workflow_management.wes.controller.model.RunsRequest;
+import org.icgc.argo.workflow_management.service.functions.StartRunFunc;
+import org.icgc.argo.workflow_management.service.model.RunParams;
 import org.icgc.argo.workflow_management.wes.controller.model.RunsResponse;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
-@RestController
-@RequestMapping("/runs")
-public class RunsApiController implements RunsApi {
-
-  /** Dependencies */
-  private final WorkflowExecutionService wes;
-
-  @Autowired
-  public RunsApiController(WorkflowExecutionService wes) {
-    this.wes = wes;
-  }
-
-  @PostMapping
-  public Mono<RunsResponse> postRun(@Valid @RequestBody RunsRequest runsRequest) {
-    return wes.run(runsRequest);
-  }
-
-  @PostMapping(
-      path = "/{run_id}/cancel",
-      produces = {"application/json"})
-  public Mono<RunsResponse> cancelRun(@Valid @PathVariable("run_id") String runId) {
-    return wes.cancel(runId);
+public class StartRunUnavailable implements StartRunFunc {
+  @Override
+  public Mono<RunsResponse> apply(RunParams param) {
+    return Mono.error(new Exception("Function currently unavailable"));
   }
 }

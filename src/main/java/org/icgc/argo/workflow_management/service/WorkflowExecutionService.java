@@ -18,11 +18,15 @@
 
 package org.icgc.argo.workflow_management.service;
 
+import static org.icgc.argo.workflow_management.util.WesUtils.generateWesRunName;
+
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import lombok.val;
 import org.icgc.argo.workflow_management.service.functions.CancelRunFunc;
 import org.icgc.argo.workflow_management.service.functions.StartRunFunc;
 import org.icgc.argo.workflow_management.service.model.RunParams;
+import org.icgc.argo.workflow_management.wes.controller.model.RunsRequest;
 import org.icgc.argo.workflow_management.wes.controller.model.RunsResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -41,7 +45,17 @@ public class WorkflowExecutionService {
   }
 
   @HasQueryAndMutationAccess
-  public Mono<RunsResponse> run(RunParams params) {
+  public Mono<RunsResponse> run(RunsRequest runsRequest) {
+    val params =
+        RunParams.builder()
+            .workflowUrl(runsRequest.getWorkflowUrl())
+            .workflowParams(runsRequest.getWorkflowParams())
+            .workflowEngineParams(runsRequest.getWorkflowEngineParams())
+            .workflowType(runsRequest.getWorkflowType())
+            .workflowTypeVersion(runsRequest.getWorkflowTypeVersion())
+            .runName(generateWesRunName())
+            .build();
+
     return startRunFunc.apply(params);
   }
 
