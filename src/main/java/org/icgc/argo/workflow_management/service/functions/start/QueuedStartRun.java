@@ -1,7 +1,6 @@
 package org.icgc.argo.workflow_management.service.functions.start;
 
 import static org.icgc.argo.workflow_management.service.WebLogEventSender.Event.QUEUED;
-import static org.icgc.argo.workflow_management.util.WesUtils.generateWesRunName;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,11 +22,6 @@ public class QueuedStartRun implements StartRunFunc {
 
   @Override
   public Mono<RunsResponse> apply(RunParams runParams) {
-    String runName = runParams.getRunName();
-    if (runName == null) {
-      runName = generateWesRunName();
-      runParams = runParams.toBuilder().runName(runName).build();
-    }
     webLogSender.sendManagementEvent(runParams, QUEUED);
     log.debug("QUEUED run {}", runParams.getRunName());
     return Mono.just(new RunsResponse(runParams.getRunName()));

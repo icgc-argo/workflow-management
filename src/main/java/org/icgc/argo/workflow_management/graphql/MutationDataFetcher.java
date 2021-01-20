@@ -41,11 +41,11 @@ import reactor.core.publisher.Mono;
 @Component
 public class MutationDataFetcher {
 
-  private final WorkflowExecutionService nextflowService;
+  private final WorkflowExecutionService wes;
 
   @Autowired
-  public MutationDataFetcher(WorkflowExecutionService nextflowService) {
-    this.nextflowService = nextflowService;
+  public MutationDataFetcher(WorkflowExecutionService wes) {
+    this.wes = wes;
   }
 
   private final MonoDataFetcher<RunsResponse> cancelRunResolver =
@@ -100,7 +100,7 @@ public class MutationDataFetcher {
   }
 
   private WorkflowExecutionService getWorkflowService() {
-    return nextflowService;
+    return wes;
   }
 
   interface MonoDataFetcher<T> extends Function<DataFetchingEnvironment, Mono<T>> {}

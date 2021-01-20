@@ -1,6 +1,8 @@
 package org.icgc.argo.workflow_management.service;
 
 import java.util.function.Consumer;
+import java.util.function.Function;
+
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.icgc.argo.workflow_management.secret.SecretProvider;
@@ -9,6 +11,7 @@ import org.icgc.argo.workflow_management.service.functions.StartRunFunc;
 import org.icgc.argo.workflow_management.service.functions.cancel.CancelRunImpl;
 import org.icgc.argo.workflow_management.service.functions.cancel.CancelRunUnsupported;
 import org.icgc.argo.workflow_management.service.functions.start.*;
+import org.icgc.argo.workflow_management.service.model.RunParams;
 import org.icgc.argo.workflow_management.service.model.WorkflowManagementEvent;
 import org.icgc.argo.workflow_management.service.properties.NextflowProperties;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +20,9 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+
+import static org.icgc.argo.workflow_management.util.WesUtils.generateWesRunName;
+import static org.icgc.argo.workflow_management.util.WesUtils.isValidWesRunName;
 
 /**
  * Component responsible for creating functional beans queudToStartConsumer, StartRunFunc and
@@ -43,20 +49,18 @@ public class WesFunctionsComposer {
   @Bean
   @Profile("!start-is-queued & !queued-to-start") // Default setup
   public StartRunFunc startRun() {
-    return createWorkflowStartRunFunction();
+    return ensureValidRunNameDecorator(workflowStartRunFunction());
   }
 
   @Bean
   @Profile("start-is-queued")
   public StartRunFunc queueStartRun() {
-    return new QueuedStartRun(webLogSender);
+    return ensureValidRunNameDecorator(new QueuedStartRun(webLogSender));
   }
 
   @Bean
   @Profile("queued-to-start & !start-is-queued")
-  public StartRunFunc initializeOnly() {
-    return new StartRunUnsupported();
-  }
+  public StartRunFunc initializeOnly() { return new StartRunUnsupported(); }
 
   // Wes cancelRun functional bean resolution
   @Bean
@@ -76,7 +80,8 @@ public class WesFunctionsComposer {
   @Bean
   @Profile("queued-to-start")
   public Consumer<WorkflowManagementEvent> queudToStartConsumer() {
-    val workflowStartRunFunction = createWorkflowStartRunFunction();
+    // No needs to inject RunName into RunParams (if not there), should already be there
+    val workflowStartRunFunction = workflowStartRunFunction();
     return event -> {
       if (!event.getEvent().equalsIgnoreCase(WebLogEventSender.Event.QUEUED.toString())) {
         return;
@@ -87,12 +92,27 @@ public class WesFunctionsComposer {
     };
   }
 
-  private WorkflowStartRun createWorkflowStartRunFunction() {
+  private WorkflowStartRun workflowStartRunFunction() {
     // Only one engine with fixed version for now, so just using that
     // Eventually generate ImmutableMap of workflowType & workflowTypeVersions to appropriate engine
     // startRunFuncs
     val defaultNextflowStartFunc =
         new NextflowStartRun(config, secretProvider, webLogSender, scheduler);
-    return new WorkflowStartRun(defaultNextflowStartFunc);
+    return new WorkflowStartRun(defaultNextflowStartFunc, webLogSender);
+  }
+
+  private StartRunFunc ensureValidRunNameDecorator(StartRunFunc startRunFunc) {
+    // inject the RunName into RunParams before we start run the startRunFunc
+    Function<RunParams, RunParams> ensureValidRunNameFunc = runParams -> {
+      String runName = runParams.getRunName();
+      if (!isValidWesRunName(runName)) {
+        runName = generateWesRunName();
+        runParams = runParams.toBuilder().runName(runName).build();
+      }
+      return runParams;
+    };
+
+    // Cast because java can't resolve, but return type of andThen() matches StartRunFunc interface
+    return (StartRunFunc) ensureValidRunNameFunc.andThen(startRunFunc);
   }
 }

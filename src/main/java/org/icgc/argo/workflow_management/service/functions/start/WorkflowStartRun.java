@@ -1,6 +1,7 @@
 package org.icgc.argo.workflow_management.service.functions.start;
 
 import lombok.RequiredArgsConstructor;
+import org.icgc.argo.workflow_management.service.WebLogEventSender;
 import org.icgc.argo.workflow_management.service.functions.StartRunFunc;
 import org.icgc.argo.workflow_management.service.model.RunParams;
 import org.icgc.argo.workflow_management.wes.controller.model.RunsResponse;
@@ -15,9 +16,12 @@ public class WorkflowStartRun implements StartRunFunc {
   // For future, replace with ImmutableMap that maps workflowType & workflowTypeVersions to
   // appropriate engine startRunFuncs, for now just nextflow
   private final StartRunFunc defaultStartRunFunc;
+  private final WebLogEventSender webLogEventSender;
 
   @Override
   public Mono<RunsResponse> apply(RunParams runParams) {
+    // send message to relay saying run is initialized
+    webLogEventSender.sendManagementEvent(runParams, WebLogEventSender.Event.INITIALIZED);
     return resolveStartRunFunc(runParams.getWorkflowType(), runParams.getWorkflowTypeVersion())
         .apply(runParams);
   }

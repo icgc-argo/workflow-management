@@ -99,9 +99,6 @@ public class NextflowStartRun implements StartRunFunc {
       // that we report an error to our web-log service if it fails to run.
       scheduler.schedule(monitor, config.getMonitor().getSleepInterval(), TimeUnit.MILLISECONDS);
 
-      // send message to relay saying run is initialized
-      webLogSender.sendManagementEvent(params, INITIALIZED);
-
       return cmd.getRunName();
     } else {
       throw new NextflowRunException(
@@ -143,8 +140,7 @@ public class NextflowStartRun implements StartRunFunc {
     // params map to build CmdKubeRun (put if val not null)
     val cmdParams = new ConditionalPutMap<String, Object>(Objects::nonNull, new HashMap<>());
 
-    val runName =
-        isValidWesRunName(params.getRunName()) ? params.getRunName() : generateWesRunName();
+    val runName = params.getRunName();
     cmdParams.put("runName", runName);
 
     // launcher and launcher options required by CmdKubeRun
