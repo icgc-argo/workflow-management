@@ -339,7 +339,7 @@ public class NextflowService implements WorkflowExecutionService {
     // should pull latest code before running?
     // does not prevent us running a specific version (revision),
     // does enforce pulling of that branch/hash before running)
-    cmdParams.put("latest", workflowEngineParams.getLatest(), v -> parseBoolean((String) v));
+    cmdParams.put("latest", workflowEngineParams.getLatest());
 
     // Process options (default docker container to run for process if not specified)
     if (nonNull(workflowEngineParams.getDefaultContainer())) {

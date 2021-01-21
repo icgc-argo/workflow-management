@@ -42,10 +42,7 @@ public class RunsRequest {
   private Map<String, Object> workflowParams = new HashMap<>();
   private WorkflowEngineParams workflowEngineParams = new WorkflowEngineParams();
 
-  private Map<String, Object> workflowType;
-  private String[] workflowTypeVersion;
+  private String workflowType;
+  private String workflowTypeVersion;
   private Map<String, Object> tags;
-
-  // we will not be accepting this (at least to start)
-  private String[] workflowAttachment;
 }

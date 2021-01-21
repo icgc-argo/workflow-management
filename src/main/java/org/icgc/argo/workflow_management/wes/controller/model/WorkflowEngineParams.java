@@ -40,5 +40,5 @@ public class WorkflowEngineParams {
   private String launchDir;
   private String projectDir;
   private String workDir;
-  private String latest;
+  private Boolean latest;
 }

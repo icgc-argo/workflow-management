@@ -11,17 +11,16 @@ input WorkflowEngineParams {
   launchDir: String
   projectDir: String
   workDir: String
-  latest: String
+  latest: Boolean
 }
 
 input RunsRequest {
   workflowUrl: String!
   workflowEngineParams: WorkflowEngineParams
   workflowParams: JSON
-  workflowType: JSON
-  workflowTypeVersion: [String]
+  workflowType: String
+  workflowTypeVersion: String
   tags: JSON
-  workflowAttachment: [String]
 }
 
 
