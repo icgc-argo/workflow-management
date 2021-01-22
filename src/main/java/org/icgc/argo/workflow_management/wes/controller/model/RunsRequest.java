@@ -44,10 +44,7 @@ public class RunsRequest {
   private Map<String, Object> workflowParams = new HashMap<>();
   private WorkflowEngineParams workflowEngineParams = new WorkflowEngineParams();
 
-  private String workflowType = NEXTFLOW_ENGINE_TYPE;
+  private String workflowType;
   private String workflowTypeVersion;
-  private Map<String, String> tags;
-
-  // we will not be accepting this (at least to start)
-  private String[] workflowAttachment;
+  private Map<String, Object> tags;
 }
