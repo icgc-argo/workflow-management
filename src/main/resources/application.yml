@@ -44,7 +44,7 @@ secret:
   tokenUri: http://localhost:8080/oauth/token
 
 ---
-spring.profiles: queued-to-start
+spring.profiles: initialized-to-start
 
 spring.cloud.stream:
   function.definition: queudToStartConsumer

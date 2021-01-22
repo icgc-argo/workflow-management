@@ -46,7 +46,7 @@ public class WesFunctionsComposer {
 
   // Wes startRun functional bean resolution
   @Bean
-  @Profile("!start-is-queued & !queued-to-start") // Default setup
+  @Profile("!start-is-queued & !initialized-to-start") // Default setup
   public StartRunFunc startRun() {
     return workflowStartRunFunction();
   }
@@ -58,20 +58,20 @@ public class WesFunctionsComposer {
   }
 
   @Bean
-  @Profile("queued-to-start & !start-is-queued")
+  @Profile("initialized-to-start & !start-is-queued")
   public StartRunFunc initializeOnly() {
     return new StartRunUnavailable();
   }
 
   // Wes cancelRun functional bean resolution
   @Bean
-  @Profile({"!start-is-queued & !queued-to-start", "start-is-queued"})
+  @Profile({"!start-is-queued & !initialized-to-start", "start-is-queued"})
   public CancelRunFunc cancelRunFunc() {
     return new WesCancelRun(config, webLogSender, scheduler, workflowk8sClient);
   }
 
   @Bean
-  @Profile("queued-to-start & !start-is-queued")
+  @Profile("initialized-to-start & !start-is-queued")
   public CancelRunFunc unsupportedCancelRunFunc() {
     // profiles indicate only want to have queued-to-start consumer functionality so disable cancel
     // operation
@@ -79,16 +79,16 @@ public class WesFunctionsComposer {
   }
 
   @Bean
-  @Profile("queued-to-start")
+  @Profile("initialized-to-start")
   public Consumer<WorkflowManagementEvent> queudToStartConsumer() {
     // No needs to inject RunName into RunParams (if not there), should already be there
     val workflowStartRunFunction = workflowStartRunFunction();
     return event -> {
-      if (!event.getEvent().equalsIgnoreCase(WebLogEventSender.Event.QUEUED.toString())) {
+      if (!event.getEvent().equalsIgnoreCase(WebLogEventSender.Event.INITIALIZED.toString())) {
         return;
       }
 
-      log.debug("Received queue run message: " + event);
+      log.debug("Received initialized run message: " + event);
       workflowStartRunFunction.apply(event.getRunParams()).subscribe();
     };
   }
@@ -99,7 +99,7 @@ public class WesFunctionsComposer {
     // startRunFuncs
     val defaultNextflowStartFunc =
         new NextflowStartRun(config, secretProvider, webLogSender, workflowk8sClient, scheduler);
-    return new WesStartRun(defaultNextflowStartFunc, webLogSender);
+    return new WesStartRun(defaultNextflowStartFunc);
   }
 
   /**

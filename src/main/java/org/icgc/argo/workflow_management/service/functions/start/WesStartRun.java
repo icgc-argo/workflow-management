@@ -34,11 +34,9 @@ public class WesStartRun implements StartRunFunc {
   // For future, replace with ImmutableMap that maps workflowType & workflowTypeVersions to
   // appropriate engine startRunFuncs, for now just nextflow
   private final StartRunFunc defaultStartRunFunc;
-  private final WebLogEventSender webLogEventSender;
 
   @Override
   public Mono<RunsResponse> apply(RunParams runParams) {
-    webLogEventSender.sendManagementEvent(runParams, WebLogEventSender.Event.INITIALIZED);
     return resolveStartRunFunc(runParams.getWorkflowType(), runParams.getWorkflowTypeVersion())
         .apply(runParams);
   }
