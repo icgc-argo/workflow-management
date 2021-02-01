@@ -110,8 +110,7 @@ public class NextflowWorkflowMonitor implements Runnable {
     workflow.update(pod);
     workflow.setComplete(completeTime);
     workflow.setDuration(Duration.between(workflow.getStart(), completeTime));
-    workflow.setErrorReport(podLog);
-    workflow.setErrorMessage("Nextflow pod failed to start");
+    workflow.setErrorReport("Nextflow pod failed to start");
     workflow.setSuccess(false);
   }
 

@@ -7,6 +7,7 @@ import com.pivotal.rabbitmq.source.Source;
 import com.pivotal.rabbitmq.topology.ExchangeType;
 import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.icgc.argo.workflow_management.rabbitmq.schema.WfMgmtRunMsg;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,12 +20,6 @@ import reactor.core.Disposable;
 @Profile("api")
 @Configuration
 public class ApiProducerConfig {
-  @Value("${api.producer.topology.dlxName}")
-  private String dlxName;
-
-  @Value("${api.producer.topology.dlqName}")
-  private String dlqName;
-
   @Value("${api.producer.topology.queueName}")
   private String queueName;
 
@@ -43,21 +38,23 @@ public class ApiProducerConfig {
 
   @Bean
   public Disposable produceWfMgmtRunMsg(Source<WfMgmtRunMsg> apiSourceMsgs) {
+    val dlxName = topicExchangeName + "-dlx";
+    val dlqName = queueName + "-dlq";
     return rabbit
         .declareTopology(
             topologyBuilder ->
                 topologyBuilder
+                    .declareExchange(dlxName)
+                    .and()
+                    .declareQueue(dlqName)
+                    .boundTo(dlxName)
+                    .and()
                     .declareExchange(topicExchangeName)
                     .type(ExchangeType.topic)
                     .and()
                     .declareQueue(queueName)
                     .boundTo(topicExchangeName, topicRoutingKeys)
-                    .withDeadLetterExchange(dlxName)
-                    .and()
-                    .declareExchange(dlxName)
-                    .and()
-                    .declareQueue(dlqName)
-                    .boundTo(dlxName))
+                    .withDeadLetterExchange(dlxName))
         .createTransactionalProducerStream(WfMgmtRunMsg.class)
         .route()
         .toExchange(topicExchangeName)

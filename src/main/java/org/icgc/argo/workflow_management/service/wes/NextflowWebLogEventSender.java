@@ -44,8 +44,6 @@ public class NextflowWebLogEventSender {
   @Value("${nextflow.weblogUrl}")
   private String endpoint;
 
-  private WebClient client = WebClient.create(endpoint);
-
   public void sendStartEvent(NextflowMetadata meta) {
     sendWorkflowEvent(STARTED, meta);
   }
@@ -113,7 +111,7 @@ public class NextflowWebLogEventSender {
   }
 
   private void sendHttpMessageAsync(String jsonMessage) {
-    client
+    WebClient.create(endpoint)
         .post()
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(jsonMessage)

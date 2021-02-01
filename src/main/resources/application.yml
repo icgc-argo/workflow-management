@@ -60,8 +60,6 @@ rabbit:
 spring.profiles: api
 
 api.producer.topology:
-  dlqName: "producer-dlq"
-  dlxName: "producer-dlx"
   queueName: "execute-queue"
   topicExchangeName: "execute"
   topicRoutingKeys: "INITIALIZING, CANCELLING" # comma separated Array of keys
@@ -69,8 +67,6 @@ api.producer.topology:
 spring.profiles: execute
 
 execute.consumer.topology:
-  dlqName: "consumer-dlq"
-  dlxName: "consumer-dlx"
   queueName: "execute-queue"
   topicExchangeName: "execute"
   topicRoutingKeys: "INITIALIZING, CANCELLING" # comma separated Array of keys

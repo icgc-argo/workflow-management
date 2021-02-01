@@ -25,12 +25,6 @@ import reactor.core.Disposable;
 @Slf4j
 @Configuration
 public class ExecuteConsumerConfig {
-  @Value("${execute.consumer.topology.dlxName}")
-  private String dlxName;
-
-  @Value("${execute.consumer.topology.dlqName}")
-  private String dlqName;
-
   @Value("${execute.consumer.topology.queueName}")
   private String queueName;
 
@@ -56,21 +50,23 @@ public class ExecuteConsumerConfig {
 
   @Bean
   public Disposable wfMgmtRunMsgForExecuteConsumer() {
+    val dlxName = topicExchangeName + "-dlx";
+    val dlqName = queueName + "-dlq";
     return rabbit
         .declareTopology(
             topologyBuilder ->
                 topologyBuilder
+                    .declareExchange(dlxName)
+                    .and()
+                    .declareQueue(dlqName)
+                    .boundTo(dlxName)
+                    .and()
                     .declareExchange(topicExchangeName)
                     .type(ExchangeType.topic)
                     .and()
                     .declareQueue(queueName)
                     .boundTo(topicExchangeName, topicRoutingKeys)
-                    .withDeadLetterExchange(dlxName)
-                    .and()
-                    .declareExchange(dlxName)
-                    .and()
-                    .declareQueue(dlqName)
-                    .boundTo(dlxName))
+                    .withDeadLetterExchange(dlxName))
         .createTransactionalConsumerStream(queueName, WfMgmtRunMsg.class)
         .receive()
         .doOnNext(consumeAndExecuteInitializeOrCancel())
@@ -121,7 +117,7 @@ public class ExecuteConsumerConfig {
         msg.setState(RunState.SYSTEM_ERROR);
         log.info("SYSTEM_ERROR: {}", msg);
         webLogEventSender.sendWfMgmtEvent(createWfMgmtEvent(msg));
-        ((Transaction<?>) tx).commit();
+        ((Transaction<?>) tx).reject();
       } else {
         log.error("Can't get WfMgmtRunMsg, transaction is lost!");
       }
