@@ -78,7 +78,7 @@ public class NextflowWebLogEventSender {
     message.put("event", FAILED.toString());
     message.put("utcTime", time);
 
-    sendHttpMessage(toJsonString(message));
+    sendHttpMessageAsync(toJsonString(message));
   }
 
   public void sendTraceEvent(Event event, TraceRecord traceRecord) {}
@@ -96,11 +96,11 @@ public class NextflowWebLogEventSender {
   }
 
   public void sendWorkflowEvent(Event event, NextflowMetadata meta) {
-    sendHttpMessage(createWorkflowMessageJSON(event, meta));
+    sendHttpMessageAsync(createWorkflowMessageJSON(event, meta));
   }
 
   public void sendWfMgmtEvent(WfManagementEvent event) {
-    sendHttpMessage(toJsonString(event));
+    sendHttpMessageAsync(toJsonString(event));
   }
 
   public String createWorkflowMessageJSON(Event event, NextflowMetadata logMessage) {
@@ -112,7 +112,7 @@ public class NextflowWebLogEventSender {
     return toJsonString(message);
   }
 
-  private void sendHttpMessage(String jsonMessage) {
+  private void sendHttpMessageAsync(String jsonMessage) {
     client
         .post()
         .contentType(MediaType.APPLICATION_JSON)
