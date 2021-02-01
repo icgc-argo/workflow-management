@@ -16,13 +16,14 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.service.model;
+package org.icgc.argo.workflow_management.service.wes;
 
-import lombok.Data;
-import nextflow.script.ScriptBinding.ParamsMap;
+import org.icgc.argo.workflow_management.service.wes.model.RunParams;
+import org.icgc.argo.workflow_management.wes.controller.model.RunsResponse;
+import reactor.core.publisher.Mono;
 
-@Data
-public class NextflowMetadata {
-  private final NextflowWorkflowMetadata workflow;
-  private final ParamsMap params;
+public interface WorkflowExecutionService {
+  Mono<RunsResponse> run(RunParams params);
+
+  Mono<RunsResponse> cancel(String runId);
 }

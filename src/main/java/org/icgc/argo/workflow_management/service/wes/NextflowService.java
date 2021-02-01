@@ -16,12 +16,11 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.service;
+package org.icgc.argo.workflow_management.service.wes;
 
-import static java.lang.Boolean.parseBoolean;
 import static java.lang.String.format;
 import static java.util.Objects.nonNull;
-import static org.icgc.argo.workflow_management.service.model.KubernetesPhase.*;
+import static org.icgc.argo.workflow_management.service.wes.model.KubernetesPhase.*;
 import static org.icgc.argo.workflow_management.util.NextflowConfigFile.createNextflowConfigFile;
 import static org.icgc.argo.workflow_management.util.ParamsFile.createParamsFile;
 import static org.icgc.argo.workflow_management.util.Reflections.createWithReflection;
@@ -45,11 +44,11 @@ import nextflow.script.ScriptBinding;
 import org.icgc.argo.workflow_management.exception.NextflowRunException;
 import org.icgc.argo.workflow_management.exception.ReflectionUtilsException;
 import org.icgc.argo.workflow_management.secret.SecretProvider;
-import org.icgc.argo.workflow_management.service.model.KubernetesPhase;
-import org.icgc.argo.workflow_management.service.model.NextflowMetadata;
-import org.icgc.argo.workflow_management.service.model.NextflowWorkflowMetadata;
-import org.icgc.argo.workflow_management.service.model.RunParams;
-import org.icgc.argo.workflow_management.service.properties.NextflowProperties;
+import org.icgc.argo.workflow_management.service.wes.model.KubernetesPhase;
+import org.icgc.argo.workflow_management.service.wes.model.NextflowMetadata;
+import org.icgc.argo.workflow_management.service.wes.model.NextflowWorkflowMetadata;
+import org.icgc.argo.workflow_management.service.wes.model.RunParams;
+import org.icgc.argo.workflow_management.service.wes.properties.NextflowProperties;
 import org.icgc.argo.workflow_management.util.ConditionalPutMap;
 import org.icgc.argo.workflow_management.wes.controller.model.RunsResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -257,20 +256,7 @@ public class NextflowService implements WorkflowExecutionService {
     // params map to build CmdKubeRun (put if val not null)
     val cmdParams = new ConditionalPutMap<String, Object>(Objects::nonNull, new HashMap<>());
 
-    // run name (used for paramsFile as well)
-    // You may be asking yourself, why is he replacing the "-" in the UUID, this is a valid
-    // question, well unfortunately when trying to resume a job, Nextflow searches for the
-    // UUID format ANYWHERE in the resume string, resulting in the incorrect assumption
-    // that we are passing an runId when in fact we are passing a runName ...
-    // thanks Nextflow ... this workaround solves that problem
-    //
-    // UPDATE: The glory of Nextflow knows no bounds ... resuming by runName while possible
-    // ends up reusing the run/session (yeah these are the same but still recorded separately) id
-    // from the "last" run ... wtv run that was ... resulting in multiple resumed runs sharing the
-    // same sessionId (we're going with this label) even though they have nothing to do with one
-    // another. This is a bug in NF and warrants a PR but for now we recommend only resuming runs
-    // with sessionId and never with runName
-    val runName = format("wes-%s", UUID.randomUUID().toString().replace("-", ""));
+    val runName = params.getRunId();
     cmdParams.put("runName", runName);
 
     // launcher and launcher options required by CmdKubeRun

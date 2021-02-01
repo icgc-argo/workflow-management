@@ -16,39 +16,25 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.service.properties;
+package org.icgc.argo.workflow_management.service.api_to_wes;
 
-import java.util.List;
-import lombok.Data;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import org.icgc.argo.workflow_management.wes.controller.model.RunsRequest;
+import org.icgc.argo.workflow_management.wes.controller.model.RunsResponse;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
 
-@Data
-@Configuration
-@EnableConfigurationProperties
-@ConfigurationProperties(prefix = "nextflow")
-public class NextflowProperties {
-  private K8sProperties k8s;
-  private MonitorProperties monitor;
-  private String weblogUrl;
-  private String masterUrl;
-  private boolean trustCertificate;
+@Service
+public interface ApiToWesService {
+  @HasQueryAndMutationAccess
+  Mono<RunsResponse> run(RunsRequest runsRequest);
 
-  @Data
-  public static class K8sProperties {
-    private Integer runAsUser;
-    private String serviceAccount;
-    private String namespace;
-    private String runNamespace;
-    private List<String> volMounts;
-    private String masterUrl;
-    private boolean trustCertificate;
-  }
+  @HasQueryAndMutationAccess
+  Mono<RunsResponse> cancel(String runId);
 
-  @Data
-  public static class MonitorProperties {
-    private Integer sleepInterval;
-    private Integer maxErrorLogLines;
-  }
+  @Retention(RetentionPolicy.RUNTIME)
+  @PreAuthorize("@queryAndMutationScopeChecker.apply(authentication)")
+  @interface HasQueryAndMutationAccess {}
 }

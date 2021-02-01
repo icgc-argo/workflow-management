@@ -16,23 +16,21 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.service;
+package org.icgc.argo.workflow_management.service.wes.model;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import org.icgc.argo.workflow_management.service.model.RunParams;
-import org.icgc.argo.workflow_management.wes.controller.model.RunsResponse;
-import org.springframework.security.access.prepost.PreAuthorize;
-import reactor.core.publisher.Mono;
+import java.util.Map;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import org.icgc.argo.workflow_management.wes.controller.model.WorkflowEngineParams;
 
-public interface WorkflowExecutionService {
-  @HasQueryAndMutationAccess
-  Mono<RunsResponse> run(RunParams params);
-
-  @HasQueryAndMutationAccess
-  Mono<RunsResponse> cancel(String runId);
-
-  @Retention(RetentionPolicy.RUNTIME)
-  @PreAuthorize("@queryAndMutationScopeChecker.apply(authentication)")
-  @interface HasQueryAndMutationAccess {}
+@Data
+@Builder
+@RequiredArgsConstructor
+public class RunParams {
+  @NonNull private String runId;
+  @NonNull private final Map<String, Object> workflowParams;
+  @NonNull private final String workflowUrl;
+  private final WorkflowEngineParams workflowEngineParams;
 }

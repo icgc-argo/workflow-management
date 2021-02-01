@@ -16,13 +16,13 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.service.model;
+package org.icgc.argo.workflow_management.service.wes.model;
 
-/** * Kubernetes phases */
-public enum KubernetesPhase {
-  PENDING,
-  RUNNING,
-  SUCCEEDED,
-  FAILED,
-  UNKNOWN;
+import lombok.Data;
+import nextflow.script.ScriptBinding.ParamsMap;
+
+@Data
+public class NextflowMetadata {
+  private final NextflowWorkflowMetadata workflow;
+  private final ParamsMap params;
 }

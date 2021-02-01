@@ -16,38 +16,49 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.wes.controller.impl;
+package org.icgc.argo.workflow_management.service.api_to_wes.impl;
 
-import javax.validation.Valid;
+import static org.icgc.argo.workflow_management.util.WesUtils.generateWesRunId;
+
+import lombok.val;
 import org.icgc.argo.workflow_management.service.api_to_wes.ApiToWesService;
-import org.icgc.argo.workflow_management.wes.controller.RunsApi;
+import org.icgc.argo.workflow_management.service.wes.WorkflowExecutionService;
+import org.icgc.argo.workflow_management.service.wes.model.RunParams;
 import org.icgc.argo.workflow_management.wes.controller.model.RunsRequest;
 import org.icgc.argo.workflow_management.wes.controller.model.RunsResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
-@RestController
-@RequestMapping("/runs")
-public class RunsApiController implements RunsApi {
+// Default setup uses no rabbitmq configs setup, so talk directly to WES
+@Profile("!api & !execute")
+@Service
+public class DirectToWes implements ApiToWesService {
 
-  /** Dependencies */
-  private final ApiToWesService apiToWesService;
+  private final WorkflowExecutionService wes;
 
   @Autowired
-  public RunsApiController(ApiToWesService apiToWesService) {
-    this.apiToWesService = apiToWesService;
+  public DirectToWes(WorkflowExecutionService wes) {
+    this.wes = wes;
   }
 
-  @PostMapping
-  public Mono<RunsResponse> postRun(@Valid @RequestBody RunsRequest runsRequest) {
-    return apiToWesService.run(runsRequest);
+  @Override
+  public Mono<RunsResponse> run(RunsRequest runsRequest) {
+    // create run config from request
+    val runConfig =
+        RunParams.builder()
+            .workflowUrl(runsRequest.getWorkflowUrl())
+            .workflowParams(runsRequest.getWorkflowParams())
+            .workflowEngineParams(runsRequest.getWorkflowEngineParams())
+            .runId(generateWesRunId())
+            .build();
+
+    return wes.run(runConfig);
   }
 
-  @PostMapping(
-      path = "/{run_id}/cancel",
-      produces = {"application/json"})
-  public Mono<RunsResponse> cancelRun(@Valid @PathVariable("run_id") String runId) {
-    return apiToWesService.cancel(runId);
+  @Override
+  public Mono<RunsResponse> cancel(String runId) {
+    return null;
   }
 }

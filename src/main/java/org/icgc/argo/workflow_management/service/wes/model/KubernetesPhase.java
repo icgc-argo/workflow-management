@@ -16,20 +16,13 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.service.model;
+package org.icgc.argo.workflow_management.service.wes.model;
 
-import java.util.Map;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import org.icgc.argo.workflow_management.wes.controller.model.WorkflowEngineParams;
-
-@Data
-@Builder
-@RequiredArgsConstructor
-public class RunParams {
-  @NonNull private final Map<String, Object> workflowParams;
-  @NonNull private final String workflowUrl;
-  private final WorkflowEngineParams workflowEngineParams;
+/** * Kubernetes phases */
+public enum KubernetesPhase {
+  PENDING,
+  RUNNING,
+  SUCCEEDED,
+  FAILED,
+  UNKNOWN;
 }

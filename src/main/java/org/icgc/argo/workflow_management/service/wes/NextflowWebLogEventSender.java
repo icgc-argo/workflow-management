@@ -16,9 +16,9 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.service;
+package org.icgc.argo.workflow_management.service.wes;
 
-import static org.icgc.argo.workflow_management.service.NextflowWebLogEventSender.Event.*;
+import static org.icgc.argo.workflow_management.service.wes.NextflowWebLogEventSender.Event.*;
 import static org.icgc.argo.workflow_management.util.JacksonUtils.toJsonString;
 
 import java.util.Date;
@@ -31,9 +31,11 @@ import nextflow.Const;
 import nextflow.extension.Bolts;
 import nextflow.trace.TraceRecord;
 import nextflow.util.SimpleHttpClient;
-import org.icgc.argo.workflow_management.service.model.NextflowMetadata;
+import org.icgc.argo.workflow_management.service.wes.model.NextflowMetadata;
+import org.icgc.argo.workflow_management.service.wes.model.WfManagementEvent;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
 
 @Service
 @AllArgsConstructor
@@ -95,6 +97,10 @@ public class NextflowWebLogEventSender {
 
   public void sendWorkflowEvent(Event event, NextflowMetadata meta) {
     httpClient.sendHttpMessage(endpoint, createWorkflowMessageJSON(event, meta));
+  }
+
+  public void sendWfMgmtEvent(WfManagementEvent event) {
+    WebClient.create(endpoint).post().bodyValue(event).retrieve().toBodilessEntity().subscribe();
   }
 
   public String createWorkflowMessageJSON(Event event, NextflowMetadata logMessage) {

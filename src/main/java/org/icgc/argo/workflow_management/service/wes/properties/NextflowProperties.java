@@ -16,31 +16,39 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.wes.controller.model;
+package org.icgc.argo.workflow_management.service.wes.properties;
 
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
-import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import io.swagger.annotations.ApiModel;
-import java.util.UUID;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
+import java.util.List;
 import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Configuration;
 
 @Data
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
-@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
-@JsonIgnoreProperties(ignoreUnknown = true)
-@ApiModel(description = "Describes valid workflow engine parameters (part of RunsRequest)")
-public class WorkflowEngineParams {
-  private String defaultContainer;
-  private String revision;
-  private UUID resume;
-  private String launchDir;
-  private String projectDir;
-  private String workDir;
-  private Boolean latest;
+@Configuration
+@EnableConfigurationProperties
+@ConfigurationProperties(prefix = "nextflow")
+public class NextflowProperties {
+  private K8sProperties k8s;
+  private MonitorProperties monitor;
+  private String weblogUrl;
+  private String masterUrl;
+  private boolean trustCertificate;
+
+  @Data
+  public static class K8sProperties {
+    private Integer runAsUser;
+    private String serviceAccount;
+    private String namespace;
+    private String runNamespace;
+    private List<String> volMounts;
+    private String masterUrl;
+    private boolean trustCertificate;
+  }
+
+  @Data
+  public static class MonitorProperties {
+    private Integer sleepInterval;
+    private Integer maxErrorLogLines;
+  }
 }

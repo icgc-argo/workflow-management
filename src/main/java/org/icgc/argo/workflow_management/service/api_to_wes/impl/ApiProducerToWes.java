@@ -16,38 +16,44 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.wes.controller.impl;
+package org.icgc.argo.workflow_management.service.api_to_wes.impl;
 
-import javax.validation.Valid;
+import static org.icgc.argo.workflow_management.rabbitmq.WfMgmtRunMsgConverters.createWfMgmtRunMsg;
+import static org.icgc.argo.workflow_management.util.WesUtils.generateWesRunId;
+
+import com.pivotal.rabbitmq.source.Sender;
+import lombok.val;
+import org.icgc.argo.workflow_management.rabbitmq.schema.RunState;
+import org.icgc.argo.workflow_management.rabbitmq.schema.WfMgmtRunMsg;
 import org.icgc.argo.workflow_management.service.api_to_wes.ApiToWesService;
-import org.icgc.argo.workflow_management.wes.controller.RunsApi;
 import org.icgc.argo.workflow_management.wes.controller.model.RunsRequest;
 import org.icgc.argo.workflow_management.wes.controller.model.RunsResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
-@RestController
-@RequestMapping("/runs")
-public class RunsApiController implements RunsApi {
+@Profile("api")
+@Service
+public class ApiProducerToWes implements ApiToWesService {
 
-  /** Dependencies */
-  private final ApiToWesService apiToWesService;
+  private final Sender<WfMgmtRunMsg> sender;
 
   @Autowired
-  public RunsApiController(ApiToWesService apiToWesService) {
-    this.apiToWesService = apiToWesService;
+  public ApiProducerToWes(Sender<WfMgmtRunMsg> sender) {
+    this.sender = sender;
   }
 
-  @PostMapping
-  public Mono<RunsResponse> postRun(@Valid @RequestBody RunsRequest runsRequest) {
-    return apiToWesService.run(runsRequest);
+  @Override
+  public Mono<RunsResponse> run(RunsRequest runsRequest) {
+    val runId = generateWesRunId();
+    val msg = createWfMgmtRunMsg(runId, runsRequest, RunState.INITIALIZING);
+    return Mono.just(msg).flatMap(sender::send).map(o -> new RunsResponse(runId));
   }
 
-  @PostMapping(
-      path = "/{run_id}/cancel",
-      produces = {"application/json"})
-  public Mono<RunsResponse> cancelRun(@Valid @PathVariable("run_id") String runId) {
-    return apiToWesService.cancel(runId);
+  @Override
+  public Mono<RunsResponse> cancel(String runId) {
+    val event = createWfMgmtRunMsg(runId, RunState.CANCELING);
+    return Mono.just(event).flatMap(sender::send).map(o -> new RunsResponse(runId));
   }
 }
