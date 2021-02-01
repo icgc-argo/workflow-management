@@ -54,7 +54,6 @@ rabbit:
       port: 5672
       username: user
       password: pass
-      managementPort:
 
 ---
 spring.profiles: api
