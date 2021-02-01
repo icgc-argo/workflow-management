@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 The Ontario Institute for Cancer Research. All rights reserved
+ * Copyright (c) 2021 The Ontario Institute for Cancer Research. All rights reserved
  *
  * This program and the accompanying materials are made available under the terms of the GNU Affero General Public License v3.0.
  * You should have received a copy of the GNU Affero General Public License along with
@@ -16,9 +16,9 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.service;
+package org.icgc.argo.workflow_management.service.wes;
 
-import static org.icgc.argo.workflow_management.service.NextflowWebLogEventSender.Event.*;
+import static org.icgc.argo.workflow_management.service.wes.NextflowWebLogEventSender.Event.*;
 import static org.icgc.argo.workflow_management.util.JacksonUtils.toJsonString;
 
 import java.util.Date;
@@ -30,17 +30,17 @@ import lombok.val;
 import nextflow.Const;
 import nextflow.extension.Bolts;
 import nextflow.trace.TraceRecord;
-import nextflow.util.SimpleHttpClient;
-import org.icgc.argo.workflow_management.service.model.NextflowMetadata;
+import org.icgc.argo.workflow_management.service.wes.model.NextflowMetadata;
+import org.icgc.argo.workflow_management.service.wes.model.WfManagementEvent;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
 
 @Service
 @AllArgsConstructor
 @NoArgsConstructor
 public class NextflowWebLogEventSender {
-  private final SimpleHttpClient httpClient = new SimpleHttpClient();
-
   @Value("${nextflow.weblogUrl}")
   private String endpoint;
 
@@ -76,7 +76,7 @@ public class NextflowWebLogEventSender {
     message.put("event", FAILED.toString());
     message.put("utcTime", time);
 
-    httpClient.sendHttpMessage(endpoint, toJsonString(message));
+    sendHttpMessageAsync(toJsonString(message));
   }
 
   public void sendTraceEvent(Event event, TraceRecord traceRecord) {}
@@ -94,7 +94,11 @@ public class NextflowWebLogEventSender {
   }
 
   public void sendWorkflowEvent(Event event, NextflowMetadata meta) {
-    httpClient.sendHttpMessage(endpoint, createWorkflowMessageJSON(event, meta));
+    sendHttpMessageAsync(createWorkflowMessageJSON(event, meta));
+  }
+
+  public void sendWfMgmtEvent(WfManagementEvent event) {
+    sendHttpMessageAsync(toJsonString(event));
   }
 
   public String createWorkflowMessageJSON(Event event, NextflowMetadata logMessage) {
@@ -104,6 +108,16 @@ public class NextflowWebLogEventSender {
     message.put("metadata", logMessage);
 
     return toJsonString(message);
+  }
+
+  private void sendHttpMessageAsync(String jsonMessage) {
+    WebClient.create(endpoint)
+        .post()
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(jsonMessage)
+        .retrieve()
+        .toBodilessEntity()
+        .subscribe();
   }
 
   enum Event {

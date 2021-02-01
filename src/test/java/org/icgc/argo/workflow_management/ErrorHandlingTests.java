@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 The Ontario Institute for Cancer Research. All rights reserved
+ * Copyright (c) 2021 The Ontario Institute for Cancer Research. All rights reserved
  *
  * This program and the accompanying materials are made available under the terms of the GNU Affero General Public License v3.0.
  * You should have received a copy of the GNU Affero General Public License along with
@@ -22,8 +22,7 @@ import static java.lang.String.format;
 import static org.hamcrest.Matchers.*;
 import static org.icgc.argo.workflow_management.util.RandomGenerator.createRandomGenerator;
 import static org.icgc.argo.workflow_management.util.Reflections.findResponseStatusAnnotation;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.reset;
 import static org.springframework.http.HttpStatus.*;
@@ -41,9 +40,11 @@ import nextflow.exception.*;
 import org.icgc.argo.workflow_management.config.secret.NoSecretProviderConfig;
 import org.icgc.argo.workflow_management.config.security.AuthDisabledConfig;
 import org.icgc.argo.workflow_management.exception.GlobalExceptionHandler;
-import org.icgc.argo.workflow_management.service.NextflowService;
-import org.icgc.argo.workflow_management.service.NextflowWebLogEventSender;
-import org.icgc.argo.workflow_management.service.properties.NextflowProperties;
+import org.icgc.argo.workflow_management.service.api_to_wes.ApiToWesService;
+import org.icgc.argo.workflow_management.service.api_to_wes.impl.DirectToWes;
+import org.icgc.argo.workflow_management.service.wes.NextflowService;
+import org.icgc.argo.workflow_management.service.wes.NextflowWebLogEventSender;
+import org.icgc.argo.workflow_management.service.wes.properties.NextflowProperties;
 import org.icgc.argo.workflow_management.wes.controller.impl.RunsApiController;
 import org.icgc.argo.workflow_management.wes.controller.model.RunsRequest;
 import org.junit.Test;
@@ -70,6 +71,7 @@ import org.springframework.web.server.ResponseStatusException;
 @Import(
     value = {
       NoSecretProviderConfig.class,
+      DirectToWes.class,
       NextflowService.class,
       NextflowWebLogEventSender.class,
       NextflowProperties.class,
@@ -81,7 +83,7 @@ import org.springframework.web.server.ResponseStatusException;
 @WebFluxTest(controllers = RunsApiController.class)
 public class ErrorHandlingTests {
 
-  @Mock private NextflowService mockNextflowService;
+  @Mock private ApiToWesService apiToWesService;
 
   @Autowired private RunsApiController controller;
 
@@ -290,11 +292,15 @@ public class ErrorHandlingTests {
 
   private void setup(Supplier<? extends Throwable> exceptionSupplier) {
     // Replace nextflowService dependency in the controller with a mock
-    ReflectionTestUtils.setField(controller, "nextflowService", mockNextflowService);
+    assertNotNull(
+        ReflectionTestUtils.getField(controller, "apiToWesService"),
+        "Test setup uses reflection to inject mock into controller field, but field not found!");
+
+    ReflectionTestUtils.setField(controller, "apiToWesService", apiToWesService);
 
     // Setup the mock to throw an exception
-    reset(mockNextflowService);
-    given(mockNextflowService.run(Mockito.any()))
+    reset(apiToWesService);
+    given(apiToWesService.run(Mockito.any()))
         .willAnswer(
             i -> {
               throw exceptionSupplier.get();

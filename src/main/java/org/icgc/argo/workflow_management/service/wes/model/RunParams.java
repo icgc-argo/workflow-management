@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 The Ontario Institute for Cancer Research. All rights reserved
+ * Copyright (c) 2021 The Ontario Institute for Cancer Research. All rights reserved
  *
  * This program and the accompanying materials are made available under the terms of the GNU Affero General Public License v3.0.
  * You should have received a copy of the GNU Affero General Public License along with
@@ -16,39 +16,21 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.service.properties;
+package org.icgc.argo.workflow_management.service.wes.model;
 
-import java.util.List;
+import java.util.Map;
+import lombok.Builder;
 import lombok.Data;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import org.icgc.argo.workflow_management.wes.controller.model.WorkflowEngineParams;
 
 @Data
-@Configuration
-@EnableConfigurationProperties
-@ConfigurationProperties(prefix = "nextflow")
-public class NextflowProperties {
-  private K8sProperties k8s;
-  private MonitorProperties monitor;
-  private String weblogUrl;
-  private String masterUrl;
-  private boolean trustCertificate;
-
-  @Data
-  public static class K8sProperties {
-    private Integer runAsUser;
-    private String serviceAccount;
-    private String namespace;
-    private String runNamespace;
-    private List<String> volMounts;
-    private String masterUrl;
-    private boolean trustCertificate;
-  }
-
-  @Data
-  public static class MonitorProperties {
-    private Integer sleepInterval;
-    private Integer maxErrorLogLines;
-  }
+@Builder
+@RequiredArgsConstructor
+public class RunParams {
+  @NonNull private String runId;
+  @NonNull private final Map<String, Object> workflowParams;
+  @NonNull private final String workflowUrl;
+  private final WorkflowEngineParams workflowEngineParams;
 }

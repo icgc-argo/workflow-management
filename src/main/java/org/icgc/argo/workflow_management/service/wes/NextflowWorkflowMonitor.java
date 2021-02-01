@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 The Ontario Institute for Cancer Research. All rights reserved
+ * Copyright (c) 2021 The Ontario Institute for Cancer Research. All rights reserved
  *
  * This program and the accompanying materials are made available under the terms of the GNU Affero General Public License v3.0.
  * You should have received a copy of the GNU Affero General Public License along with
@@ -16,11 +16,11 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.service;
+package org.icgc.argo.workflow_management.service.wes;
 
 import static java.lang.String.format;
 import static java.time.OffsetDateTime.now;
-import static org.icgc.argo.workflow_management.service.NextflowService.NEXTFLOW_PREFIX;
+import static org.icgc.argo.workflow_management.service.wes.NextflowService.NEXTFLOW_PREFIX;
 
 import io.fabric8.kubernetes.api.model.DoneablePod;
 import io.fabric8.kubernetes.api.model.Pod;
@@ -32,8 +32,8 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import nextflow.util.Duration;
-import org.icgc.argo.workflow_management.service.model.KubernetesPhase;
-import org.icgc.argo.workflow_management.service.model.NextflowMetadata;
+import org.icgc.argo.workflow_management.service.wes.model.KubernetesPhase;
+import org.icgc.argo.workflow_management.service.wes.model.NextflowMetadata;
 
 @Slf4j
 @AllArgsConstructor
@@ -110,8 +110,7 @@ public class NextflowWorkflowMonitor implements Runnable {
     workflow.update(pod);
     workflow.setComplete(completeTime);
     workflow.setDuration(Duration.between(workflow.getStart(), completeTime));
-    workflow.setErrorReport(podLog);
-    workflow.setErrorMessage("Nextflow pod failed to start");
+    workflow.setErrorReport("Nextflow pod failed to start");
     workflow.setSuccess(false);
   }
 

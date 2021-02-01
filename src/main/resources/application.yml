@@ -35,10 +35,38 @@ secret:
   apiKey: testapikeytotallylegit
 
 ---
-spring.profile: oauth2Token
+spring.profiles: oauth2Token
 
 secret:
   enabled: true
   clientId: testId
   clientSecret: testSecret
   tokenUri: http://localhost:8080/oauth/token
+
+---
+spring.profiles: api,execute
+
+rabbit:
+  default-endpoint-name: standalone
+  endpoints:
+    standalone:
+      host: localhost
+      port: 5672
+      username: user
+      password: pass
+      managementPort:
+
+---
+spring.profiles: api
+
+api.producer.topology:
+  queueName: "execute-queue"
+  topicExchangeName: "execute"
+  topicRoutingKeys: "INITIALIZING, CANCELLING" # comma separated Array of keys
+---
+spring.profiles: execute
+
+execute.consumer.topology:
+  queueName: "execute-queue"
+  topicExchangeName: "execute"
+  topicRoutingKeys: "INITIALIZING, CANCELLING" # comma separated Array of keys

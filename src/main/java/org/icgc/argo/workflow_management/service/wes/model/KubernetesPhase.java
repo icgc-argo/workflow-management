@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 The Ontario Institute for Cancer Research. All rights reserved
+ * Copyright (c) 2021 The Ontario Institute for Cancer Research. All rights reserved
  *
  * This program and the accompanying materials are made available under the terms of the GNU Affero General Public License v3.0.
  * You should have received a copy of the GNU Affero General Public License along with
@@ -16,23 +16,13 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.service;
+package org.icgc.argo.workflow_management.service.wes.model;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import org.icgc.argo.workflow_management.service.model.RunParams;
-import org.icgc.argo.workflow_management.wes.controller.model.RunsResponse;
-import org.springframework.security.access.prepost.PreAuthorize;
-import reactor.core.publisher.Mono;
-
-public interface WorkflowExecutionService {
-  @HasQueryAndMutationAccess
-  Mono<RunsResponse> run(RunParams params);
-
-  @HasQueryAndMutationAccess
-  Mono<RunsResponse> cancel(String runId);
-
-  @Retention(RetentionPolicy.RUNTIME)
-  @PreAuthorize("@queryAndMutationScopeChecker.apply(authentication)")
-  @interface HasQueryAndMutationAccess {}
+/** * Kubernetes phases */
+public enum KubernetesPhase {
+  PENDING,
+  RUNNING,
+  SUCCEEDED,
+  FAILED,
+  UNKNOWN;
 }

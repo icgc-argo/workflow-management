@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 The Ontario Institute for Cancer Research. All rights reserved
+ * Copyright (c) 2021 The Ontario Institute for Cancer Research. All rights reserved
  *
  * This program and the accompanying materials are made available under the terms of the GNU Affero General Public License v3.0.
  * You should have received a copy of the GNU Affero General Public License along with
@@ -16,20 +16,23 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.service.model;
+package org.icgc.argo.workflow_management.service.api_to_wes;
 
-import java.util.Map;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import org.icgc.argo.workflow_management.wes.controller.model.WorkflowEngineParams;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import org.icgc.argo.workflow_management.wes.controller.model.RunsRequest;
+import org.icgc.argo.workflow_management.wes.controller.model.RunsResponse;
+import org.springframework.security.access.prepost.PreAuthorize;
+import reactor.core.publisher.Mono;
 
-@Data
-@Builder
-@RequiredArgsConstructor
-public class RunParams {
-  @NonNull private final Map<String, Object> workflowParams;
-  @NonNull private final String workflowUrl;
-  private final WorkflowEngineParams workflowEngineParams;
+public interface ApiToWesService {
+  @HasQueryAndMutationAccess
+  Mono<RunsResponse> run(RunsRequest runsRequest);
+
+  @HasQueryAndMutationAccess
+  Mono<RunsResponse> cancel(String runId);
+
+  @Retention(RetentionPolicy.RUNTIME)
+  @PreAuthorize("@queryAndMutationScopeChecker.apply(authentication)")
+  @interface HasQueryAndMutationAccess {}
 }

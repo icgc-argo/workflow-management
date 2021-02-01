@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 The Ontario Institute for Cancer Research. All rights reserved
+ * Copyright (c) 2021 The Ontario Institute for Cancer Research. All rights reserved
  *
  * This program and the accompanying materials are made available under the terms of the GNU Affero General Public License v3.0.
  * You should have received a copy of the GNU Affero General Public License along with
@@ -26,14 +26,13 @@ import graphql.schema.DataFetchingEnvironment;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import lombok.NonNull;
 import lombok.val;
 import org.icgc.argo.workflow_management.graphql.model.GqlRunsRequest;
-import org.icgc.argo.workflow_management.service.WorkflowExecutionService;
-import org.icgc.argo.workflow_management.service.model.RunParams;
+import org.icgc.argo.workflow_management.service.api_to_wes.ApiToWesService;
 import org.icgc.argo.workflow_management.wes.controller.model.RunsRequest;
 import org.icgc.argo.workflow_management.wes.controller.model.RunsResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.stereotype.Component;
@@ -42,40 +41,31 @@ import reactor.core.publisher.Mono;
 @Component
 public class MutationDataFetcher {
 
-  private final WorkflowExecutionService nextflowService;
+  @NonNull private final MonoDataFetcher<RunsResponse> cancelRunResolver;
+  @NonNull private final MonoDataFetcher<RunsResponse> startRunResolver;
 
   @Autowired
-  public MutationDataFetcher(@Qualifier("nextflow") WorkflowExecutionService nextflowService) {
-    this.nextflowService = nextflowService;
+  public MutationDataFetcher(ApiToWesService apiToWesService) {
+    cancelRunResolver =
+        env -> {
+          val args = env.getArguments();
+          String runId = String.valueOf(args.get("runId"));
+          return apiToWesService.cancel(runId);
+        };
+
+    startRunResolver =
+        env -> {
+          val args = env.getArguments();
+
+          val requestMap = ImmutableMap.<String, Object>builder();
+
+          if (args.get("request") != null)
+            requestMap.putAll((Map<String, Object>) args.get("request"));
+
+          RunsRequest runsRequest = convertValue(requestMap.build(), GqlRunsRequest.class);
+          return apiToWesService.run(runsRequest);
+        };
   }
-
-  private final MonoDataFetcher<RunsResponse> cancelRunResolver =
-      env -> {
-        val args = env.getArguments();
-        String runId = String.valueOf(args.get("runId"));
-        return getWorkflowService().cancel(runId);
-      };
-
-  private final MonoDataFetcher<RunsResponse> startRunResolver =
-      env -> {
-        val args = env.getArguments();
-
-        val requestMap = ImmutableMap.<String, Object>builder();
-
-        if (args.get("request") != null)
-          requestMap.putAll((Map<String, Object>) args.get("request"));
-
-        RunsRequest runsRequest = convertValue(requestMap.build(), GqlRunsRequest.class);
-
-        val runConfig =
-            RunParams.builder()
-                .workflowUrl(runsRequest.getWorkflowUrl())
-                .workflowParams(runsRequest.getWorkflowParams())
-                .workflowEngineParams(runsRequest.getWorkflowEngineParams())
-                .build();
-
-        return getWorkflowService().run(runConfig);
-      };
 
   public Map<String, DataFetcher> mutationResolvers() {
     return Map.of(
@@ -98,10 +88,6 @@ public class MutationDataFetcher {
       }
       return monoDataFetcher.apply(environment).toFuture();
     };
-  }
-
-  private WorkflowExecutionService getWorkflowService() {
-    return nextflowService;
   }
 
   interface MonoDataFetcher<T> extends Function<DataFetchingEnvironment, Mono<T>> {}
