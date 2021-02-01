@@ -4,7 +4,7 @@
   "namespace": "org.icgc.argo.workflow_management.rabbitmq.schema",
   "fields": [
     {
-      "name": "time",
+      "name": "timestamp",
       "type": "long",
       "logicalType": "date"
     },

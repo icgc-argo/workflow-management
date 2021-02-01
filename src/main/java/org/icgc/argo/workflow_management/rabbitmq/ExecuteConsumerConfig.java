@@ -135,7 +135,7 @@ public class ExecuteConsumerConfig {
         msg.setState(RunState.SYSTEM_ERROR);
         log.info("SYSTEM_ERROR: {}", msg);
         webLogEventSender.sendWfMgmtEvent(createWfMgmtEvent(msg));
-        ((Transaction<?>) tx).reject();
+        ((Transaction<?>) tx).commit();
       } else {
         log.error("Can't get WfMgmtRunMsg, transaction is lost!");
       }
