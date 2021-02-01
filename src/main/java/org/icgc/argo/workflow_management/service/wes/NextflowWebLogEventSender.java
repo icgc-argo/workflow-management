@@ -30,10 +30,10 @@ import lombok.val;
 import nextflow.Const;
 import nextflow.extension.Bolts;
 import nextflow.trace.TraceRecord;
-import nextflow.util.SimpleHttpClient;
 import org.icgc.argo.workflow_management.service.wes.model.NextflowMetadata;
 import org.icgc.argo.workflow_management.service.wes.model.WfManagementEvent;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -41,10 +41,10 @@ import org.springframework.web.reactive.function.client.WebClient;
 @AllArgsConstructor
 @NoArgsConstructor
 public class NextflowWebLogEventSender {
-  private final SimpleHttpClient httpClient = new SimpleHttpClient();
-
   @Value("${nextflow.weblogUrl}")
   private String endpoint;
+
+  private WebClient client = WebClient.create(endpoint);
 
   public void sendStartEvent(NextflowMetadata meta) {
     sendWorkflowEvent(STARTED, meta);
@@ -78,7 +78,7 @@ public class NextflowWebLogEventSender {
     message.put("event", FAILED.toString());
     message.put("utcTime", time);
 
-    httpClient.sendHttpMessage(endpoint, toJsonString(message));
+    sendHttpMessage(toJsonString(message));
   }
 
   public void sendTraceEvent(Event event, TraceRecord traceRecord) {}
@@ -96,11 +96,11 @@ public class NextflowWebLogEventSender {
   }
 
   public void sendWorkflowEvent(Event event, NextflowMetadata meta) {
-    httpClient.sendHttpMessage(endpoint, createWorkflowMessageJSON(event, meta));
+    sendHttpMessage(createWorkflowMessageJSON(event, meta));
   }
 
   public void sendWfMgmtEvent(WfManagementEvent event) {
-    WebClient.create(endpoint).post().bodyValue(event).retrieve().toBodilessEntity().subscribe();
+    sendHttpMessage(toJsonString(event));
   }
 
   public String createWorkflowMessageJSON(Event event, NextflowMetadata logMessage) {
@@ -110,6 +110,16 @@ public class NextflowWebLogEventSender {
     message.put("metadata", logMessage);
 
     return toJsonString(message);
+  }
+
+  private void sendHttpMessage(String jsonMessage) {
+    client
+        .post()
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(jsonMessage)
+        .retrieve()
+        .toBodilessEntity()
+        .subscribe();
   }
 
   enum Event {

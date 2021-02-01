@@ -6,7 +6,6 @@ import static org.icgc.argo.workflow_management.rabbitmq.WfMgmtRunMsgConverters.
 import com.pivotal.rabbitmq.RabbitEndpointService;
 import com.pivotal.rabbitmq.stream.Transaction;
 import com.pivotal.rabbitmq.topology.ExchangeType;
-
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
@@ -26,15 +25,25 @@ import reactor.core.Disposable;
 @Slf4j
 @Configuration
 public class ExecuteConsumerConfig {
-    @Value("${execute.consumer.topology.dlxName}") private String dlxName;
-    @Value("${execute.consumer.topology.dlqName}") private String dlqName;
-    @Value("${execute.consumer.topology.queueName}") private String queueName;
-    @Value("${execute.consumer.topology.topicExchangeName}") private String topicExchangeName;
-    @Value("${execute.consumer.topology.topicRoutingKeys}") private String[] topicRoutingKeys;
+  @Value("${execute.consumer.topology.dlxName}")
+  private String dlxName;
+
+  @Value("${execute.consumer.topology.dlqName}")
+  private String dlqName;
+
+  @Value("${execute.consumer.topology.queueName}")
+  private String queueName;
+
+  @Value("${execute.consumer.topology.topicExchangeName}")
+  private String topicExchangeName;
+
+  @Value("${execute.consumer.topology.topicRoutingKeys}")
+  private String[] topicRoutingKeys;
 
   private final NextflowWebLogEventSender webLogEventSender;
   private final WorkflowExecutionService wes;
   private final RabbitEndpointService rabbit;
+
   @Autowired
   public ExecuteConsumerConfig(
       WorkflowExecutionService wes,
@@ -49,19 +58,19 @@ public class ExecuteConsumerConfig {
   public Disposable wfMgmtRunMsgForExecuteConsumer() {
     return rabbit
         .declareTopology(
-                topologyBuilder ->
-                        topologyBuilder
-                                .declareExchange(topicExchangeName)
-                                .type(ExchangeType.topic)
-                                .and()
-                                .declareQueue(queueName)
-                                .boundTo(topicExchangeName, topicRoutingKeys)
-                                .withDeadLetterExchange(dlxName)
-                                .and()
-                                .declareExchange(dlxName)
-                                .and()
-                                .declareQueue(dlqName)
-                                .boundTo(dlxName))
+            topologyBuilder ->
+                topologyBuilder
+                    .declareExchange(topicExchangeName)
+                    .type(ExchangeType.topic)
+                    .and()
+                    .declareQueue(queueName)
+                    .boundTo(topicExchangeName, topicRoutingKeys)
+                    .withDeadLetterExchange(dlxName)
+                    .and()
+                    .declareExchange(dlxName)
+                    .and()
+                    .declareQueue(dlqName)
+                    .boundTo(dlxName))
         .createTransactionalConsumerStream(queueName, WfMgmtRunMsg.class)
         .receive()
         .doOnNext(consumeAndExecuteInitializeOrCancel())
@@ -104,18 +113,18 @@ public class ExecuteConsumerConfig {
   }
 
   public BiConsumer<Throwable, Object> handleError() {
-      return (t, tx) -> {
-          t.printStackTrace();
-          log.error("Error occurred with: {}", tx);
-          if (tx instanceof Transaction<?> && ((Transaction<?>) tx).get() instanceof WfMgmtRunMsg) {
-              val msg = (WfMgmtRunMsg) ((Transaction<?>) tx).get();
-              msg.setState(RunState.SYSTEM_ERROR);
-              log.info("SYSTEM_ERROR: {}", msg);
-              webLogEventSender.sendWfMgmtEvent(createWfMgmtEvent(msg));
-              ((Transaction<?>) tx).commit();
-          } else {
-              log.error("Can't get WfMgmtRunMsg, transaction is lost!");
-          }
-      };
+    return (t, tx) -> {
+      t.printStackTrace();
+      log.error("Error occurred with: {}", tx);
+      if (tx instanceof Transaction<?> && ((Transaction<?>) tx).get() instanceof WfMgmtRunMsg) {
+        val msg = (WfMgmtRunMsg) ((Transaction<?>) tx).get();
+        msg.setState(RunState.SYSTEM_ERROR);
+        log.info("SYSTEM_ERROR: {}", msg);
+        webLogEventSender.sendWfMgmtEvent(createWfMgmtEvent(msg));
+        ((Transaction<?>) tx).commit();
+      } else {
+        log.error("Can't get WfMgmtRunMsg, transaction is lost!");
+      }
+    };
   }
 }

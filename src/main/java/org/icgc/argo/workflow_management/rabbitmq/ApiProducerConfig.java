@@ -5,13 +5,11 @@ import com.pivotal.rabbitmq.source.OnDemandSource;
 import com.pivotal.rabbitmq.source.Sender;
 import com.pivotal.rabbitmq.source.Source;
 import com.pivotal.rabbitmq.topology.ExchangeType;
-
 import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
 import org.icgc.argo.workflow_management.rabbitmq.schema.WfMgmtRunMsg;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -21,17 +19,22 @@ import reactor.core.Disposable;
 @Profile("api")
 @Configuration
 public class ApiProducerConfig {
-  @Value("${api.producer.topology.dlxName}") private String dlxName;
-  @Value("${api.producer.topology.dlqName}") private String dlqName;
-  @Value("${api.producer.topology.queueName}") private String queueName;
-  @Value("${api.producer.topology.topicExchangeName}") private String topicExchangeName;
-  @Value("${api.producer.topology.topicRoutingKeys}") private String[] topicRoutingKeys;
+  @Value("${api.producer.topology.dlxName}")
+  private String dlxName;
 
-//  private static final String exchange = "execute";
-//  private static final String queue = "execute-queue";
+  @Value("${api.producer.topology.dlqName}")
+  private String dlqName;
+
+  @Value("${api.producer.topology.queueName}")
+  private String queueName;
+
+  @Value("${api.producer.topology.topicExchangeName}")
+  private String topicExchangeName;
+
+  @Value("${api.producer.topology.topicRoutingKeys}")
+  private String[] topicRoutingKeys;
 
   private final RabbitEndpointService rabbit;
-
 
   @Autowired
   public ApiProducerConfig(RabbitEndpointService rabbit) {
@@ -45,16 +48,16 @@ public class ApiProducerConfig {
             topologyBuilder ->
                 topologyBuilder
                     .declareExchange(topicExchangeName)
-                      .type(ExchangeType.topic)
+                    .type(ExchangeType.topic)
                     .and()
                     .declareQueue(queueName)
-                      .boundTo(topicExchangeName, topicRoutingKeys)
-                      .withDeadLetterExchange(dlxName)
+                    .boundTo(topicExchangeName, topicRoutingKeys)
+                    .withDeadLetterExchange(dlxName)
                     .and()
                     .declareExchange(dlxName)
                     .and()
                     .declareQueue(dlqName)
-                      .boundTo(dlxName))
+                    .boundTo(dlxName))
         .createTransactionalProducerStream(WfMgmtRunMsg.class)
         .route()
         .toExchange(topicExchangeName)

@@ -59,6 +59,6 @@ public class DirectToWes implements ApiToWesService {
 
   @Override
   public Mono<RunsResponse> cancel(String runId) {
-    return null;
+    return wes.cancel(runId);
   }
 }

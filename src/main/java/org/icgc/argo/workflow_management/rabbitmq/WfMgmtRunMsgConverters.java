@@ -21,7 +21,8 @@ import org.icgc.argo.workflow_management.wes.controller.model.WorkflowEnginePara
 
 @UtilityClass
 public class WfMgmtRunMsgConverters {
-  public static WfMgmtRunMsg createWfMgmtRunMsg(String runId, RunsRequest runsRequest, RunState state) {
+  public static WfMgmtRunMsg createWfMgmtRunMsg(
+      String runId, RunsRequest runsRequest, RunState state) {
     val requestWep = runsRequest.getWorkflowEngineParams();
 
     val msgWep =
@@ -100,7 +101,8 @@ public class WfMgmtRunMsgConverters {
     }
 
     String time =
-            Bolts.format(new Date(msg.getTime()), Const.ISO_8601_DATETIME_FORMAT, TimeZone.getTimeZone("UTC"));
+        Bolts.format(
+            new Date(msg.getTime()), Const.ISO_8601_DATETIME_FORMAT, TimeZone.getTimeZone("UTC"));
     return WfManagementEvent.builder()
         .event(msg.getState().toString())
         .runId(msg.getRunId())

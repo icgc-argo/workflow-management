@@ -23,10 +23,8 @@ import java.lang.annotation.RetentionPolicy;
 import org.icgc.argo.workflow_management.wes.controller.model.RunsRequest;
 import org.icgc.argo.workflow_management.wes.controller.model.RunsResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
-@Service
 public interface ApiToWesService {
   @HasQueryAndMutationAccess
   Mono<RunsResponse> run(RunsRequest runsRequest);
