@@ -18,24 +18,26 @@
 
 package org.icgc.argo.workflow_management.service.wes.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import java.util.Map;
-import lombok.*;
-import org.icgc.argo.workflow_management.wes.controller.model.WorkflowEngineParams;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 
-@Data
-@Builder
-@AllArgsConstructor
+/**
+ * ENUM of nextflow events from: https://www.nextflow.io/docs/latest/tracing.html#weblog-via-http
+ */
 @RequiredArgsConstructor
-@NoArgsConstructor
-@JsonIgnoreProperties(ignoreUnknown = true)
-public class WfManagementEvent {
-  @NonNull private String runId;
-  @NonNull private String event;
-  @NonNull private String utcTime;
-  private String workflowUrl;
-  private String workflowType;
-  private String workflowTypeVersion;
-  private Map<String, Object> workflowParams;
-  private WorkflowEngineParams workflowEngineParams;
+public enum NextflowEvent {
+  STARTED("STARTED"),
+
+  PROCESS_SUBMITTED("PROCESS_SUBMITTED"),
+
+  PROCESS_STARTED("PROCESS_STARTED"),
+
+  PROCESS_COMPLETED("PROCESS_COMPLETED"),
+
+  ERROR("ERROR"),
+
+  COMPLETED("COMPLETED");
+
+  @Getter @NonNull private final String value;
 }

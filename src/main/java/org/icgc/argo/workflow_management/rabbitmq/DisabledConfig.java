@@ -16,26 +16,14 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.service.wes.model;
+package org.icgc.argo.workflow_management.rabbitmq;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import java.util.Map;
-import lombok.*;
-import org.icgc.argo.workflow_management.wes.controller.model.WorkflowEngineParams;
+import com.pivotal.rabbitmq.ReactiveRabbitAutoConfiguration;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
-@Data
-@Builder
-@AllArgsConstructor
-@RequiredArgsConstructor
-@NoArgsConstructor
-@JsonIgnoreProperties(ignoreUnknown = true)
-public class WfManagementEvent {
-  @NonNull private String runId;
-  @NonNull private String event;
-  @NonNull private String utcTime;
-  private String workflowUrl;
-  private String workflowType;
-  private String workflowTypeVersion;
-  private Map<String, Object> workflowParams;
-  private WorkflowEngineParams workflowEngineParams;
-}
+@Profile("!api & !execute")
+@Configuration
+@EnableAutoConfiguration(exclude = ReactiveRabbitAutoConfiguration.class)
+public class DisabledConfig {}

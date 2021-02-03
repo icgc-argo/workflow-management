@@ -30,7 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.icgc.argo.workflow_management.rabbitmq.schema.RunState;
 import org.icgc.argo.workflow_management.rabbitmq.schema.WfMgmtRunMsg;
-import org.icgc.argo.workflow_management.service.wes.NextflowWebLogEventSender;
+import org.icgc.argo.workflow_management.service.wes.WebLogEventSender;
 import org.icgc.argo.workflow_management.service.wes.WorkflowExecutionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -52,7 +52,7 @@ public class ExecuteConsumerConfig {
   @Value("${execute.consumer.topology.topicRoutingKeys}")
   private String[] topicRoutingKeys;
 
-  private final NextflowWebLogEventSender webLogEventSender;
+  private final WebLogEventSender webLogEventSender;
   private final WorkflowExecutionService wes;
   private final RabbitEndpointService rabbit;
 
@@ -60,7 +60,7 @@ public class ExecuteConsumerConfig {
   public ExecuteConsumerConfig(
       WorkflowExecutionService wes,
       RabbitEndpointService rabbit,
-      NextflowWebLogEventSender webLogEventSender) {
+      WebLogEventSender webLogEventSender) {
     this.wes = wes;
     this.rabbit = rabbit;
     this.webLogEventSender = webLogEventSender;
@@ -98,9 +98,6 @@ public class ExecuteConsumerConfig {
       log.debug("WfMgmtRunMsg received: {}", msg);
 
       if (msg.getState().equals(RunState.CANCELING)) {
-        log.info("Cancelling: {}", msg);
-        webLogEventSender.sendWfMgmtEvent(createWfMgmtEvent(msg));
-
         wes.cancel(msg.getRunId())
             .subscribe(
                 runsResponse -> {
@@ -108,9 +105,6 @@ public class ExecuteConsumerConfig {
                   tx.commit();
                 });
       } else if (msg.getState().equals(RunState.INITIALIZING)) {
-        log.info("Initializing: {}", msg);
-        webLogEventSender.sendWfMgmtEvent(createWfMgmtEvent(msg));
-
         val runParams = createRunParams(msg);
 
         wes.run(runParams)
@@ -134,7 +128,7 @@ public class ExecuteConsumerConfig {
         val msg = (WfMgmtRunMsg) ((Transaction<?>) tx).get();
         msg.setState(RunState.SYSTEM_ERROR);
         log.info("SYSTEM_ERROR: {}", msg);
-        webLogEventSender.sendWfMgmtEvent(createWfMgmtEvent(msg));
+        webLogEventSender.sendWfMgmtEventAsync(createWfMgmtEvent(msg));
         ((Transaction<?>) tx).commit();
       } else {
         log.error("Can't get WfMgmtRunMsg, transaction is lost!");
