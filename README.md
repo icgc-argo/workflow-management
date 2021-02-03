@@ -1,5 +1,7 @@
 # Workflow Management
 
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+
 This service is responsible for managing the lifecycle of a workflow execution within the larger Workflow Execution System (WES).
 At it's simplest, Workflow Management takes a workflow request and initiates a run using the requested workflow engine (currently only supporting Nextflow).
 However, it is possible to configure Workflow Management to go beyond being a direct initiator and instead it can be configured to queue runs
