@@ -113,7 +113,8 @@ public class NextflowService implements WorkflowExecutionService {
         log.error("nextflow runtime exception", t);
       }
       log.error(methodName + " exception", t);
-      return new RuntimeException(format("%s error. runId: %s, msg: %s", methodName, runId, t.getMessage()));
+      return new RuntimeException(
+          format("%s error. runId: %s, msg: %s", methodName, runId, t.getMessage()));
     };
   }
 

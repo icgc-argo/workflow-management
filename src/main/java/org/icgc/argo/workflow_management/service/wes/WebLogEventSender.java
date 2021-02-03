@@ -18,7 +18,6 @@
 
 package org.icgc.argo.workflow_management.service.wes;
 
-import static org.icgc.argo.workflow_management.util.JacksonUtils.convertValue;
 import static org.icgc.argo.workflow_management.util.JacksonUtils.toJsonString;
 
 import java.util.Date;
@@ -67,14 +66,15 @@ public class WebLogEventSender {
   }
 
   public Mono<Boolean> sendWfMgmtEvent(RunParams params, WesState stateForEvent) {
-    val event = WfManagementEvent.builder()
-                        .runId(params.getRunId())
-                        .workflowUrl(params.getWorkflowUrl())
-                        .workflowEngineParams(params.getWorkflowEngineParams())
-                        .workflowParams(params.getWorkflowParams())
-                        .event(stateForEvent.getValue())
-                        .utcTime(nowInUtc())
-                        .build();
+    val event =
+        WfManagementEvent.builder()
+            .runId(params.getRunId())
+            .workflowUrl(params.getWorkflowUrl())
+            .workflowEngineParams(params.getWorkflowEngineParams())
+            .workflowParams(params.getWorkflowParams())
+            .event(stateForEvent.getValue())
+            .utcTime(nowInUtc())
+            .build();
 
     return sendHttpMessage(event);
   }

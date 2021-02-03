@@ -33,7 +33,8 @@ public class WfManagementEvent {
   @NonNull private String runId;
   @NonNull private String event;
   @NonNull private String utcTime;
-  // TODO - workflowUrl needs to be @NonNull, its missing it now because currently only INITIALIZING events have this info available
+  // TODO - workflowUrl needs to be @NonNull, its missing it now because currently only INITIALIZING
+  // events have this info available
   private String workflowUrl;
   private String workflowType;
   private String workflowTypeVersion;
