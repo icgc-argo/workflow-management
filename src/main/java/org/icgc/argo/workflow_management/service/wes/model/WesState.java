@@ -18,25 +18,35 @@
 
 package org.icgc.argo.workflow_management.service.wes.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import java.util.Map;
-import lombok.*;
-import org.icgc.argo.workflow_management.wes.controller.model.WorkflowEngineParams;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 
-@Data
-@Builder
-@AllArgsConstructor
+/**
+ * ENUM of wes state from:
+ * https://github.com/ga4gh/workflow-execution-service-schemas/blob/c3b19854240c4fcbaf3483e22b19db0a918a7ee5/openapi/workflow_execution_service.swagger.yaml#L483
+ */
 @RequiredArgsConstructor
-@NoArgsConstructor
-@JsonIgnoreProperties(ignoreUnknown = true)
-public class WfManagementEvent {
-  @NonNull private String runId;
-  @NonNull private String event;
-  @NonNull private String utcTime;
-  // TODO - workflowUrl needs to be @NonNull, its missing it now because currently only INITIALIZING events have this info available
-  private String workflowUrl;
-  private String workflowType;
-  private String workflowTypeVersion;
-  private Map<String, Object> workflowParams;
-  private WorkflowEngineParams workflowEngineParams;
+public enum WesState {
+  UNKNOWN("UNKNOWN"),
+
+  QUEUED("QUEUED"),
+
+  INITIALIZING("INITIALIZING"),
+
+  RUNNING("RUNNING"),
+
+  PAUSED("PAUSED"),
+
+  CANCELING("CANCELING"),
+
+  CANCELED("CANCELED"),
+
+  COMPLETE("COMPLETE"),
+
+  EXECUTOR_ERROR("EXECUTOR_ERROR"),
+
+  SYSTEM_ERROR("SYSTEM_ERROR");
+
+  @Getter @NonNull private final String value;
 }

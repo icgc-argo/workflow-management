@@ -43,7 +43,7 @@ import org.icgc.argo.workflow_management.exception.GlobalExceptionHandler;
 import org.icgc.argo.workflow_management.service.api_to_wes.ApiToWesService;
 import org.icgc.argo.workflow_management.service.api_to_wes.impl.DirectToWes;
 import org.icgc.argo.workflow_management.service.wes.NextflowService;
-import org.icgc.argo.workflow_management.service.wes.NextflowWebLogEventSender;
+import org.icgc.argo.workflow_management.service.wes.WebLogEventSender;
 import org.icgc.argo.workflow_management.service.wes.properties.NextflowProperties;
 import org.icgc.argo.workflow_management.wes.controller.impl.RunsApiController;
 import org.icgc.argo.workflow_management.wes.controller.model.RunsRequest;
@@ -73,7 +73,7 @@ import org.springframework.web.server.ResponseStatusException;
       NoSecretProviderConfig.class,
       DirectToWes.class,
       NextflowService.class,
-      NextflowWebLogEventSender.class,
+      WebLogEventSender.class,
       NextflowProperties.class,
       GlobalExceptionHandler.class,
       AuthDisabledConfig.class

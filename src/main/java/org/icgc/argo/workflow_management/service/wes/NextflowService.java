@@ -32,8 +32,10 @@ import io.fabric8.kubernetes.client.KubernetesClientException;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.NonNull;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import nextflow.cli.CliOptions;
@@ -44,10 +46,7 @@ import nextflow.script.ScriptBinding;
 import org.icgc.argo.workflow_management.exception.NextflowRunException;
 import org.icgc.argo.workflow_management.exception.ReflectionUtilsException;
 import org.icgc.argo.workflow_management.secret.SecretProvider;
-import org.icgc.argo.workflow_management.service.wes.model.KubernetesPhase;
-import org.icgc.argo.workflow_management.service.wes.model.NextflowMetadata;
-import org.icgc.argo.workflow_management.service.wes.model.NextflowWorkflowMetadata;
-import org.icgc.argo.workflow_management.service.wes.model.RunParams;
+import org.icgc.argo.workflow_management.service.wes.model.*;
 import org.icgc.argo.workflow_management.service.wes.properties.NextflowProperties;
 import org.icgc.argo.workflow_management.util.ConditionalPutMap;
 import org.icgc.argo.workflow_management.wes.controller.model.RunsResponse;
@@ -69,7 +68,7 @@ public class NextflowService implements WorkflowExecutionService {
   // Dependencies
   private final NextflowProperties config;
   private final SecretProvider secretProvider;
-  private final NextflowWebLogEventSender webLogSender;
+  private final WebLogEventSender webLogSender;
 
   // State
   private final DefaultKubernetesClient workflowRunK8sClient;
@@ -78,9 +77,7 @@ public class NextflowService implements WorkflowExecutionService {
 
   @Autowired
   public NextflowService(
-      NextflowProperties config,
-      SecretProvider secretProvider,
-      NextflowWebLogEventSender webLogSender) {
+      NextflowProperties config, SecretProvider secretProvider, WebLogEventSender webLogSender) {
     this.config = config;
     this.secretProvider = secretProvider;
     this.webLogSender = webLogSender;
@@ -89,25 +86,39 @@ public class NextflowService implements WorkflowExecutionService {
   }
 
   public Mono<RunsResponse> run(RunParams params) {
-    return Mono.fromSupplier(
-            () -> {
-              try {
-                return this.startRun(params);
-              } catch (RuntimeException e) {
-                // rethrow runtime exception for GlobalExceptionHandler
-                log.error("nextflow runtime exception", e);
-                throw e;
-              } catch (Exception e) {
-                log.error("startRun exception", e);
-                throw new RuntimeException(e.getMessage());
-              }
-            })
+    log.debug("Initializing run: {}", params);
+    return webLogSender
+        .sendWfMgmtEvent(params, WesState.INITIALIZING)
+        .map(r -> this.startRun(params))
         .map(RunsResponse::new)
+        .doOnError(t -> webLogSender.sendWfMgmtEventAsync(params, WesState.SYSTEM_ERROR))
+        .onErrorMap(toRuntimeException("startRun"))
         .subscribeOn(scheduler);
   }
 
-  private String startRun(RunParams params)
-      throws ReflectionUtilsException, IOException, NextflowRunException {
+  public Mono<RunsResponse> cancel(@NonNull String runId) {
+    log.debug("Cancelling run: {}", runId);
+    return webLogSender
+        .sendWfMgmtEvent(runId, WesState.CANCELING)
+        .map(r -> this.cancelRun(runId))
+        .map(RunsResponse::new)
+        .doOnError(t -> webLogSender.sendWfMgmtEventAsync(runId, WesState.SYSTEM_ERROR))
+        .onErrorMap(toRuntimeException("cancelRun"))
+        .subscribeOn(scheduler);
+  }
+
+  private Function<Throwable, Throwable> toRuntimeException(String methodName) {
+    return t -> {
+      if (t instanceof RuntimeException) {
+        log.error("nextflow runtime exception", t);
+      }
+      log.error(methodName + " exception", t);
+      return new RuntimeException(t.getMessage());
+    };
+  }
+
+  @SneakyThrows
+  private String startRun(RunParams params) {
     val cmd = createCmd(createLauncher(), params);
 
     val driver = createDriver(cmd);
@@ -117,7 +128,7 @@ public class NextflowService implements WorkflowExecutionService {
     if (exitStatus == 0) {
 
       // Build required objects for monitoring THIS run.
-      val workflowMetadata = NextflowWorkflowMetadata.create(cmd, driver);
+      val workflowMetadata = NextflowWorkflowMetadata.create(cmd, driver, params.getWorkflowUrl());
       val meta =
           new NextflowMetadata(
               workflowMetadata, new ScriptBinding.ParamsMap(params.getWorkflowParams()));
@@ -134,24 +145,6 @@ public class NextflowService implements WorkflowExecutionService {
       throw new NextflowRunException(
           format("Invalid exit status (%d) from run %s", exitStatus, cmd.getRunName()));
     }
-  }
-
-  public Mono<RunsResponse> cancel(@NonNull String runId) {
-    return Mono.fromSupplier(
-            () -> {
-              try {
-                return this.cancelRun(runId);
-              } catch (RuntimeException e) {
-                // rethrow runtime exception for GlobalExceptionHandler
-                log.error("nextflow runtime exception", e);
-                throw e;
-              } catch (Exception e) {
-                log.error("cancelRun exception", e);
-                throw new RuntimeException(e.getMessage());
-              }
-            })
-        .map(RunsResponse::new)
-        .subscribeOn(scheduler);
   }
 
   /**
@@ -177,6 +170,7 @@ public class NextflowService implements WorkflowExecutionService {
     }
   }
 
+  @SneakyThrows
   private String cancelRun(@NonNull String runId) {
     val state = getPhase(runId);
 
@@ -230,7 +224,7 @@ public class NextflowService implements WorkflowExecutionService {
         format(
             "Executor pod %s is in a failed state, sending failed pod event to weblog ...",
             podName));
-    webLogSender.sendFailedPodEvent(podName);
+    webLogSender.sendWfMgmtEventAsync(podName, WesState.SYSTEM_ERROR);
     log.info(format("Cancellation event for pod %s has been sent to weblog.", podName));
     return podName;
   }

@@ -79,7 +79,8 @@ public class NextflowWorkflowMetadata {
     this.setStart(OffsetDateTime.parse(pod.getStatus().getStartTime()));
   }
 
-  public static NextflowWorkflowMetadata create(CmdKubeRun cmd, K8sDriverLauncher driver) {
+  public static NextflowWorkflowMetadata create(
+      CmdKubeRun cmd, K8sDriverLauncher driver, String repo) {
     NextflowWorkflowMetadata metadata = new NextflowWorkflowMetadata();
     String commandLine;
     try {
@@ -95,6 +96,7 @@ public class NextflowWorkflowMetadata {
     metadata.setRevision(cmd.getRevision());
     metadata.setRunName(cmd.getRunName());
     metadata.setSuccess(false);
+    metadata.setRepository(repo);
     return metadata;
   }
 }

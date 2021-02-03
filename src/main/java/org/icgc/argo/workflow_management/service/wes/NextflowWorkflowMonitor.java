@@ -31,15 +31,15 @@ import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import nextflow.util.Duration;
 import org.icgc.argo.workflow_management.service.wes.model.KubernetesPhase;
+import org.icgc.argo.workflow_management.service.wes.model.NextflowEvent;
 import org.icgc.argo.workflow_management.service.wes.model.NextflowMetadata;
 
 @Slf4j
 @AllArgsConstructor
 public class NextflowWorkflowMonitor implements Runnable {
 
-  private final NextflowWebLogEventSender webLogSender;
+  private final WebLogEventSender webLogSender;
   private final NextflowMetadata metadata;
   private final Integer maxErrorLogLines;
   private final DefaultKubernetesClient kubernetesClient;
@@ -72,14 +72,15 @@ public class NextflowWorkflowMonitor implements Runnable {
     // if the pod failed to start up, we'll log the start and end events, so that we know
     // that the pod has started, and has failed, with the pod log as the error report.
     if (podFailed(pod)) {
-      log.debug("Sending start event");
-      webLogSender.sendStartEvent(metadata);
-      log.debug("Updating the failure message");
-      updateFailure(metadata, pod, podLog);
-      log.debug("Sending completed event");
-      webLogSender.sendCompletedEvent(metadata);
-      log.debug("Event sent");
-      log.debug(podName + " failed! Done!");
+      val workflow = metadata.getWorkflow();
+
+      workflow.update(pod);
+      workflow.setComplete(now(ZoneOffset.UTC));
+      workflow.setErrorReport("Nextflow pod failed to start: " + podLog);
+      workflow.setSuccess(false);
+
+      log.debug("Sending error nextflow event");
+      webLogSender.sendNextflowEventAsync(metadata, NextflowEvent.ERROR);
       return true;
     }
 
@@ -102,16 +103,6 @@ public class NextflowWorkflowMonitor implements Runnable {
 
   private boolean podFailed(Pod pod) {
     return getPhase(pod).equals(KubernetesPhase.FAILED);
-  }
-
-  public void updateFailure(NextflowMetadata metadata, Pod pod, String podLog) {
-    val workflow = metadata.getWorkflow();
-    val completeTime = now(ZoneOffset.UTC);
-    workflow.update(pod);
-    workflow.setComplete(completeTime);
-    workflow.setDuration(Duration.between(workflow.getStart(), completeTime));
-    workflow.setErrorReport("Nextflow pod failed to start");
-    workflow.setSuccess(false);
   }
 
   public KubernetesPhase getPhase(Pod pod) {
