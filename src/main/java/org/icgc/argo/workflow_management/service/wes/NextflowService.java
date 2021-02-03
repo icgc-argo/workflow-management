@@ -92,7 +92,7 @@ public class NextflowService implements WorkflowExecutionService {
         .map(r -> this.startRun(params))
         .map(RunsResponse::new)
         .doOnError(t -> webLogSender.sendWfMgmtEventAsync(params, WesState.SYSTEM_ERROR))
-        .onErrorMap(toRuntimeException("startRun"))
+        .onErrorMap(toRuntimeException("startRun", params.getRunId()))
         .subscribeOn(scheduler);
   }
 
@@ -103,17 +103,17 @@ public class NextflowService implements WorkflowExecutionService {
         .map(r -> this.cancelRun(runId))
         .map(RunsResponse::new)
         .doOnError(t -> webLogSender.sendWfMgmtEventAsync(runId, WesState.SYSTEM_ERROR))
-        .onErrorMap(toRuntimeException("cancelRun"))
+        .onErrorMap(toRuntimeException("cancelRun", runId))
         .subscribeOn(scheduler);
   }
 
-  private Function<Throwable, Throwable> toRuntimeException(String methodName) {
+  private Function<Throwable, Throwable> toRuntimeException(String methodName, String runId) {
     return t -> {
       if (t instanceof RuntimeException) {
         log.error("nextflow runtime exception", t);
       }
       log.error(methodName + " exception", t);
-      return new RuntimeException(t.getMessage());
+      return new RuntimeException(format("%s error. runId: %s, msg: %s", methodName, runId, t.getMessage()));
     };
   }
 

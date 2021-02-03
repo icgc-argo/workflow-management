@@ -67,9 +67,14 @@ public class WebLogEventSender {
   }
 
   public Mono<Boolean> sendWfMgmtEvent(RunParams params, WesState stateForEvent) {
-    val event = convertValue(params, WfManagementEvent.class);
-    event.setEvent(stateForEvent.getValue());
-    event.setUtcTime(nowInUtc());
+    val event = WfManagementEvent.builder()
+                        .runId(params.getRunId())
+                        .workflowUrl(params.getWorkflowUrl())
+                        .workflowEngineParams(params.getWorkflowEngineParams())
+                        .workflowParams(params.getWorkflowParams())
+                        .event(stateForEvent.getValue())
+                        .utcTime(nowInUtc())
+                        .build();
 
     return sendHttpMessage(event);
   }
