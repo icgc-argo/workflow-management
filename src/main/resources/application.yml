@@ -66,15 +66,15 @@ spring.profiles: api
 api.producer.topology:
   queueName: "gatekeeper-in-queue"
   topicExchangeName: "gatekeeper-in"
-  topicRoutingKeys:  "QUEUED, CANCELING" # comma separated Array of keys
+  topicRoutingKeys:  "#" # comma separated Array of keys
 
 ---
 spring.profiles: execute
 
 execute.consumer.topology:
   queueName: "execute-queue"
-  topicExchangeName: "execute"
-  topicRoutingKeys: "#" # comma separated Array of keys
+  topicExchangeName: "gatekeeper-out"
+  topicRoutingKeys: "INITIALIZING, CANCELING" # comma separated Array of keys
 
 ---
 spring.profiles: gatekeeper
@@ -87,6 +87,24 @@ spring.jpa:
   hibernate:
     ddl-auto: create # TODO - update
 
+spring.cloud.stream:
+  function.definition: weblogConsumer
+  bindings:
+    weblogConsumer-in-0:
+      group: mgmt-weblogConsumer
+      destination: weblog # kafka topic to listen to
+      binder: kafka
+
+spring.cloud.stream.kafka:
+  binder.brokers: localhost:9092
+#  bindings:
+#    weblog-in-0:
+#      consumer:
+#        enableDlq: true
+#        dlqName: weblog-in-0_dlq
+#        autoCommitOnError: true
+#        autoCommitOffset: true
+
 gatekeeper.consumer.topology:
   queueName: "gatekeeper-in-queue"
   topicExchangeName: "gatekeeper-in"
@@ -94,3 +112,4 @@ gatekeeper.consumer.topology:
 gatekeeper.producer.topology:
   queueName: "gatekeeper-out-queue" # TODO remove
   topicExchangeName: "gatekeeper-out"
+

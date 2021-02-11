@@ -19,17 +19,21 @@
 package org.icgc.argo.workflow_management.rabbitmq;
 
 import com.pivotal.rabbitmq.RabbitEndpointService;
+import com.pivotal.rabbitmq.source.OnDemandSource;
 import com.pivotal.rabbitmq.stream.Transaction;
 import com.pivotal.rabbitmq.topology.ExchangeType;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
+
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.icgc.argo.workflow_management.config.rabbitmq.RabbitSchemaConfig;
 import org.icgc.argo.workflow_management.gatekeeper.service.GateKeeperService;
+import org.icgc.argo.workflow_management.rabbitmq.schema.EngineParams;
 import org.icgc.argo.workflow_management.rabbitmq.schema.RunState;
 import org.icgc.argo.workflow_management.rabbitmq.schema.WfMgmtRunMsg;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.context.annotation.Bean;
@@ -42,6 +46,7 @@ import reactor.core.publisher.Flux;
 @Profile("gatekeeper")
 @AutoConfigureAfter(RabbitSchemaConfig.class)
 @Configuration
+@RequiredArgsConstructor
 public class GateKeeperStreamsConfig {
   @Value("${gatekeeper.producer.topology.queueName}")
   private String producerDefaultQueueName;
@@ -60,14 +65,26 @@ public class GateKeeperStreamsConfig {
   private final RabbitEndpointService rabbit;
   private final GateKeeperService service;
 
-  @Autowired
-  public GateKeeperStreamsConfig(
-      RabbitEndpointService rabbit, GateKeeperService gateKeeperService) {
-    this.rabbit = rabbit;
-    this.service = gateKeeperService;
+  private final OnDemandSource<WfMgmtRunMsg> gatekeeperSource = new OnDemandSource<>("gatekeeperSource");
+
+  @Bean
+  public Consumer<Object> weblogConsumer() {
+    return obj -> {
+      log.info("weblogConsumer recived: {}", obj);
+      gatekeeperSource.send(
+              WfMgmtRunMsg.newBuilder()
+                      .setRunId("foofoo")
+                      .setState(RunState.UNKNOWN)
+                      .setWorkflowParamsJsonStr("")
+                      .setWorkflowType("")
+                      .setWorkflowTypeVersion("")
+                      .setWorkflowEngineParams(EngineParams.newBuilder().build())
+                      .setTimestamp(0L)
+                      .build());
+    };
   }
 
-  public Flux<Transaction<WfMgmtRunMsg>> consumeAndValidatedMsgs() {
+  public Flux<Transaction<WfMgmtRunMsg>> consumedAndValidatedMsgs() {
     val dlxName = consumerTopicExchangeName + "-dlx";
     val dlqName = consumerQueueName + "-dlq";
     return rabbit
@@ -125,13 +142,47 @@ public class GateKeeperStreamsConfig {
         .toExchange(producerTopicExchangeName)
         .withRoutingKey(routingKeySelector())
         .then()
-        .send(consumeAndValidatedMsgs())
+        .send(consumedAndValidatedMsgs())
         .onErrorContinue(handleError())
         .subscribe(
             tx -> {
               log.info("Gatekeeper Sent: {}", tx.get());
               tx.commit();
             });
+  }
+
+
+  @Bean
+  public Disposable gatekeeperWeblogProducer() {
+    val dlxName = consumerTopicExchangeName + "-dlx";
+    val dlqName = consumerQueueName + "-dlq";
+    return rabbit
+                   .declareTopology(
+                           topologyBuilder ->
+                                   topologyBuilder
+                                           .declareExchange(dlxName)
+                                           .and()
+                                           .declareQueue(dlqName)
+                                           .boundTo(dlxName)
+                                           .and()
+                                           .declareExchange(consumerTopicExchangeName)
+                                           .type(ExchangeType.topic)
+                                           .and()
+                                           .declareQueue(consumerQueueName)
+                                           .boundTo(producerTopicExchangeName, ROUTING_KEY)
+                                           .withDeadLetterExchange(dlxName))
+                   .createTransactionalProducerStream(WfMgmtRunMsg.class)
+                   .route()
+                   .toExchange(producerTopicExchangeName)
+                   .withRoutingKey(routingKeySelector())
+                   .then()
+                   .send(gatekeeperSource.source())
+                   .onErrorContinue(handleError())
+                   .subscribe(
+                           tx -> {
+                             log.info("GatekeeperWeblogProducer Sent: {}", tx.get());
+                             tx.commit();
+                           });
   }
 
   public BiConsumer<Throwable, Object> handleError() {
@@ -142,7 +193,7 @@ public class GateKeeperStreamsConfig {
         val msg = (WfMgmtRunMsg) ((Transaction<?>) tx).get();
         msg.setState(RunState.SYSTEM_ERROR);
         log.info("SYSTEM_ERROR: {}", msg);
-        // webLogEventSender.sendWfMgmtEventAsync(createWfMgmtEvent(msg));
+//         webLogEventSender.sendWfMgmtEventAsync(createWfMgmtEvent(msg));
         ((Transaction<?>) tx).reject();
       } else {
         log.error("Can't get WfMgmtRunMsg, transaction is lost!");
