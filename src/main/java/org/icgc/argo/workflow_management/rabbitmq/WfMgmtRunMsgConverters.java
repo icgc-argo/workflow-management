@@ -71,6 +71,15 @@ public class WfMgmtRunMsgConverters {
         .setRunId(runId)
         .setTimestamp(Instant.now().toEpochMilli())
         .setState(state)
+        .setWorkflowEngineParams(
+            EngineParams.newBuilder()
+                .setDefaultContainer(null)
+                .setRevision(null)
+                .setLaunchDir(null)
+                .setProjectDir(null)
+                .setWorkDir(null)
+                .setLatest(null)
+                .build())
         .build();
   }
 

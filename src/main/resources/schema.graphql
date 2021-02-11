@@ -23,8 +23,27 @@ input RunsRequest {
   tags: JSON
 }
 
-
 type Mutation {
     startRun(request: RunsRequest!): RunsResponse
     cancelRun(runId: ID!): RunsResponse
+}
+
+type SearchResultInfo {
+    contentCount: String!
+    hasNextFrom: String!
+    totalHits: String!
+}
+
+type ActiveRun {
+    runId: String!
+    state: String!
+}
+
+type ActiveRunsSearchResult {
+    content: [ActiveRun!]
+    info: SearchResultInfo!
+}
+
+type Query {
+    activeRuns: ActiveRunsSearchResult
 }

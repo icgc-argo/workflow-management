@@ -66,6 +66,7 @@ public class GraphQLProvider {
     return RuntimeWiring.newRuntimeWiring()
         .scalar(ExtendedScalars.Json)
         .type(newTypeWiring("Mutation").dataFetchers(mutationDataFetcher.mutationResolvers()))
+        .fieldVisibility(new AdminVisibility())
         .build();
   }
 }

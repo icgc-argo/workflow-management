@@ -5,13 +5,18 @@ nextflow:
     runNamespace: "default" # Namespace where wes and nf pods will live
     serviceAccount: "default"
     volMounts:
-      - "pv-claim:/some/dir"
-    masterUrl: "localhost:8080"
+      - "task-pv-claim:/mnt/data"
+    masterUrl: "https://192.168.99.100:8443"
     trustCertificate: false
-  weblogUrl: "http://localhost"
+  weblogUrl: "http://localhost:8083"
   monitor:
     sleepInterval: 1000 # milliseconds
     maxErrorLogLines: 50 # we put the last ${maxErrorLogLines} into the error message if a Pod fails
+
+logging.level:
+  com.pivotal: debug
+#  org.springframework: debug
+  org.icgc.argo: debug
 
 secret:
   enabled: false
@@ -44,7 +49,7 @@ secret:
   tokenUri: http://localhost:8080/oauth/token
 
 ---
-spring.profiles: api,execute
+spring.profiles: api,execute,gatekeeper
 
 rabbit:
   default-endpoint-name: standalone
@@ -59,13 +64,33 @@ rabbit:
 spring.profiles: api
 
 api.producer.topology:
-  queueName: "execute-queue"
-  topicExchangeName: "execute"
-  topicRoutingKeys: "INITIALIZING, CANCELLING" # comma separated Array of keys
+  queueName: "gatekeeper-in-queue"
+  topicExchangeName: "gatekeeper-in"
+  topicRoutingKeys:  "QUEUED, CANCELING" # comma separated Array of keys
+
 ---
 spring.profiles: execute
 
 execute.consumer.topology:
   queueName: "execute-queue"
   topicExchangeName: "execute"
-  topicRoutingKeys: "INITIALIZING, CANCELLING" # comma separated Array of keys
+  topicRoutingKeys: "#" # comma separated Array of keys
+
+---
+spring.profiles: gatekeeper
+
+spring.datasource:
+  url: jdbc:postgresql://localhost:5432/gatekeeperdb
+  username: postgres
+  password: mysecretpassword
+spring.jpa:
+  hibernate:
+    ddl-auto: create # TODO - update
+
+gatekeeper.consumer.topology:
+  queueName: "gatekeeper-in-queue"
+  topicExchangeName: "gatekeeper-in"
+
+gatekeeper.producer.topology:
+  queueName: "gatekeeper-out-queue" # TODO remove
+  topicExchangeName: "gatekeeper-out"

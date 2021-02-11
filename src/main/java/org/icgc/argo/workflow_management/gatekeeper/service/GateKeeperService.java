@@ -1,0 +1,119 @@
+/*
+ * Copyright (c) 2021 The Ontario Institute for Cancer Research. All rights reserved
+ *
+ * This program and the accompanying materials are made available under the terms of the GNU Affero General Public License v3.0.
+ * You should have received a copy of the GNU Affero General Public License along with
+ * this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
+ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
+ * SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+ * TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+ * IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+package org.icgc.argo.workflow_management.gatekeeper.service;
+
+import static org.icgc.argo.workflow_management.rabbitmq.schema.RunState.*;
+
+import java.util.Map;
+import java.util.Set;
+import lombok.RequiredArgsConstructor;
+import lombok.val;
+import org.icgc.argo.workflow_management.gatekeeper.model.ActiveRun;
+import org.icgc.argo.workflow_management.gatekeeper.repository.ActiveRunsRepo;
+import org.icgc.argo.workflow_management.graphql.model.SearchResult;
+import org.icgc.argo.workflow_management.rabbitmq.schema.RunState;
+import org.icgc.argo.workflow_management.rabbitmq.schema.WfMgmtRunMsg;
+import org.springframework.context.annotation.Profile;
+import org.springframework.data.domain.Example;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Profile("gatekeeper")
+@Service
+@RequiredArgsConstructor
+public class GateKeeperService {
+  private static final Map<RunState, Set<RunState>> STATE_LOOKUP =
+      Map.of(
+          QUEUED, Set.of(INITIALIZING, CANCELING, CANCELED, SYSTEM_ERROR),
+          INITIALIZING, Set.of(RUNNING, CANCELING, CANCELED, SYSTEM_ERROR),
+          CANCELING, Set.of(CANCELED, EXECUTOR_ERROR, SYSTEM_ERROR),
+          RUNNING, Set.of(SYSTEM_ERROR, EXECUTOR_ERROR, CANCELED, CANCELING, COMPLETE));
+
+  private static final Set<RunState> TERMINAL_STATES =
+      Set.of(SYSTEM_ERROR, EXECUTOR_ERROR, CANCELED, COMPLETE);
+
+  private final ActiveRunsRepo repo;
+
+  // TODO cleanup??
+  @Transactional
+  public Boolean updateRunState(WfMgmtRunMsg msg) {
+    val knownRunOpt = repo.findById(msg.getRunId());
+
+    if (knownRunOpt.isEmpty() && msg.getState().equals(QUEUED)) {
+      repo.save(fromMsg(msg));
+      return true;
+    } else if (knownRunOpt.isEmpty()) {
+      return false;
+    }
+
+    val knownRun = knownRunOpt.get();
+
+    val current = RunState.valueOf(knownRun.getState());
+    val next = msg.getState();
+    if (STATE_LOOKUP.getOrDefault(current, Set.of()).contains(next)) {
+      if (TERMINAL_STATES.contains(next)) {
+        repo.delete(knownRun);
+      } else {
+        knownRun.setState(next.toString());
+        repo.save(knownRun);
+      }
+
+      // TODO - is this the best place for this??
+      if (current.equals(QUEUED) && next.equals(CANCELING)) {
+        msg.setState(CANCELED);
+      }
+      return true;
+    }
+
+    return false;
+  }
+
+  public SearchResult<ActiveRun> getRuns(Pageable pageable) {
+    return getRuns(null, pageable);
+  }
+
+  public SearchResult<ActiveRun> getRuns(Example<ActiveRun> example, Pageable pageable) {
+    val result = example == null ? repo.findAll(pageable) : repo.findAll(example, pageable);
+    return new SearchResult<>(result.getContent(), result.hasNext(), result.getTotalElements());
+  }
+
+  private ActiveRun fromMsg(WfMgmtRunMsg msg) {
+    val msgWep = msg.getWorkflowEngineParams();
+    val runWep =
+        ActiveRun.EngineParams.builder()
+            .latest(msgWep.getLatest())
+            .defaultContainer(msgWep.getDefaultContainer())
+            .launchDir(msgWep.getLaunchDir())
+            .revision(msgWep.getRevision())
+            .projectDir(msgWep.getProjectDir())
+            .workDir(msgWep.getWorkDir())
+            .resume(msgWep.getResume())
+            .build();
+
+    return ActiveRun.builder()
+        .runId(msg.getRunId())
+        .state(msg.getState().toString()) // TODO use enum!
+        .workflowUrl(msg.getWorkflowUrl())
+        .workflowParamsJsonStr(msg.getWorkflowParamsJsonStr())
+        .workflowEngineParams(runWep)
+        .timestamp(msg.getTimestamp())
+        .build();
+  }
+}

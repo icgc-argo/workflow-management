@@ -47,7 +47,7 @@ public class ApiProducerToWes implements ApiToWesService {
   @Override
   public Mono<RunsResponse> run(RunsRequest runsRequest) {
     val runId = generateWesRunId();
-    val msg = createWfMgmtRunMsg(runId, runsRequest, RunState.INITIALIZING);
+    val msg = createWfMgmtRunMsg(runId, runsRequest, RunState.QUEUED);
     return Mono.just(msg).flatMap(sender::send).map(o -> new RunsResponse(runId));
   }
 
