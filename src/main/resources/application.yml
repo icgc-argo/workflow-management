@@ -79,13 +79,13 @@ execute.consumer.topology:
 ---
 spring.profiles: gatekeeper
 
-spring.datasource:
-  url: jdbc:postgresql://localhost:5432/gatekeeperdb
-  username: postgres
-  password: mysecretpassword
-spring.jpa:
-  hibernate:
-    ddl-auto: create # TODO - update
+gatekeeper.consumer.topology:
+  queueName: "gatekeeper-in-queue"
+  topicExchangeName: "gatekeeper-in"
+
+gatekeeper.producer.topology:
+  queueName: "gatekeeper-out-default-queue"
+  topicExchangeName: "gatekeeper-out"
 
 spring.cloud.stream:
   function.definition: weblogConsumer
@@ -94,22 +94,20 @@ spring.cloud.stream:
       group: mgmt-weblogConsumer
       destination: weblog # kafka topic to listen to
       binder: kafka
+  kafka:
+    binder.brokers: localhost:9092
+    bindings:
+      weblogConsumer-in-0:
+        consumer:
+          enableDlq: true
+          dlqName: weblog-in-0_dlq
+          autoCommitOnError: true
+          autoCommitOffset: true
 
-spring.cloud.stream.kafka:
-  binder.brokers: localhost:9092
-#  bindings:
-#    weblog-in-0:
-#      consumer:
-#        enableDlq: true
-#        dlqName: weblog-in-0_dlq
-#        autoCommitOnError: true
-#        autoCommitOffset: true
-
-gatekeeper.consumer.topology:
-  queueName: "gatekeeper-in-queue"
-  topicExchangeName: "gatekeeper-in"
-
-gatekeeper.producer.topology:
-  queueName: "gatekeeper-out-queue" # TODO remove
-  topicExchangeName: "gatekeeper-out"
-
+spring.datasource:
+  url: jdbc:postgresql://localhost:5432/gatekeeperdb
+  username: postgres
+  password: mysecretpassword
+spring.jpa:
+  hibernate:
+    ddl-auto: update

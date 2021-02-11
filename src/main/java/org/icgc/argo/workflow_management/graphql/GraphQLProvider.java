@@ -23,17 +23,15 @@ import static graphql.schema.idl.TypeRuntimeWiring.newTypeWiring;
 import com.apollographql.federation.graphqljava.Federation;
 import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
-import com.sun.xml.bind.v2.TODO;
 import graphql.GraphQL;
 import graphql.scalars.ExtendedScalars;
 import graphql.schema.DataFetcher;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.idl.RuntimeWiring;
+import graphql.schema.visibility.BlockedFields;
 import java.io.IOException;
 import java.net.URL;
 import javax.annotation.PostConstruct;
-
-import graphql.schema.visibility.BlockedFields;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
@@ -67,9 +65,10 @@ public class GraphQLProvider {
         .scalar(ExtendedScalars.Json)
         .type(newTypeWiring("Mutation").dataFetchers(mutationDataFetcher.mutationResolvers()))
         .type(newTypeWiring("Query").dataFetcher("activeRuns", gatekeeperDataFetcher))
-        .fieldVisibility(BlockedFields.newBlock()
-                                 .addPattern("activeRuns") // TODO make visible after api is removed
-                                 .build())
+        .fieldVisibility(
+            BlockedFields.newBlock()
+                .addPattern("activeRuns") // TODO make visible after api is removed
+                .build())
         .build();
   }
 }

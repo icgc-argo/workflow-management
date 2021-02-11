@@ -26,7 +26,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.icgc.argo.workflow_management.gatekeeper.model.ActiveRun;
 import org.icgc.argo.workflow_management.gatekeeper.repository.ActiveRunsRepo;
-import org.icgc.argo.workflow_management.graphql.model.SearchResult;
 import org.icgc.argo.workflow_management.rabbitmq.schema.RunState;
 import org.icgc.argo.workflow_management.rabbitmq.schema.WfMgmtRunMsg;
 import org.springframework.context.annotation.Profile;

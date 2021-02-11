@@ -42,30 +42,30 @@ public class GatekeeperDataFetchers {
         if (args.get("sorts") != null) {
           val rawSorts = (List<Object>) args.get("sorts");
           sortsBuilder.addAll(
-                  rawSorts.stream()
-                          .map(sort -> convertValue(sort, GqlSort.class))
-                          .collect(toUnmodifiableList()));
+              rawSorts.stream()
+                  .map(sort -> convertValue(sort, GqlSort.class))
+                  .collect(toUnmodifiableList()));
         }
       }
 
       val sorts = sortsBuilder.build();
 
       val sortable =
-              Sort.by(
-                      sorts.stream()
-                              .map(
-                                      s ->
-                                              new Sort.Order(
-                                                      s.getOrder().equalsIgnoreCase("asc")
-                                                              ? Sort.Direction.ASC
-                                                              : Sort.Direction.DESC,
-                                                      s.getFieldName()))
-                              .collect(toList()));
+          Sort.by(
+              sorts.stream()
+                  .map(
+                      s ->
+                          new Sort.Order(
+                              s.getOrder().equalsIgnoreCase("asc")
+                                  ? Sort.Direction.ASC
+                                  : Sort.Direction.DESC,
+                              s.getFieldName()))
+                  .collect(toList()));
 
       val pageable =
-              page == null
-                      ? PageRequest.of(0, 10, sortable)
-                      : PageRequest.of(page.getFrom(), page.getSize(), sortable);
+          page == null
+              ? PageRequest.of(0, 10, sortable)
+              : PageRequest.of(page.getFrom(), page.getSize(), sortable);
 
       Page<ActiveRun> result;
       if (activeRun == null) {

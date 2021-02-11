@@ -18,14 +18,14 @@
 
 package org.icgc.argo.workflow_management.rabbitmq;
 
+import static org.icgc.argo.workflow_management.util.RabbitmqUtils.createTransConsumerStream;
+import static org.icgc.argo.workflow_management.util.RabbitmqUtils.createTransProducerStream;
+
 import com.pivotal.rabbitmq.RabbitEndpointService;
 import com.pivotal.rabbitmq.source.OnDemandSource;
 import com.pivotal.rabbitmq.stream.Transaction;
-import com.pivotal.rabbitmq.topology.ExchangeType;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.function.Function;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -65,127 +65,80 @@ public class GateKeeperStreamsConfig {
   private final RabbitEndpointService rabbit;
   private final GateKeeperService service;
 
-  private final OnDemandSource<WfMgmtRunMsg> gatekeeperSource = new OnDemandSource<>("gatekeeperSource");
+  private final OnDemandSource<WfMgmtRunMsg> weblogSink = new OnDemandSource<>("weblogSource");
 
+  /** Creates functional bean to consume weblog kafka events */
   @Bean
   public Consumer<Object> weblogConsumer() {
     return obj -> {
-      log.info("weblogConsumer recived: {}", obj);
-      gatekeeperSource.send(
-              WfMgmtRunMsg.newBuilder()
-                      .setRunId("foofoo")
-                      .setState(RunState.UNKNOWN)
-                      .setWorkflowParamsJsonStr("")
-                      .setWorkflowType("")
-                      .setWorkflowTypeVersion("")
-                      .setWorkflowEngineParams(EngineParams.newBuilder().build())
-                      .setTimestamp(0L)
-                      .build());
+      log.info("WeblogConsumer received from kafka: {}", obj);
+      weblogSink.send(
+          WfMgmtRunMsg.newBuilder()
+              .setRunId("foofoo")
+              .setState(RunState.UNKNOWN)
+              .setWorkflowParamsJsonStr("")
+              .setWorkflowType("")
+              .setWorkflowTypeVersion("")
+              .setWorkflowEngineParams(EngineParams.newBuilder().build())
+              .setTimestamp(0L)
+              .build());
     };
   }
-
-  public Flux<Transaction<WfMgmtRunMsg>> consumedAndValidatedMsgs() {
-    val dlxName = consumerTopicExchangeName + "-dlx";
-    val dlqName = consumerQueueName + "-dlq";
-    return rabbit
-        .declareTopology(
-            topologyBuilder ->
-                topologyBuilder
-                    .declareExchange(dlxName)
-                    .and()
-                    .declareQueue(dlqName)
-                    .boundTo(dlxName)
-                    .and()
-                    .declareExchange(consumerTopicExchangeName)
-                    .type(ExchangeType.topic)
-                    .and()
-                    .declareQueue(consumerQueueName)
-                    .boundTo(consumerTopicExchangeName, ROUTING_KEY)
-                    .withDeadLetterExchange(dlxName))
-        .createTransactionalConsumerStream(consumerQueueName, WfMgmtRunMsg.class)
-        .receive()
-        .doOnNext(tx -> log.info("Gatekeeper Received: " + tx.get()))
-        .filter(
-            tx -> {
-              val msg = tx.get();
-              val isUpdated = service.updateRunState(msg);
-              if (!isUpdated) {
-                tx.reject();
-                log.info("Gatekeeper Rejected: {}", msg);
-              }
-              return isUpdated;
-            })
-        .onErrorContinue(handleError());
-  }
-
+  /**
+   * Creates disposable to produce rabbit msg of weblog kafka event that were converted and sinked
+   */
   @Bean
-  public Disposable gatekeeperProducer() {
-    val dlxName = producerTopicExchangeName + "-dlx";
-    val dlqName = producerDefaultQueueName + "-dlq";
-    return rabbit
-        .declareTopology(
-            topologyBuilder ->
-                topologyBuilder
-                    .declareExchange(dlxName)
-                    .and()
-                    .declareQueue(dlqName)
-                    .boundTo(dlxName)
-                    .and()
-                    .declareExchange(producerTopicExchangeName)
-                    .type(ExchangeType.topic)
-                    .and()
-                    .declareQueue(producerDefaultQueueName)
-                    .boundTo(producerTopicExchangeName, ROUTING_KEY)
-                    .withDeadLetterExchange(dlxName))
-        .createTransactionalProducerStream(WfMgmtRunMsg.class)
-        .route()
-        .toExchange(producerTopicExchangeName)
-        .withRoutingKey(routingKeySelector())
-        .then()
-        .send(consumedAndValidatedMsgs())
+  public Disposable weblogSourceProducer() {
+    return createTransProducerStream(
+            rabbit, consumerTopicExchangeName, consumerQueueName, ROUTING_KEY)
+        .send(weblogSink.source())
         .onErrorContinue(handleError())
         .subscribe(
             tx -> {
-              log.info("Gatekeeper Sent: {}", tx.get());
+              log.info("WeblogSourceProducer Sent: {}", tx.get());
               tx.commit();
             });
   }
 
-
+  /** Disposable that takes the input messages, checks if they are valid and allows them */
   @Bean
-  public Disposable gatekeeperWeblogProducer() {
-    val dlxName = consumerTopicExchangeName + "-dlx";
-    val dlqName = consumerQueueName + "-dlq";
-    return rabbit
-                   .declareTopology(
-                           topologyBuilder ->
-                                   topologyBuilder
-                                           .declareExchange(dlxName)
-                                           .and()
-                                           .declareQueue(dlqName)
-                                           .boundTo(dlxName)
-                                           .and()
-                                           .declareExchange(consumerTopicExchangeName)
-                                           .type(ExchangeType.topic)
-                                           .and()
-                                           .declareQueue(consumerQueueName)
-                                           .boundTo(producerTopicExchangeName, ROUTING_KEY)
-                                           .withDeadLetterExchange(dlxName))
-                   .createTransactionalProducerStream(WfMgmtRunMsg.class)
-                   .route()
-                   .toExchange(producerTopicExchangeName)
-                   .withRoutingKey(routingKeySelector())
-                   .then()
-                   .send(gatekeeperSource.source())
-                   .onErrorContinue(handleError())
-                   .subscribe(
-                           tx -> {
-                             log.info("GatekeeperWeblogProducer Sent: {}", tx.get());
-                             tx.commit();
-                           });
+  public Disposable gatekeeperProcessor() {
+    val inputFlux =
+        consumedMsgs().doOnNext(tx -> log.debug("GateKeeperProcessor Received: " + tx.get()));
+
+    Flux<Transaction<WfMgmtRunMsg>> outputFlux =
+        inputFlux
+            .filter(
+                tx -> {
+                  val msg = tx.get();
+                  val isUpdated = service.updateRunState(msg);
+                  if (!isUpdated) {
+                    tx.reject();
+                    log.debug("GateKeeperProcessor Rejected: {}", msg);
+                  }
+                  return isUpdated;
+                })
+            .onErrorContinue(handleError());
+
+    return createTransProducerStream(
+            rabbit, producerTopicExchangeName, producerDefaultQueueName, ROUTING_KEY)
+        .send(outputFlux)
+        .onErrorContinue(handleError())
+        .subscribe(
+            tx -> {
+              log.debug("GateKeeperProcessor Sent: {}", tx.get());
+              tx.commit();
+            });
   }
 
-  public BiConsumer<Throwable, Object> handleError() {
+  /** Flux of input messages into gatekeeper */
+  private Flux<Transaction<WfMgmtRunMsg>> consumedMsgs() {
+    return createTransConsumerStream(
+            rabbit, consumerTopicExchangeName, consumerQueueName, ROUTING_KEY)
+        .receive();
+  }
+
+  private BiConsumer<Throwable, Object> handleError() {
     return (t, tx) -> {
       t.printStackTrace();
       log.error("Error occurred with: {}", tx);
@@ -193,15 +146,11 @@ public class GateKeeperStreamsConfig {
         val msg = (WfMgmtRunMsg) ((Transaction<?>) tx).get();
         msg.setState(RunState.SYSTEM_ERROR);
         log.info("SYSTEM_ERROR: {}", msg);
-//         webLogEventSender.sendWfMgmtEventAsync(createWfMgmtEvent(msg));
+        //         webLogEventSender.sendWfMgmtEventAsync(createWfMgmtEvent(msg));
         ((Transaction<?>) tx).reject();
       } else {
         log.error("Can't get WfMgmtRunMsg, transaction is lost!");
       }
     };
-  }
-
-  Function<WfMgmtRunMsg, String> routingKeySelector() {
-    return msg -> msg.getState().toString();
   }
 }
