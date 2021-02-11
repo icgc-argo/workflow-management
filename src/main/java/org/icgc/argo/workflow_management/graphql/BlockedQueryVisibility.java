@@ -21,13 +21,25 @@ package org.icgc.argo.workflow_management.graphql;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLFieldsContainer;
 import graphql.schema.visibility.GraphqlFieldVisibility;
+import lombok.Builder;
+import lombok.Singular;
+
 import java.util.List;
 
-public class AdminVisibility implements GraphqlFieldVisibility {
+import static java.util.stream.Collectors.toUnmodifiableList;
+
+@Builder
+public class BlockedQueryVisibility implements GraphqlFieldVisibility {
+  @Singular
+  private final List<String> blockedQueryFields;
+
   @Override
   public List<GraphQLFieldDefinition> getFieldDefinitions(GraphQLFieldsContainer fieldsContainer) {
-    if (fieldsContainer.getName().equalsIgnoreCase("Mutation")) {
-      return List.of(fieldsContainer.getFieldDefinition("startRun"));
+    if (fieldsContainer.getName().equalsIgnoreCase("Query")) {
+      return fieldsContainer.getFieldDefinitions()
+                     .stream()
+                     .filter(fd -> !blockedQueryFields.contains(fd.getName()))
+                     .collect(toUnmodifiableList());
     }
     return fieldsContainer.getFieldDefinitions();
   }

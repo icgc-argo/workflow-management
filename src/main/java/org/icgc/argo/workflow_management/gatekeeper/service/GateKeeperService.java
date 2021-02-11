@@ -65,13 +65,13 @@ public class GateKeeperService {
 
     val knownRun = knownRunOpt.get();
 
-    val current = RunState.valueOf(knownRun.getState());
+    val current = knownRun.getState();
     val next = msg.getState();
     if (STATE_LOOKUP.getOrDefault(current, Set.of()).contains(next)) {
       if (TERMINAL_STATES.contains(next)) {
         repo.delete(knownRun);
       } else {
-        knownRun.setState(next.toString());
+        knownRun.setState(next);
         repo.save(knownRun);
       }
 
@@ -108,7 +108,7 @@ public class GateKeeperService {
 
     return ActiveRun.builder()
         .runId(msg.getRunId())
-        .state(msg.getState().toString()) // TODO use enum!
+        .state(msg.getState())
         .workflowUrl(msg.getWorkflowUrl())
         .workflowParamsJsonStr(msg.getWorkflowParamsJsonStr())
         .workflowEngineParams(runWep)

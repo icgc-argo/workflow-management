@@ -31,6 +31,7 @@ import graphql.schema.idl.RuntimeWiring;
 import graphql.schema.visibility.BlockedFields;
 import java.io.IOException;
 import java.net.URL;
+import java.util.List;
 import javax.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -40,7 +41,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class GraphQLProvider {
   private final MutationDataFetcher mutationDataFetcher;
-  private final DataFetcher gatekeeperDataFetcher;
+  private final DataFetcher activeRunsDataFetcher;
   private GraphQL graphQL;
 
   @Bean
@@ -64,11 +65,12 @@ public class GraphQLProvider {
     return RuntimeWiring.newRuntimeWiring()
         .scalar(ExtendedScalars.Json)
         .type(newTypeWiring("Mutation").dataFetchers(mutationDataFetcher.mutationResolvers()))
-        .type(newTypeWiring("Query").dataFetcher("activeRuns", gatekeeperDataFetcher))
+        .type(newTypeWiring("Query").dataFetcher("activeRuns", activeRunsDataFetcher))
+         // Filed visibility hides from schema, but they are executable
         .fieldVisibility(
-            BlockedFields.newBlock()
-                .addPattern("activeRuns") // TODO make visible after api is removed
-                .build())
+                BlockedQueryVisibility.builder()
+                        .blockedQueryField("activeRuns") // TODO make visible after api is removed
+                        .build())
         .build();
   }
 }

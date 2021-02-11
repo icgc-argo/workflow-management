@@ -27,7 +27,7 @@ public class GatekeeperDataFetchers {
 
   @Bean
   @Profile("gatekeeper")
-  @Qualifier("gatekeeperDataFetcher")
+  @Qualifier("activeRunsDataFetcher")
   public DataFetcher getActiveRunsDataFetcher(GateKeeperService gateKeeperService) {
     return environment -> {
       val args = environment.getArguments();
@@ -81,7 +81,7 @@ public class GatekeeperDataFetchers {
 
   @Bean
   @Profile("!gatekeeper")
-  @Qualifier("gatekeeperDataFetcher")
+  @Qualifier("activeRunsDataFetcher")
   public DataFetcher getActiveRunsDisabledDataFetcher() {
     return environment -> null;
   }

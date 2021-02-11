@@ -1,10 +1,9 @@
 package org.icgc.argo.workflow_management.gatekeeper.model;
 
-import javax.persistence.Convert;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Version;
+import javax.persistence.*;
+
 import lombok.*;
+import org.icgc.argo.workflow_management.rabbitmq.schema.RunState;
 import org.springframework.context.annotation.Profile;
 
 @Profile("gatekeeper")
@@ -21,9 +20,9 @@ public class ActiveRun {
   private String workflowType;
   private String workflowTypeVersion;
   private String workflowParamsJsonStr;
-  private String state; // TODO - Make into enum
-
-  @Convert(converter = JpaConverterJson.class)
+  @Enumerated(EnumType.STRING)
+  private RunState state;
+  @Convert(converter = EngineParamsConverter.class)
   private EngineParams workflowEngineParams;
 
   private Long timestamp;
