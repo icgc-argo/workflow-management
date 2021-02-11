@@ -31,6 +31,7 @@ import org.icgc.argo.workflow_management.rabbitmq.schema.RunState;
 import org.icgc.argo.workflow_management.rabbitmq.schema.WfMgmtRunMsg;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Example;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -85,13 +86,12 @@ public class GateKeeperService {
     return false;
   }
 
-  public SearchResult<ActiveRun> getRuns(Pageable pageable) {
+  public Page<ActiveRun> getRuns(Pageable pageable) {
     return getRuns(null, pageable);
   }
 
-  public SearchResult<ActiveRun> getRuns(Example<ActiveRun> example, Pageable pageable) {
-    val result = example == null ? repo.findAll(pageable) : repo.findAll(example, pageable);
-    return new SearchResult<>(result.getContent(), result.hasNext(), result.getTotalElements());
+  public Page<ActiveRun> getRuns(Example<ActiveRun> example, Pageable pageable) {
+    return example == null ? repo.findAll(pageable) : repo.findAll(example, pageable);
   }
 
   private ActiveRun fromMsg(WfMgmtRunMsg msg) {

@@ -1,0 +1,21 @@
+version: '3'
+
+services:
+#  gatekeeper-db:
+#    #    network_mode: host
+#    image: postgres:10-alpine
+#    environment:
+#      POSTGRES_DB: gatekeeperdb
+#      POSTGRES_PASSWORD: mysecretpassword
+#    expose:
+#      - "5432"
+#    ports:
+#      - "5432:5432"
+  rabbitmq:
+    image: bitnami/rabbitmq:3.8.9
+    environment:
+      RABBITMQ_USERNAME: user
+      RABBITMQ_PASSWORD: pass
+    ports:
+      - 5672:5672
+      - 15672:15672

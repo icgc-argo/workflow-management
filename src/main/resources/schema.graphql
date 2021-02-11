@@ -34,9 +34,33 @@ type SearchResultInfo {
     totalHits: String!
 }
 
+type EngineParameters {
+    launchDir: String
+    projectDir: String
+    resume: String
+    revision: String
+    workDir: String
+}
+
 type ActiveRun {
     runId: String!
     state: String!
+    workflowUrl: String!
+    workflowType:  String
+    workflowTypeVersion:  String
+    workflowParamsJsonStr:  String
+    workflowEngineParams: EngineParameters!
+    timestamp: String!
+}
+
+input Example {
+  runId: String
+  state: String
+  workflowUrl: String
+  workflowType:  String
+  workflowTypeVersion:  String
+  workflowParamsJsonStr:  String
+  timestamp: String
 }
 
 type ActiveRunsSearchResult {
@@ -44,6 +68,27 @@ type ActiveRunsSearchResult {
     info: SearchResultInfo!
 }
 
+enum SortOrder {
+    asc,
+    desc
+}
+
+enum SortField {
+    runId,
+    state,
+    timestamp
+}
+
+input Page {
+    size: Int!
+    from: Int!
+}
+
+input Sort {
+    fieldName: SortField!
+    order: SortOrder!
+}
+
 type Query {
-    activeRuns: ActiveRunsSearchResult
+    activeRuns(example: Example, page: Page, sorts: [Sort]): ActiveRunsSearchResult
 }
