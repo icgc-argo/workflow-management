@@ -20,13 +20,13 @@ package org.icgc.argo.workflow_management.service.wes.model;
 
 import static org.icgc.argo.workflow_management.util.Reflections.invokeDeclaredMethod;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.fabric8.kubernetes.api.model.Pod;
 import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
-import lombok.*;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nextflow.NextflowMeta;
 import nextflow.cli.CmdKubeRun;
@@ -39,12 +39,7 @@ import org.icgc.argo.workflow_management.exception.ReflectionUtilsException;
 /** Side effect-free data object mimic-ing nextflow's WorkflowMetadata class... */
 @Slf4j
 @Data
-@Builder
-@ToString
 @NoArgsConstructor
-@AllArgsConstructor
-@EqualsAndHashCode
-@JsonIgnoreProperties(ignoreUnknown = true)
 public class NextflowWorkflowMetadata {
   private String runName;
   private String scriptId;

@@ -29,7 +29,6 @@ import com.pivotal.rabbitmq.stream.Transaction;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -74,7 +73,8 @@ public class GateKeeperStreamsConfig {
   private final GateKeeperService service;
   private final WebLogEventSender webLogEventSender;
 
-  private final OnDemandSource<WfMgmtRunMsg> weblogSourceSink = new OnDemandSource<>("weblogSourceSink");
+  private final OnDemandSource<WfMgmtRunMsg> weblogSourceSink =
+      new OnDemandSource<>("weblogSourceSink");
 
   /** Disposable that takes the input messages, checks if they are valid and allows them */
   @Bean
@@ -97,7 +97,8 @@ public class GateKeeperStreamsConfig {
   }
 
   /**
-   * Functional bean consuming weblog events outside mgmt domain, updating gatekeeper and sending messages for gatekeeper to produce to ondemandsource
+   * Functional bean consuming weblog events outside mgmt domain, updating gatekeeper and sending
+   * messages for gatekeeper to produce to ondemandsource
    */
   @Bean
   public Consumer<JsonNode> weblogConsumer() {
@@ -107,7 +108,9 @@ public class GateKeeperStreamsConfig {
       if (WEBLOG_EVENTS_OUTSIDE_MGMT.contains(weblogEvent.getRunState())) {
         log.debug("WeblogConsumer received: {}", event);
         // Weblog events will only change run state info in gatekeeper service, not other params
-        val allowedMsg = service.checkWithExistingAndUpdateStateOnly(weblogEvent.getRunId(), weblogEvent.getRunState());
+        val allowedMsg =
+            service.checkWithExistingAndUpdateStateOnly(
+                weblogEvent.getRunId(), weblogEvent.getRunState());
         if (allowedMsg != null) {
           log.debug("WeblogConsumer sending to gatekeeper producer: {}", allowedMsg);
           weblogSourceSink.send(allowedMsg);
@@ -120,22 +123,22 @@ public class GateKeeperStreamsConfig {
   private Flux<Transaction<WfMgmtRunMsg>> gatekeeperQueueConsumedAndCheckedMsgs() {
     return createTransConsumerStream(
             rabbit, consumerTopicExchangeName, consumerQueueName, ROUTING_KEY)
-                   .receive()
-                   .doOnNext(tx -> log.debug("GateKeeperConsumer Received: " + tx.get()))
-                   .<Transaction<WfMgmtRunMsg>>handle(
-                           (tx, sink) -> {
-                             val msg = tx.get();
-                             val allowedMsg = service.checkWfMgmtRunMsgAndUpdate(msg);
+        .receive()
+        .doOnNext(tx -> log.debug("GateKeeperConsumer Received: " + tx.get()))
+        .<Transaction<WfMgmtRunMsg>>handle(
+            (tx, sink) -> {
+              val msg = tx.get();
+              val allowedMsg = service.checkWfMgmtRunMsgAndUpdate(msg);
 
-                             if (allowedMsg == null) {
-                               tx.reject();
-                               log.debug("GateKeeperConsumer - Gatekeeper Rejected: {}", msg);
-                               return;
-                             }
+              if (allowedMsg == null) {
+                tx.reject();
+                log.debug("GateKeeperConsumer - Gatekeeper Rejected: {}", msg);
+                return;
+              }
 
-                             sink.next(tx.map(allowedMsg));
-                           })
-                   .onErrorContinue(handleError());
+              sink.next(tx.map(allowedMsg));
+            })
+        .onErrorContinue(handleError());
   }
 
   private WeblogEvent toWeblogEvent(JsonNode event) {
@@ -148,7 +151,10 @@ public class GateKeeperStreamsConfig {
       val eventString = event.get("event").asText();
       val success = event.get("metadata").get("workflow").get("success").asBoolean();
       runState = fromNextflowEventAndSuccess(eventString, success);
-    } else if (event.has("workflowUrl") && event.has("runId") && event.has("event") && event.has("utcTime")) {
+    } else if (event.has("workflowUrl")
+        && event.has("runId")
+        && event.has("event")
+        && event.has("utcTime")) {
       // WFMGMT event
       runId = event.get("runId").asText();
 
@@ -159,14 +165,15 @@ public class GateKeeperStreamsConfig {
     return new WeblogEvent(runId, runState);
   }
 
-  private RunState fromNextflowEventAndSuccess(@NonNull String nextflowEvent, @NonNull boolean success) {
+  private RunState fromNextflowEventAndSuccess(
+      @NonNull String nextflowEvent, @NonNull boolean success) {
     if (nextflowEvent.equalsIgnoreCase("started")) {
       return RunState.RUNNING;
     } else if (nextflowEvent.equalsIgnoreCase("completed") && success) {
       return RunState.COMPLETE;
     } else if ((nextflowEvent.equalsIgnoreCase("completed") && !success)
-                       || nextflowEvent.equalsIgnoreCase("failed")
-                       || nextflowEvent.equalsIgnoreCase("error")) {
+        || nextflowEvent.equalsIgnoreCase("failed")
+        || nextflowEvent.equalsIgnoreCase("error")) {
       return RunState.EXECUTOR_ERROR;
     } else {
       return RunState.UNKNOWN;
@@ -181,7 +188,7 @@ public class GateKeeperStreamsConfig {
         val msg = (WfMgmtRunMsg) ((Transaction<?>) tx).get();
         msg.setState(RunState.SYSTEM_ERROR);
         log.info("SYSTEM_ERROR: {}", msg);
-       webLogEventSender.sendWfMgmtEventAsync(createWfMgmtEvent(msg));
+        webLogEventSender.sendWfMgmtEventAsync(createWfMgmtEvent(msg));
         ((Transaction<?>) tx).reject();
       } else {
         log.error("Can't get WfMgmtRunMsg, transaction is lost!");

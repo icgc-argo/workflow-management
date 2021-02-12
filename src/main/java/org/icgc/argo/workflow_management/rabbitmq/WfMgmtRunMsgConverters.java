@@ -135,30 +135,4 @@ public class WfMgmtRunMsgConverters {
         .workflowUrl(msg.getWorkflowUrl())
         .build();
   }
-
-  public static WfMgmtRunMsg createWfMgmtEvent(WfManagementEvent event) {
-    val eventWep = event.getWorkflowEngineParams();
-
-    val msgWep =
-        EngineParams.newBuilder()
-            .setLatest(eventWep.getLatest())
-            .setDefaultContainer(eventWep.getDefaultContainer())
-            .setLaunchDir(eventWep.getLaunchDir())
-            .setRevision(eventWep.getRevision())
-            .setProjectDir(eventWep.getProjectDir())
-            .setWorkDir(eventWep.getWorkDir());
-
-    if (eventWep.getResume() != null) {
-      msgWep.setResume(eventWep.getResume().toString());
-    }
-
-    return WfMgmtRunMsg.newBuilder()
-        .setRunId(event.getRunId())
-        .setState(RunState.valueOf(event.getEvent()))
-        .setWorkflowUrl(event.getWorkflowUrl())
-        .setWorkflowParamsJsonStr(toJsonString(event.getWorkflowParams()))
-        .setWorkflowEngineParams(msgWep.build())
-        .setTimestamp(Instant.now().toEpochMilli())
-        .build();
-  }
 }

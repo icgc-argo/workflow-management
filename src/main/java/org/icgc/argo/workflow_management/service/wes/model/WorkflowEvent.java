@@ -18,12 +18,12 @@
 
 package org.icgc.argo.workflow_management.service.wes.model;
 
-import lombok.*;
+import lombok.Builder;
+import lombok.NonNull;
+import lombok.Value;
 
-@Data
+@Value
 @Builder
-@NoArgsConstructor
-@RequiredArgsConstructor
 public class WorkflowEvent {
   @NonNull String runId;
   @NonNull String runName;

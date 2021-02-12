@@ -18,7 +18,6 @@
 
 package org.icgc.argo.workflow_management.gatekeeper.service;
 
-import static org.icgc.argo.workflow_management.rabbitmq.WfMgmtRunMsgConverters.createWfMgmtRunMsg;
 import static org.icgc.argo.workflow_management.rabbitmq.schema.RunState.*;
 
 import java.util.Map;
