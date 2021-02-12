@@ -58,7 +58,8 @@ public class GateKeeperStreamsConfig {
   private static final Set<RunState> WEBLOG_EVENTS_OUTSIDE_MGMT =
       Set.of(RunState.COMPLETE, RunState.EXECUTOR_ERROR, RunState.RUNNING, RunState.SYSTEM_ERROR);
 
-  private static final Set<RunState> RUN_STATES_TO_WEBLOG = Set.of(RunState.QUEUED, RunState.CANCELED);
+  private static final Set<RunState> RUN_STATES_TO_WEBLOG =
+      Set.of(RunState.QUEUED, RunState.CANCELED);
 
   @Value("${gatekeeper.producer.topology.queueName}")
   private String producerDefaultQueueName;
@@ -141,14 +142,15 @@ public class GateKeeperStreamsConfig {
 
               sink.next(tx.map(allowedMsg));
             })
-        .flatMap(tx -> {
-          if (RUN_STATES_TO_WEBLOG.contains(tx.get().getState())) {
-            return webLogEventSender
-                           .sendWfMgmtEvent(createWfMgmtEvent(tx.get()))
-                           .thenReturn(tx);
-          }
-          return Mono.just(tx);
-        })
+        .flatMap(
+            tx -> {
+              if (RUN_STATES_TO_WEBLOG.contains(tx.get().getState())) {
+                return webLogEventSender
+                    .sendWfMgmtEvent(createWfMgmtEvent(tx.get()))
+                    .thenReturn(tx);
+              }
+              return Mono.just(tx);
+            })
         .onErrorContinue(handleError());
   }
 

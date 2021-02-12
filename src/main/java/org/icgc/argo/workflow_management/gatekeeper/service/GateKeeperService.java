@@ -92,7 +92,7 @@ public class GateKeeperService {
 
     // special case if queued is going to canceling, just make it canceled
     next = current.equals(QUEUED) && next.equals(CANCELING) ? CANCELED : next;
-    
+
     if (STATE_LOOKUP.getOrDefault(current, Set.of()).contains(next)) {
       if (TERMINAL_STATES.contains(next)) {
         repo.deleteById(knownRun.getRunId());
