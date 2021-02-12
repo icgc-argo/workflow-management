@@ -21,6 +21,7 @@ package org.icgc.argo.workflow_management.gatekeeper.service;
 import static org.icgc.argo.workflow_management.rabbitmq.schema.RunState.*;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -57,32 +58,32 @@ public class GateKeeperService {
    * Checks if msg is valid next state for an active run. Returns msgs if allowed and null if not.
    */
   @Transactional
-  public WfMgmtRunMsg checkWfMgmtRunMsgAndUpdate(WfMgmtRunMsg msg) {
+  public Optional<WfMgmtRunMsg> checkWfMgmtRunMsgAndUpdate(WfMgmtRunMsg msg) {
     val knownRunOpt = repo.findById(msg.getRunId());
 
     // short circuit run is new case
     if (knownRunOpt.isEmpty() && msg.getState().equals(QUEUED)) {
       val newRun = repo.save(fromMsg(msg));
       log.debug("Active Run created: {}", newRun);
-      return msg;
+      return Optional.of(msg);
     } else if (knownRunOpt.isEmpty()) {
-      return null;
+      return Optional.empty();
     }
 
     val knownRun = knownRunOpt.get();
     val next = msg.getState();
 
-    return fromActiveRun(checkActiveRunAndUpdate(knownRun, next));
+    return Optional.ofNullable(fromActiveRun(checkActiveRunAndUpdate(knownRun, next)));
   }
 
   @Transactional
-  public WfMgmtRunMsg checkWithExistingAndUpdateStateOnly(String runId, RunState next) {
+  public Optional<WfMgmtRunMsg> checkWithExistingAndUpdateStateOnly(String runId, RunState next) {
     val knownRunOpt = repo.findById(runId);
     if (knownRunOpt.isEmpty()) {
       log.debug("Active Run not found, so not updated: {} {}", runId, next);
-      return null;
+      return Optional.empty();
     } else {
-      return fromActiveRun(checkActiveRunAndUpdate(knownRunOpt.get(), next));
+      return Optional.ofNullable(fromActiveRun(checkActiveRunAndUpdate(knownRunOpt.get(), next)));
     }
   }
 

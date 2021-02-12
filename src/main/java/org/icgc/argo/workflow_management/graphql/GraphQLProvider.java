@@ -64,7 +64,7 @@ public class GraphQLProvider {
         .scalar(ExtendedScalars.Json)
         .type(newTypeWiring("Mutation").dataFetchers(mutationDataFetcher.mutationResolvers()))
         .type(newTypeWiring("Query").dataFetcher("activeRuns", activeRunsDataFetcher))
-        // Filed visibility hides from schema, but they are executable
+        // Field visibility hides from schema, but they are executable
         .fieldVisibility(
             BlockedQueryVisibility.builder()
                 .blockedQueryField("activeRuns") // TODO make visible after api is removed

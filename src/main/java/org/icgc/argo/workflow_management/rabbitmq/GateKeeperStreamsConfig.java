@@ -115,9 +115,9 @@ public class GateKeeperStreamsConfig {
         val allowedMsg =
             service.checkWithExistingAndUpdateStateOnly(
                 weblogEvent.getRunId(), weblogEvent.getRunState());
-        if (allowedMsg != null) {
+        if (allowedMsg.isPresent()) {
           log.debug("WeblogConsumer sending to gatekeeper producer: {}", allowedMsg);
-          weblogSourceSink.send(allowedMsg);
+          weblogSourceSink.send(allowedMsg.get());
         }
       }
     };
@@ -134,13 +134,13 @@ public class GateKeeperStreamsConfig {
               val msg = tx.get();
               val allowedMsg = service.checkWfMgmtRunMsgAndUpdate(msg);
 
-              if (allowedMsg == null) {
+              if (allowedMsg.isEmpty()) {
                 tx.reject();
                 log.debug("GateKeeperConsumer - Gatekeeper Rejected: {}", msg);
                 return;
               }
 
-              sink.next(tx.map(allowedMsg));
+              sink.next(tx.map(allowedMsg.get()));
             })
         .flatMap(
             tx -> {
