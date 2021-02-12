@@ -45,6 +45,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @Slf4j
 @Profile("gatekeeper")
@@ -56,6 +57,8 @@ public class GateKeeperStreamsConfig {
 
   private static final Set<RunState> WEBLOG_EVENTS_OUTSIDE_MGMT =
       Set.of(RunState.COMPLETE, RunState.EXECUTOR_ERROR, RunState.RUNNING, RunState.SYSTEM_ERROR);
+
+  private static final Set<RunState> RUN_STATES_TO_WEBLOG = Set.of(RunState.QUEUED, RunState.CANCELED);
 
   @Value("${gatekeeper.producer.topology.queueName}")
   private String producerDefaultQueueName;
@@ -98,7 +101,7 @@ public class GateKeeperStreamsConfig {
 
   /**
    * Functional bean consuming weblog events outside mgmt domain, updating gatekeeper and sending
-   * messages for gatekeeper to produce to ondemandsource
+   * messages for gatekeeper to produce
    */
   @Bean
   public Consumer<JsonNode> weblogConsumer() {
@@ -138,6 +141,14 @@ public class GateKeeperStreamsConfig {
 
               sink.next(tx.map(allowedMsg));
             })
+        .flatMap(tx -> {
+          if (RUN_STATES_TO_WEBLOG.contains(tx.get().getState())) {
+            return webLogEventSender
+                           .sendWfMgmtEvent(createWfMgmtEvent(tx.get()))
+                           .thenReturn(tx);
+          }
+          return Mono.just(tx);
+        })
         .onErrorContinue(handleError());
   }
 
