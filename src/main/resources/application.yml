@@ -5,18 +5,13 @@ nextflow:
     runNamespace: "default" # Namespace where wes and nf pods will live
     serviceAccount: "default"
     volMounts:
-      - "task-pv-claim:/mnt/data"
-    masterUrl: "https://192.168.99.100:8443"
+      - "pv-claim:/some/dir"
+    masterUrl: "localhost:8080"
     trustCertificate: false
-  weblogUrl: "http://localhost:8083"
+  weblogUrl: "http://localhost"
   monitor:
     sleepInterval: 1000 # milliseconds
     maxErrorLogLines: 50 # we put the last ${maxErrorLogLines} into the error message if a Pod fails
-
-logging.level:
-  org.icgc.argo.workflow_management: debug
-#  com.pivotal: debug
-#  org.springframework: debug
 
 secret:
   enabled: false

@@ -266,8 +266,7 @@ public class NextflowService implements WorkflowExecutionService {
     cmdParams.put("volMounts", k8sConfig.getVolMounts());
 
     // Where to POST event-based logging
-    //    cmdParams.put("withWebLog", webLogUrl);
-    cmdParams.put("withWebLog", "http://192.168.99.1:8083");
+    cmdParams.put("withWebLog", webLogUrl);
 
     // Dynamic engine properties/config
     val workflowEngineParams = params.getWorkflowEngineParams();
