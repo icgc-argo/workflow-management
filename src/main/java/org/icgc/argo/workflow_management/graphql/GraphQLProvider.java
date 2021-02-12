@@ -28,10 +28,8 @@ import graphql.scalars.ExtendedScalars;
 import graphql.schema.DataFetcher;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.idl.RuntimeWiring;
-import graphql.schema.visibility.BlockedFields;
 import java.io.IOException;
 import java.net.URL;
-import java.util.List;
 import javax.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -66,11 +64,11 @@ public class GraphQLProvider {
         .scalar(ExtendedScalars.Json)
         .type(newTypeWiring("Mutation").dataFetchers(mutationDataFetcher.mutationResolvers()))
         .type(newTypeWiring("Query").dataFetcher("activeRuns", activeRunsDataFetcher))
-         // Filed visibility hides from schema, but they are executable
+        // Filed visibility hides from schema, but they are executable
         .fieldVisibility(
-                BlockedQueryVisibility.builder()
-                        .blockedQueryField("activeRuns") // TODO make visible after api is removed
-                        .build())
+            BlockedQueryVisibility.builder()
+                .blockedQueryField("activeRuns") // TODO make visible after api is removed
+                .build())
         .build();
   }
 }

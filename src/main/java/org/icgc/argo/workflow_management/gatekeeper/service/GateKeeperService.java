@@ -18,13 +18,16 @@
 
 package org.icgc.argo.workflow_management.gatekeeper.service;
 
+import static org.icgc.argo.workflow_management.rabbitmq.WfMgmtRunMsgConverters.createWfMgmtRunMsg;
 import static org.icgc.argo.workflow_management.rabbitmq.schema.RunState.*;
 
 import java.util.Map;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.icgc.argo.workflow_management.gatekeeper.model.ActiveRun;
+import org.icgc.argo.workflow_management.gatekeeper.model.CheckAndUpdateResult;
 import org.icgc.argo.workflow_management.gatekeeper.repository.ActiveRunsRepo;
 import org.icgc.argo.workflow_management.rabbitmq.schema.RunState;
 import org.icgc.argo.workflow_management.rabbitmq.schema.WfMgmtRunMsg;
@@ -36,13 +39,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Profile("gatekeeper")
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class GateKeeperService {
   private static final Map<RunState, Set<RunState>> STATE_LOOKUP =
       Map.of(
           QUEUED, Set.of(INITIALIZING, CANCELING, CANCELED, SYSTEM_ERROR),
-          INITIALIZING, Set.of(RUNNING, CANCELING, CANCELED, SYSTEM_ERROR),
+          INITIALIZING, Set.of(RUNNING, CANCELING, CANCELED, EXECUTOR_ERROR, SYSTEM_ERROR),
           CANCELING, Set.of(CANCELED, EXECUTOR_ERROR, SYSTEM_ERROR),
           RUNNING, Set.of(SYSTEM_ERROR, EXECUTOR_ERROR, CANCELED, CANCELING, COMPLETE));
 
@@ -51,38 +55,57 @@ public class GateKeeperService {
 
   private final ActiveRunsRepo repo;
 
-  // TODO cleanup??
   @Transactional
-  public Boolean updateRunState(WfMgmtRunMsg msg) {
+  public CheckAndUpdateResult checkAndUpdate(WfMgmtRunMsg msg) {
     val knownRunOpt = repo.findById(msg.getRunId());
 
+    // short circuit run is new case
     if (knownRunOpt.isEmpty() && msg.getState().equals(QUEUED)) {
-      repo.save(fromMsg(msg));
-      return true;
+      val newRun = repo.save(fromMsg(msg));
+      log.debug("Active Run created: {}", newRun);
+      return CheckAndUpdateResult.okWithMsg(msg);
     } else if (knownRunOpt.isEmpty()) {
-      return false;
+      return CheckAndUpdateResult.NOT_OK_AND_NO_MSG;
     }
 
     val knownRun = knownRunOpt.get();
-
     val current = knownRun.getState();
     val next = msg.getState();
+
     if (STATE_LOOKUP.getOrDefault(current, Set.of()).contains(next)) {
       if (TERMINAL_STATES.contains(next)) {
-        repo.delete(knownRun);
+        repo.deleteById(knownRun.getRunId());
+        log.debug("Active Run removed: {}", knownRun);
+        return CheckAndUpdateResult.OK_AND_NO_MSG;
       } else {
-        knownRun.setState(next);
-        repo.save(knownRun);
-      }
+        val updatedRun = fromMsg(msg);
 
-      // TODO - is this the best place for this??
-      if (current.equals(QUEUED) && next.equals(CANCELING)) {
-        msg.setState(CANCELED);
+        // special case if queued is going to canceling, just make it canceled
+        updatedRun.setState(current.equals(QUEUED) && next.equals(CANCELING) ? CANCELED : next);
+
+        // version should remain same within the Transactional, o.w. spring error thrown
+        updatedRun.setVersion(knownRun.getVersion());
+        val updatedMsg = fromActiveRun(repo.save(updatedRun));
+
+        log.debug("Active Run updated: {}", knownRun);
+        return CheckAndUpdateResult.okWithMsg(updatedMsg);
       }
-      return true;
     }
 
-    return false;
+    return CheckAndUpdateResult.NOT_OK_AND_NO_MSG;
+  }
+
+  @Transactional
+  public CheckAndUpdateResult checkAndUpdateStateOnly(String runId, RunState next) {
+    val knownRunOpt = repo.findById(runId);
+    WfMgmtRunMsg msg;
+    if (knownRunOpt.isEmpty()) {
+      msg = createWfMgmtRunMsg(runId, next);
+    } else {
+      msg = fromActiveRun(knownRunOpt.get());
+      msg.setState(next);
+    }
+    return checkAndUpdate(msg);
   }
 
   public Page<ActiveRun> getRuns(Pageable pageable) {
@@ -113,6 +136,29 @@ public class GateKeeperService {
         .workflowParamsJsonStr(msg.getWorkflowParamsJsonStr())
         .workflowEngineParams(runWep)
         .timestamp(msg.getTimestamp())
+        .build();
+  }
+
+  private WfMgmtRunMsg fromActiveRun(ActiveRun msg) {
+    val msgWep = msg.getWorkflowEngineParams();
+    val runWep =
+        org.icgc.argo.workflow_management.rabbitmq.schema.EngineParams.newBuilder()
+            .setLatest(msgWep.getLatest())
+            .setDefaultContainer(msgWep.getDefaultContainer())
+            .setLaunchDir(msgWep.getLaunchDir())
+            .setRevision(msgWep.getRevision())
+            .setProjectDir(msgWep.getProjectDir())
+            .setWorkDir(msgWep.getWorkDir())
+            .setResume(msgWep.getResume())
+            .build();
+
+    return WfMgmtRunMsg.newBuilder()
+        .setRunId(msg.getRunId())
+        .setState(msg.getState())
+        .setWorkflowUrl(msg.getWorkflowUrl())
+        .setWorkflowParamsJsonStr(msg.getWorkflowParamsJsonStr())
+        .setWorkflowEngineParams(runWep)
+        .setTimestamp(msg.getTimestamp())
         .build();
   }
 }

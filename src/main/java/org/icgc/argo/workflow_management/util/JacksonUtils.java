@@ -18,6 +18,7 @@
 
 package org.icgc.argo.workflow_management.util;
 
+import com.fasterxml.jackson.core.TreeNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 
@@ -37,5 +38,10 @@ public class JacksonUtils {
   @SneakyThrows
   public static <T> T readValue(String jsonString, Class<T> valueType) {
     return OBJECT_MAPPER.readValue(jsonString, valueType);
+  }
+
+  @SneakyThrows
+  public static <T> T treeToValue(TreeNode n, Class<T> valueType) {
+    return OBJECT_MAPPER.treeToValue(n, valueType);
   }
 }

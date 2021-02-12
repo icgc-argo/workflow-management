@@ -1,7 +1,6 @@
 package org.icgc.argo.workflow_management.gatekeeper.model;
 
 import javax.persistence.*;
-
 import lombok.*;
 import org.icgc.argo.workflow_management.rabbitmq.schema.RunState;
 import org.springframework.context.annotation.Profile;
@@ -20,8 +19,10 @@ public class ActiveRun {
   private String workflowType;
   private String workflowTypeVersion;
   private String workflowParamsJsonStr;
+
   @Enumerated(EnumType.STRING)
   private RunState state;
+
   @Convert(converter = EngineParamsConverter.class)
   private EngineParams workflowEngineParams;
 

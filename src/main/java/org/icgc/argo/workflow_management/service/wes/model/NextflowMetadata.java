@@ -18,11 +18,16 @@
 
 package org.icgc.argo.workflow_management.service.wes.model;
 
+import java.util.Map;
 import lombok.Data;
-import nextflow.script.ScriptBinding.ParamsMap;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 
 @Data
+@NoArgsConstructor
+@RequiredArgsConstructor
 public class NextflowMetadata {
-  private final NextflowWorkflowMetadata workflow;
-  private final ParamsMap params;
+  @NonNull private NextflowWorkflowMetadata workflow;
+  @NonNull private Map<String, Object> params;
 }

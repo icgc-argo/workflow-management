@@ -16,18 +16,20 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.service.wes.model;
+package org.icgc.argo.workflow_management.gatekeeper.model;
 
 import lombok.*;
+import org.icgc.argo.workflow_management.rabbitmq.schema.WfMgmtRunMsg;
 
-@Data
-@Builder
-@NoArgsConstructor
-@RequiredArgsConstructor
-public class WorkflowEvent {
-  @NonNull String runId;
-  @NonNull String runName;
-  @NonNull String event;
-  @NonNull String utcTime;
-  @NonNull NextflowMetadata metadata;
+@Value
+public class CheckAndUpdateResult {
+    public static final CheckAndUpdateResult OK_AND_NO_MSG = new CheckAndUpdateResult(null, true);
+    public static final CheckAndUpdateResult NOT_OK_AND_NO_MSG = new CheckAndUpdateResult(null, false);
+
+    WfMgmtRunMsg msg;
+    Boolean ok;
+
+    public static CheckAndUpdateResult okWithMsg(WfMgmtRunMsg msg) {
+        return new CheckAndUpdateResult(msg, true);
+    }
 }

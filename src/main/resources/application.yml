@@ -14,9 +14,9 @@ nextflow:
     maxErrorLogLines: 50 # we put the last ${maxErrorLogLines} into the error message if a Pod fails
 
 logging.level:
-  com.pivotal: debug
+  org.icgc.argo.workflow_management: debug
+#  com.pivotal: debug
 #  org.springframework: debug
-  org.icgc.argo: debug
 
 secret:
   enabled: false
@@ -103,6 +103,8 @@ spring.cloud.stream:
           dlqName: weblog-in-0_dlq
           autoCommitOnError: true
           autoCommitOffset: true
+#          resetOffsets: true
+#          startOffset: earliest
 
 spring.datasource:
   url: jdbc:postgresql://localhost:5432/gatekeeperdb

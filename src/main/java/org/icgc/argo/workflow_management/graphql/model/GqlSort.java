@@ -6,9 +6,4 @@ import lombok.Data;
 public class GqlSort {
   String fieldName;
   String order;
-
-  //  enum Order {
-  //    asc,
-  //    desc
-  //  }
 }
