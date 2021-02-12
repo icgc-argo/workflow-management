@@ -40,6 +40,8 @@ type EngineParameters {
     resume: String
     revision: String
     workDir: String
+    defaultContainer: String
+    latest: String
 }
 
 type ActiveRun {

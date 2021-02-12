@@ -90,17 +90,17 @@ public class GateKeeperService {
   private ActiveRun checkActiveRunAndUpdate(ActiveRun knownRun, RunState next) {
     val current = knownRun.getState();
 
+    // special case if queued is going to canceling, just make it canceled
+    next = current.equals(QUEUED) && next.equals(CANCELING) ? CANCELED : next;
+    
     if (STATE_LOOKUP.getOrDefault(current, Set.of()).contains(next)) {
       if (TERMINAL_STATES.contains(next)) {
         repo.deleteById(knownRun.getRunId());
         log.debug("Active Run removed: {}", knownRun);
         return knownRun;
       } else {
-        // special case if queued is going to canceling, just make it canceled
-        knownRun.setState(current.equals(QUEUED) && next.equals(CANCELING) ? CANCELED : next);
-
+        knownRun.setState(next);
         val updatedRun = repo.save(knownRun);
-
         log.debug("Active Run updated: {}", updatedRun);
         return updatedRun;
       }
