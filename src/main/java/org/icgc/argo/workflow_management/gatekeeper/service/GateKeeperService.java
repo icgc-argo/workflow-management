@@ -27,7 +27,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.icgc.argo.workflow_management.gatekeeper.model.ActiveRun;
-import org.icgc.argo.workflow_management.gatekeeper.model.CheckAndUpdateResult;
 import org.icgc.argo.workflow_management.gatekeeper.repository.ActiveRunsRepo;
 import org.icgc.argo.workflow_management.rabbitmq.schema.RunState;
 import org.icgc.argo.workflow_management.rabbitmq.schema.WfMgmtRunMsg;
@@ -55,57 +54,60 @@ public class GateKeeperService {
 
   private final ActiveRunsRepo repo;
 
+  /**
+   * Checks if msg is valid next state for an active run. Returns msgs if allowed and null if not.
+   */
   @Transactional
-  public CheckAndUpdateResult checkAndUpdate(WfMgmtRunMsg msg) {
+  public WfMgmtRunMsg checkWfMgmtRunMsgAndUpdate(WfMgmtRunMsg msg) {
     val knownRunOpt = repo.findById(msg.getRunId());
 
     // short circuit run is new case
     if (knownRunOpt.isEmpty() && msg.getState().equals(QUEUED)) {
       val newRun = repo.save(fromMsg(msg));
       log.debug("Active Run created: {}", newRun);
-      return CheckAndUpdateResult.okWithMsg(msg);
+      return msg;
     } else if (knownRunOpt.isEmpty()) {
-      return CheckAndUpdateResult.NOT_OK_AND_NO_MSG;
+      return null;
     }
 
     val knownRun = knownRunOpt.get();
-    val current = knownRun.getState();
     val next = msg.getState();
+
+    return fromActiveRun(checkActiveRunAndUpdate(knownRun, next));
+  }
+
+  @Transactional
+  public WfMgmtRunMsg checkWithExistingAndUpdateStateOnly(String runId, RunState next) {
+    val knownRunOpt = repo.findById(runId);
+    if (knownRunOpt.isEmpty()) {
+      log.debug("Active Run not found, so not updated: {} {}", runId, next);
+      return null;
+    } else {
+      return fromActiveRun(checkActiveRunAndUpdate(knownRunOpt.get(), next));
+    }
+  }
+
+  @Transactional
+  private ActiveRun checkActiveRunAndUpdate(ActiveRun knownRun, RunState next) {
+    val current = knownRun.getState();
 
     if (STATE_LOOKUP.getOrDefault(current, Set.of()).contains(next)) {
       if (TERMINAL_STATES.contains(next)) {
         repo.deleteById(knownRun.getRunId());
         log.debug("Active Run removed: {}", knownRun);
-        return CheckAndUpdateResult.OK_AND_NO_MSG;
+        return knownRun;
       } else {
-        val updatedRun = fromMsg(msg);
-
         // special case if queued is going to canceling, just make it canceled
-        updatedRun.setState(current.equals(QUEUED) && next.equals(CANCELING) ? CANCELED : next);
+        knownRun.setState(current.equals(QUEUED) && next.equals(CANCELING) ? CANCELED : next);
 
-        // version should remain same within the Transactional, o.w. spring error thrown
-        updatedRun.setVersion(knownRun.getVersion());
-        val updatedMsg = fromActiveRun(repo.save(updatedRun));
+        val updatedRun = repo.save(knownRun);
 
-        log.debug("Active Run updated: {}", knownRun);
-        return CheckAndUpdateResult.okWithMsg(updatedMsg);
+        log.debug("Active Run updated: {}", updatedRun);
+        return updatedRun;
       }
     }
 
-    return CheckAndUpdateResult.NOT_OK_AND_NO_MSG;
-  }
-
-  @Transactional
-  public CheckAndUpdateResult checkAndUpdateStateOnly(String runId, RunState next) {
-    val knownRunOpt = repo.findById(runId);
-    WfMgmtRunMsg msg;
-    if (knownRunOpt.isEmpty()) {
-      msg = createWfMgmtRunMsg(runId, next);
-    } else {
-      msg = fromActiveRun(knownRunOpt.get());
-      msg.setState(next);
-    }
-    return checkAndUpdate(msg);
+    return null;
   }
 
   public Page<ActiveRun> getRuns(Pageable pageable) {
@@ -139,8 +141,10 @@ public class GateKeeperService {
         .build();
   }
 
-  private WfMgmtRunMsg fromActiveRun(ActiveRun msg) {
-    val msgWep = msg.getWorkflowEngineParams();
+  private WfMgmtRunMsg fromActiveRun(ActiveRun activeRun) {
+    if (activeRun == null) return null;
+
+    val msgWep = activeRun.getWorkflowEngineParams();
     val runWep =
         org.icgc.argo.workflow_management.rabbitmq.schema.EngineParams.newBuilder()
             .setLatest(msgWep.getLatest())
@@ -153,12 +157,12 @@ public class GateKeeperService {
             .build();
 
     return WfMgmtRunMsg.newBuilder()
-        .setRunId(msg.getRunId())
-        .setState(msg.getState())
-        .setWorkflowUrl(msg.getWorkflowUrl())
-        .setWorkflowParamsJsonStr(msg.getWorkflowParamsJsonStr())
+        .setRunId(activeRun.getRunId())
+        .setState(activeRun.getState())
+        .setWorkflowUrl(activeRun.getWorkflowUrl())
+        .setWorkflowParamsJsonStr(activeRun.getWorkflowParamsJsonStr())
         .setWorkflowEngineParams(runWep)
-        .setTimestamp(msg.getTimestamp())
+        .setTimestamp(activeRun.getTimestamp())
         .build();
   }
 }

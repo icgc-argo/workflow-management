@@ -107,10 +107,10 @@ public class GateKeeperStreamsConfig {
       if (WEBLOG_EVENTS_OUTSIDE_MGMT.contains(weblogEvent.getRunState())) {
         log.debug("WeblogConsumer received: {}", event);
         // Weblog events will only change run state info in gatekeeper service, not other params
-        val result = service.checkAndUpdateStateOnly(weblogEvent.getRunId(), weblogEvent.getRunState());
-        if (result.getOk() && result.getMsg() != null) {
-          log.debug("WeblogConsumer sending to gatekeeper producer: {}", result.getMsg());
-          weblogSourceSink.send(result.getMsg());
+        val allowedMsg = service.checkWithExistingAndUpdateStateOnly(weblogEvent.getRunId(), weblogEvent.getRunState());
+        if (allowedMsg != null) {
+          log.debug("WeblogConsumer sending to gatekeeper producer: {}", allowedMsg);
+          weblogSourceSink.send(allowedMsg);
         }
       }
     };
@@ -125,19 +125,15 @@ public class GateKeeperStreamsConfig {
                    .<Transaction<WfMgmtRunMsg>>handle(
                            (tx, sink) -> {
                              val msg = tx.get();
-                             val result = service.checkAndUpdate(msg);
+                             val allowedMsg = service.checkWfMgmtRunMsgAndUpdate(msg);
 
-                             if (!result.getOk()) {
+                             if (allowedMsg == null) {
                                tx.reject();
                                log.debug("GateKeeperConsumer - Gatekeeper Rejected: {}", msg);
                                return;
                              }
-                             
-                             if (result.getMsg() != null) {
-                               sink.next(tx.map(result.getMsg()));
-                             } else {
-                               sink.next(tx);
-                             }
+
+                             sink.next(tx.map(allowedMsg));
                            })
                    .onErrorContinue(handleError());
   }
