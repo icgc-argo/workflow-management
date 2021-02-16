@@ -5,9 +5,7 @@ import javax.persistence.AttributeConverter;
 import javax.persistence.Converter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Profile;
 
-@Profile("gatekeeper")
 @Converter
 @Slf4j
 public class EngineParamsConverter implements AttributeConverter<ActiveRun.EngineParams, String> {

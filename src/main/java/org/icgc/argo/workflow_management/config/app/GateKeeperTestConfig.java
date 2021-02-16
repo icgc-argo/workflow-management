@@ -16,22 +16,16 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.gatekeeper.repository;
+package org.icgc.argo.workflow_management.config.app;
 
-import java.util.Optional;
-import javax.persistence.LockModeType;
-import org.icgc.argo.workflow_management.gatekeeper.model.ActiveRun;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration;
+import org.springframework.cloud.function.context.config.ContextFunctionCatalogAutoConfiguration;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Lock;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.stereotype.Repository;
 
-@Profile({"gatekeeper-test", "gatekeeper"})
-@Repository
-public interface ActiveRunsRepo extends JpaRepository<ActiveRun, String> {
-
-  @Lock(LockModeType.OPTIMISTIC_FORCE_INCREMENT)
-  @Query("SELECT ar FROM activeruns ar WHERE ar.runId = ?1")
-  Optional<ActiveRun> findById(String runId);
-}
+@Configuration
+@Profile("gatekeeper-test")
+@EnableAutoConfiguration(
+    exclude = {KafkaAutoConfiguration.class, ContextFunctionCatalogAutoConfiguration.class})
+public class GateKeeperTestConfig {}

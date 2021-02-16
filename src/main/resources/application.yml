@@ -108,3 +108,10 @@ spring.datasource:
 spring.jpa:
   hibernate:
     ddl-auto: update
+
+---
+spring.profiles: gatekeeper-test
+
+spring.jpa:
+  hibernate:
+    ddl-auto: create-drop

@@ -37,7 +37,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-@Profile("gatekeeper")
+@Profile({"gatekeeper-test", "gatekeeper"})
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -95,12 +95,12 @@ public class GateKeeperService {
     next = current.equals(QUEUED) && next.equals(CANCELING) ? CANCELED : next;
 
     if (STATE_LOOKUP.getOrDefault(current, Set.of()).contains(next)) {
-      if (TERMINAL_STATES.contains(next)) {
+      knownRun.setState(next);
+      if (TERMINAL_STATES.contains(knownRun.getState())) {
         repo.deleteById(knownRun.getRunId());
         log.debug("Active Run removed: {}", knownRun);
         return knownRun;
       } else {
-        knownRun.setState(next);
         val updatedRun = repo.save(knownRun);
         log.debug("Active Run updated: {}", updatedRun);
         return updatedRun;

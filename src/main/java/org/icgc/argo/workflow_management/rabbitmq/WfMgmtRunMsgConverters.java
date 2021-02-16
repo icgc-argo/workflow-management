@@ -104,7 +104,10 @@ public class WfMgmtRunMsgConverters {
   public static WfManagementEvent createWfMgmtEvent(WfMgmtRunMsg msg) {
     val msgWep = msg.getWorkflowEngineParams();
 
-    val params = readValue(msg.getWorkflowParamsJsonStr(), Map.class);
+    val params =
+        msg.getWorkflowParamsJsonStr() != null
+            ? readValue(msg.getWorkflowParamsJsonStr(), Map.class)
+            : Map.of();
 
     val wepBuilder =
         WorkflowEngineParams.builder()

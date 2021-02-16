@@ -29,12 +29,12 @@ import com.pivotal.rabbitmq.stream.Transaction;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import lombok.NonNull;
+import javax.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.icgc.argo.workflow_management.config.rabbitmq.RabbitSchemaConfig;
-import org.icgc.argo.workflow_management.gatekeeper.service.GateKeeperService;
+import org.icgc.argo.workflow_management.gatekeeper.service.GatekeeperProcessor;
 import org.icgc.argo.workflow_management.rabbitmq.schema.RunState;
 import org.icgc.argo.workflow_management.rabbitmq.schema.WfMgmtRunMsg;
 import org.icgc.argo.workflow_management.service.wes.WebLogEventSender;
@@ -74,24 +74,51 @@ public class GateKeeperStreamsConfig {
   private String consumerQueueName;
 
   private final RabbitEndpointService rabbit;
-  private final GateKeeperService service;
+  private final GatekeeperProcessor processor;
   private final WebLogEventSender webLogEventSender;
 
   private final OnDemandSource<WfMgmtRunMsg> weblogSourceSink =
       new OnDemandSource<>("weblogSourceSink");
 
+  private Disposable gatekeeperProducerDisposable;
+
+  @PostConstruct
+  public void init() {
+    gatekeeperProducerDisposable = createGatekeeperProducer();
+  }
+
   /** Disposable that takes the input messages, checks if they are valid and allows them */
   @Bean
   public Disposable gatekeeperProducer() {
-    val msgFluxFromGatekeeperInput = gatekeeperQueueConsumedAndCheckedMsgs();
+    return gatekeeperProducerDisposable;
+  }
 
-    val msgFluxFromWeblog = weblogSourceSink.source();
+  public Boolean isAlive() {
+    return !gatekeeperProducerDisposable.isDisposed();
+  }
 
-    val outputFlux = Flux.merge(msgFluxFromGatekeeperInput, msgFluxFromWeblog);
+  private Disposable createGatekeeperProducer() {
+    val gatekeeperInputMsgsFlux = createGatekeeperInputFlux();
+
+    val weblogInputMsgsFlux = weblogSourceSink.source();
+
+    val processedFlux =
+        processor
+            .apply(gatekeeperInputMsgsFlux, weblogInputMsgsFlux)
+            .flatMap(
+                tx -> {
+                  if (RUN_STATES_TO_WEBLOG.contains(tx.get().getState())) {
+                    return webLogEventSender
+                        .sendWfMgmtEvent(createWfMgmtEvent(tx.get()))
+                        .thenReturn(tx);
+                  }
+                  return Mono.just(tx);
+                })
+            .onErrorContinue(handleError());
 
     return createTransProducerStream(
             rabbit, producerTopicExchangeName, producerDefaultQueueName, ROUTING_KEY)
-        .send(outputFlux)
+        .send(processedFlux)
         .onErrorContinue(handleError())
         .subscribe(
             tx -> {
@@ -101,96 +128,25 @@ public class GateKeeperStreamsConfig {
   }
 
   /**
-   * Functional bean consuming weblog events outside mgmt domain, updating gatekeeper and sending
-   * messages for gatekeeper to produce
+   * Functional bean consuming kafka weblog events from outside mgmt domain and sending messages for
+   * to weblogSourceSink
    */
   @Bean
   public Consumer<JsonNode> weblogConsumer() {
     return event -> {
-      val weblogEvent = toWeblogEvent(event);
-
+      val weblogEvent = new WeblogEvent(event);
       if (WEBLOG_EVENTS_OUTSIDE_MGMT.contains(weblogEvent.getRunState())) {
         log.debug("WeblogConsumer received: {}", event);
-        // Weblog events will only change run state info in gatekeeper service, not other params
-        val allowedMsg =
-            service.checkWithExistingAndUpdateStateOnly(
-                weblogEvent.getRunId(), weblogEvent.getRunState());
-        if (allowedMsg.isPresent()) {
-          log.debug("WeblogConsumer sending to gatekeeper producer: {}", allowedMsg);
-          weblogSourceSink.send(allowedMsg.get());
-        }
+        weblogSourceSink.send(weblogEvent.asRunMsg());
       }
     };
   }
 
   /** Flux of input messages into gatekeeper */
-  private Flux<Transaction<WfMgmtRunMsg>> gatekeeperQueueConsumedAndCheckedMsgs() {
+  private Flux<Transaction<WfMgmtRunMsg>> createGatekeeperInputFlux() {
     return createTransConsumerStream(
             rabbit, consumerTopicExchangeName, consumerQueueName, ROUTING_KEY)
-        .receive()
-        .doOnNext(tx -> log.debug("GateKeeperConsumer Received: " + tx.get()))
-        .<Transaction<WfMgmtRunMsg>>handle(
-            (tx, sink) -> {
-              val msg = tx.get();
-              val allowedMsg = service.checkWfMgmtRunMsgAndUpdate(msg);
-
-              if (allowedMsg.isEmpty()) {
-                tx.reject();
-                log.debug("GateKeeperConsumer - Gatekeeper Rejected: {}", msg);
-                return;
-              }
-
-              sink.next(tx.map(allowedMsg.get()));
-            })
-        .flatMap(
-            tx -> {
-              if (RUN_STATES_TO_WEBLOG.contains(tx.get().getState())) {
-                return webLogEventSender
-                    .sendWfMgmtEvent(createWfMgmtEvent(tx.get()))
-                    .thenReturn(tx);
-              }
-              return Mono.just(tx);
-            })
-        .onErrorContinue(handleError());
-  }
-
-  private WeblogEvent toWeblogEvent(JsonNode event) {
-    String runId = "";
-    RunState runState = RunState.UNKNOWN;
-    if (!event.path("metadata").path("workflow").isMissingNode()) {
-      // NEXTFLOW event
-      runId = event.get("runName").asText();
-
-      val eventString = event.get("event").asText();
-      val success = event.get("metadata").get("workflow").get("success").asBoolean();
-      runState = fromNextflowEventAndSuccess(eventString, success);
-    } else if (event.has("workflowUrl")
-        && event.has("runId")
-        && event.has("event")
-        && event.has("utcTime")) {
-      // WFMGMT event
-      runId = event.get("runId").asText();
-
-      val eventString = event.get("event").asText();
-      runState = RunState.valueOf(eventString);
-    }
-
-    return new WeblogEvent(runId, runState);
-  }
-
-  private RunState fromNextflowEventAndSuccess(
-      @NonNull String nextflowEvent, @NonNull boolean success) {
-    if (nextflowEvent.equalsIgnoreCase("started")) {
-      return RunState.RUNNING;
-    } else if (nextflowEvent.equalsIgnoreCase("completed") && success) {
-      return RunState.COMPLETE;
-    } else if ((nextflowEvent.equalsIgnoreCase("completed") && !success)
-        || nextflowEvent.equalsIgnoreCase("failed")
-        || nextflowEvent.equalsIgnoreCase("error")) {
-      return RunState.EXECUTOR_ERROR;
-    } else {
-      return RunState.UNKNOWN;
-    }
+        .receive();
   }
 
   private BiConsumer<Throwable, Object> handleError() {
@@ -207,11 +163,5 @@ public class GateKeeperStreamsConfig {
         log.error("Can't get WfMgmtRunMsg, transaction is lost!");
       }
     };
-  }
-
-  @lombok.Value
-  static class WeblogEvent {
-    String runId;
-    RunState runState;
   }
 }

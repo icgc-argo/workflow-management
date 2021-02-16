@@ -3,9 +3,7 @@ package org.icgc.argo.workflow_management.gatekeeper.model;
 import javax.persistence.*;
 import lombok.*;
 import org.icgc.argo.workflow_management.rabbitmq.schema.RunState;
-import org.springframework.context.annotation.Profile;
 
-@Profile("gatekeeper")
 @Entity(name = "activeruns")
 @Data
 @Builder
