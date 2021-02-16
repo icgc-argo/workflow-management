@@ -18,6 +18,7 @@
 
 package org.icgc.argo.workflow_management.rabbitmq;
 
+import static org.icgc.argo.workflow_management.rabbitmq.DisposableManager.GATEKEEPER_PRODUCER;
 import static org.icgc.argo.workflow_management.rabbitmq.WfMgmtRunMsgConverters.createWfMgmtEvent;
 import static org.icgc.argo.workflow_management.util.RabbitmqUtils.createTransConsumerStream;
 import static org.icgc.argo.workflow_management.util.RabbitmqUtils.createTransProducerStream;
@@ -76,27 +77,20 @@ public class GateKeeperStreamsConfig {
   private final RabbitEndpointService rabbit;
   private final GatekeeperProcessor processor;
   private final WebLogEventSender webLogEventSender;
+  private final DisposableManager disposableManager;
 
   private final OnDemandSource<WfMgmtRunMsg> weblogSourceSink =
       new OnDemandSource<>("weblogSourceSink");
 
-  private Disposable gatekeeperProducerDisposable;
-
   @PostConstruct
   public void init() {
-    gatekeeperProducerDisposable = createGatekeeperProducer();
+    disposableManager.registerDisposable(GATEKEEPER_PRODUCER, this::createGatekeeperProducer);
   }
 
-  /** Disposable that takes the input messages, checks if they are valid and allows them */
-  @Bean
-  public Disposable gatekeeperProducer() {
-    return gatekeeperProducerDisposable;
-  }
-
-  public Boolean isAlive() {
-    return !gatekeeperProducerDisposable.isDisposed();
-  }
-
+  /**
+   * Disposable that takes input messages, passes them through gatekeeper processor and produces the
+   * msgs that gatekeeper processor allowed to pass.
+   */
   private Disposable createGatekeeperProducer() {
     val gatekeeperInputMsgsFlux = createGatekeeperInputFlux();
 

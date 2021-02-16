@@ -24,7 +24,6 @@ import org.icgc.argo.workflow_management.gatekeeper.model.ActiveRun;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 @Profile({"gatekeeper-test", "gatekeeper"})
@@ -32,6 +31,5 @@ import org.springframework.stereotype.Repository;
 public interface ActiveRunsRepo extends JpaRepository<ActiveRun, String> {
 
   @Lock(LockModeType.OPTIMISTIC_FORCE_INCREMENT)
-  @Query("SELECT ar FROM activeruns ar WHERE ar.runId = ?1")
-  Optional<ActiveRun> findById(String runId);
+  Optional<ActiveRun> findActiveRunByRunId(String runId);
 }

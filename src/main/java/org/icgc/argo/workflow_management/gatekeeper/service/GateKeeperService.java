@@ -59,7 +59,7 @@ public class GateKeeperService {
    */
   @Transactional
   public Optional<WfMgmtRunMsg> checkWfMgmtRunMsgAndUpdate(WfMgmtRunMsg msg) {
-    val knownRunOpt = repo.findById(msg.getRunId());
+    val knownRunOpt = repo.findActiveRunByRunId(msg.getRunId());
 
     // short circuit run is new case
     if (knownRunOpt.isEmpty() && msg.getState().equals(QUEUED)) {
@@ -78,7 +78,7 @@ public class GateKeeperService {
 
   @Transactional
   public Optional<WfMgmtRunMsg> checkWithExistingAndUpdateStateOnly(String runId, RunState next) {
-    val knownRunOpt = repo.findById(runId);
+    val knownRunOpt = repo.findActiveRunByRunId(runId);
     if (knownRunOpt.isEmpty()) {
       log.debug("Active Run not found, so not updated: {} {}", runId, next);
       return Optional.empty();
