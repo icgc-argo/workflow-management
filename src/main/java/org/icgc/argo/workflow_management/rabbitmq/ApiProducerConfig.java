@@ -18,12 +18,13 @@
 
 package org.icgc.argo.workflow_management.rabbitmq;
 
+import static org.icgc.argo.workflow_management.rabbitmq.DisposableManager.API_PRODCUER;
+import static org.icgc.argo.workflow_management.rabbitmq.DisposableManager.EXECUTE_CONSUMER;
 import static org.icgc.argo.workflow_management.util.RabbitmqUtils.createTransProducerStream;
 
 import com.pivotal.rabbitmq.RabbitEndpointService;
 import com.pivotal.rabbitmq.source.OnDemandSource;
 import com.pivotal.rabbitmq.source.Sender;
-import com.pivotal.rabbitmq.source.Source;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.icgc.argo.workflow_management.config.rabbitmq.RabbitSchemaConfig;
@@ -34,6 +35,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import reactor.core.Disposable;
+
+import javax.annotation.PostConstruct;
 
 @Slf4j
 @Profile("api")
@@ -51,11 +54,17 @@ public class ApiProducerConfig {
   private String[] topicRoutingKeys;
 
   private final RabbitEndpointService rabbit;
+  private final DisposableManager disposableManager;
+  private final OnDemandSource<WfMgmtRunMsg> sink = new OnDemandSource<>("apiSource");
 
-  @Bean
-  public Disposable produceWfMgmtRunMsg(Source<WfMgmtRunMsg> apiSourceMsgs) {
+  @PostConstruct
+  public void init() {
+    disposableManager.registerDisposable(API_PRODCUER, this::createWfMgmtRunMsgProducer);
+  }
+
+  private Disposable createWfMgmtRunMsgProducer() {
     return createTransProducerStream(rabbit, topicExchangeName, queueName, topicRoutingKeys)
-        .send(apiSourceMsgs.source())
+        .send(sink.source())
         .subscribe(
             tx -> {
               log.debug("ApiProducer sent WfMgmtRunMsg: {}", tx.get());
@@ -64,12 +73,5 @@ public class ApiProducerConfig {
   }
 
   @Bean
-  OnDemandSource<WfMgmtRunMsg> source() {
-    return new OnDemandSource<>("source");
-  }
-
-  @Bean
-  Sender<WfMgmtRunMsg> sender(OnDemandSource<WfMgmtRunMsg> source) {
-    return source;
-  }
+  Sender<WfMgmtRunMsg> sender() { return sink; }
 }

@@ -18,6 +18,8 @@
 
 package org.icgc.argo.workflow_management.rabbitmq;
 
+import static org.icgc.argo.workflow_management.rabbitmq.DisposableManager.EXECUTE_CONSUMER;
+import static org.icgc.argo.workflow_management.rabbitmq.DisposableManager.GATEKEEPER_PRODUCER;
 import static org.icgc.argo.workflow_management.rabbitmq.WfMgmtRunMsgConverters.createRunParams;
 import static org.icgc.argo.workflow_management.rabbitmq.WfMgmtRunMsgConverters.createWfMgmtEvent;
 import static org.icgc.argo.workflow_management.util.RabbitmqUtils.createTransConsumerStream;
@@ -36,10 +38,11 @@ import org.icgc.argo.workflow_management.service.wes.WebLogEventSender;
 import org.icgc.argo.workflow_management.service.wes.WorkflowExecutionService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import reactor.core.Disposable;
+
+import javax.annotation.PostConstruct;
 
 @Profile("execute")
 @Slf4j
@@ -59,9 +62,14 @@ public class ExecuteConsumerConfig {
   private final WebLogEventSender webLogEventSender;
   private final WorkflowExecutionService wes;
   private final RabbitEndpointService rabbit;
+  private final DisposableManager disposableManager;
 
-  @Bean
-  public Disposable wfMgmtRunMsgForExecuteConsumer() {
+  @PostConstruct
+  public void init() {
+    disposableManager.registerDisposable(EXECUTE_CONSUMER, this::createWfMgmtRunMsgForExecuteConsumer);
+  }
+
+  private Disposable createWfMgmtRunMsgForExecuteConsumer() {
     return createTransConsumerStream(rabbit, topicExchangeName, queueName, topicRoutingKeys)
         .receive()
         .doOnNext(consumeAndExecuteInitializeOrCancel())
