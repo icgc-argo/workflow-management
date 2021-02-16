@@ -63,9 +63,6 @@ public class GateKeeperProcessorTests {
 
   @Autowired GatekeeperProcessor processor;
 
-  //  @Autowired
-  //  ActiveRunsRepo repo;
-
   @Test
   public void testStreamsHappyPath() {
     val runId = generateWesRunId();

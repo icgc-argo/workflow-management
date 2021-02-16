@@ -42,13 +42,23 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class GateKeeperService {
+  // When updating a Run that is stored in gatekeepers db, we need to check whether that run is
+  // allowed to go into that state. For example a CANCELLING run can become CANCELLED but never
+  // QUEUED. With these restrictions in mind, we can create a graph of allowed state transitions
+  // (link bellow of current graph) which can be represented as an adjacency list that describes
+  // all the run state changes that gatekeeper will allow during the lifecycle of a run. Here we
+  // use a Map of String,Set to represent the adjacency list for convenience (terminal state runs
+  // aren't in this map since they have no allowed changes).
+  // See graph here:
+  // https://github.com/icgc-argo/workflow-management/blob/develop/docs/WES%20States%20and%20Transitions.png
   private static final Map<RunState, Set<RunState>> STATE_LOOKUP =
       Map.of(
-          QUEUED, Set.of(INITIALIZING, CANCELING, CANCELED, SYSTEM_ERROR),
+          QUEUED, Set.of(INITIALIZING, CANCELED, SYSTEM_ERROR),
           INITIALIZING, Set.of(RUNNING, CANCELING, CANCELED, EXECUTOR_ERROR, SYSTEM_ERROR),
           CANCELING, Set.of(CANCELED, EXECUTOR_ERROR, SYSTEM_ERROR),
           RUNNING, Set.of(SYSTEM_ERROR, EXECUTOR_ERROR, CANCELED, CANCELING, COMPLETE));
 
+  // Run moving into terminal states is removed from db because it's at the end of its lifecycle
   private static final Set<RunState> TERMINAL_STATES =
       Set.of(SYSTEM_ERROR, EXECUTOR_ERROR, CANCELED, COMPLETE);
 

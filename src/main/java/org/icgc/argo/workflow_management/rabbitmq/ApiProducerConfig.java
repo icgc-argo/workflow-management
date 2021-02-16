@@ -19,12 +19,12 @@
 package org.icgc.argo.workflow_management.rabbitmq;
 
 import static org.icgc.argo.workflow_management.rabbitmq.DisposableManager.API_PRODCUER;
-import static org.icgc.argo.workflow_management.rabbitmq.DisposableManager.EXECUTE_CONSUMER;
 import static org.icgc.argo.workflow_management.util.RabbitmqUtils.createTransProducerStream;
 
 import com.pivotal.rabbitmq.RabbitEndpointService;
 import com.pivotal.rabbitmq.source.OnDemandSource;
 import com.pivotal.rabbitmq.source.Sender;
+import javax.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.icgc.argo.workflow_management.config.rabbitmq.RabbitSchemaConfig;
@@ -35,8 +35,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import reactor.core.Disposable;
-
-import javax.annotation.PostConstruct;
 
 @Slf4j
 @Profile("api")
@@ -73,5 +71,7 @@ public class ApiProducerConfig {
   }
 
   @Bean
-  Sender<WfMgmtRunMsg> sender() { return sink; }
+  Sender<WfMgmtRunMsg> sender() {
+    return sink;
+  }
 }
