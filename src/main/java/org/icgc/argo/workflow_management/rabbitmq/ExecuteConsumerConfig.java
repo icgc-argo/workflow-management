@@ -25,6 +25,7 @@ import static org.icgc.argo.workflow_management.util.RabbitmqUtils.createTransCo
 
 import com.pivotal.rabbitmq.RabbitEndpointService;
 import com.pivotal.rabbitmq.stream.Transaction;
+import java.time.Duration;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import javax.annotation.PostConstruct;
@@ -41,6 +42,7 @@ import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import reactor.core.Disposable;
+import reactor.util.retry.RetrySpec;
 
 @Profile("execute")
 @Slf4j
@@ -56,6 +58,9 @@ public class ExecuteConsumerConfig {
 
   @Value("${execute.consumer.topology.topicRoutingKeys}")
   private String[] topicRoutingKeys;
+
+  @Value("${execute.initializingByMiddleware}")
+  private Boolean initializingByMiddleware;
 
   private final WebLogEventSender webLogEventSender;
   private final WorkflowExecutionService wes;
@@ -80,21 +85,23 @@ public class ExecuteConsumerConfig {
     return tx -> {
       val msg = tx.get();
       log.debug("WfMgmtRunMsg received: {}", msg);
-
-      if (msg.getState().equals(RunState.CANCELING)) {
+      if (initializingByMiddleware.equals(true) && msg.getState().equals(RunState.QUEUED)) {
+        log.debug("Got QUEUED msg, expecting initializingByMiddleware: {}", msg);
+        tx.commit();
+      } else if (msg.getState().equals(RunState.QUEUED) || msg.getState().equals(RunState.INITIALIZING)) {
+        val runParams = createRunParams(msg);
+        wes.run(runParams)
+                .subscribe(
+                        runsResponse -> {
+                          log.info("Initialized: {}", msg);
+                          tx.commit();
+                        });
+      } else if (msg.getState().equals(RunState.CANCELING)) {
         wes.cancel(msg.getRunId())
+            .retryWhen(RetrySpec.backoff(3, Duration.ofMinutes(3)))
             .subscribe(
                 runsResponse -> {
                   log.info("Cancelled: {}", runsResponse);
-                  tx.commit();
-                });
-      } else if (msg.getState().equals(RunState.INITIALIZING)) {
-        val runParams = createRunParams(msg);
-
-        wes.run(runParams)
-            .subscribe(
-                runsResponse -> {
-                  log.info("Initialized: {}", msg);
                   tx.commit();
                 });
       } else {

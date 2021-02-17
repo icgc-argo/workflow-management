@@ -29,8 +29,8 @@ import lombok.Singular;
 
 /**
  * GraphqlFieldVisibility implementation that can be used to hide query level fields from the
- * GraphQL schema during RuntimeWiring. Simple create a new builder of this class and add
- * fields to bock with `blockedQueryField()`
+ * GraphQL schema during RuntimeWiring. Simple create a new builder of this class and add fields to
+ * bock with `blockedQueryField()`
  *
  * <p>More info on Field Visibility: https://www.graphql-java.com/documentation/v16/fieldvisibility/
  */
