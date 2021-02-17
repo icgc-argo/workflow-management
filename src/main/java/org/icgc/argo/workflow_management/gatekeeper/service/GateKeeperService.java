@@ -18,9 +18,9 @@
 
 package org.icgc.argo.workflow_management.gatekeeper.service;
 
+import static org.icgc.argo.workflow_management.gatekeeper.service.StateTransition.nextState;
 import static org.icgc.argo.workflow_management.rabbitmq.schema.RunState.*;
 
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -42,22 +42,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class GateKeeperService {
-  // When updating a Run that is stored in gatekeepers db, we need to check whether that run is
-  // allowed to go into that state. For example a CANCELLING run can become CANCELLED but never
-  // QUEUED. With these restrictions in mind, we can create a graph of allowed state transitions
-  // (link bellow of current graph) which can be represented as an adjacency list that describes
-  // all the run state changes that gatekeeper will allow during the lifecycle of a run. Here we
-  // use a Map of String,Set to represent the adjacency list for convenience (terminal state runs
-  // aren't in this map since they have no allowed changes).
-  // See graph here:
-  // https://github.com/icgc-argo/workflow-management/blob/develop/docs/WES%20States%20and%20Transitions.png
-  private static final Map<RunState, Set<RunState>> STATE_LOOKUP =
-      Map.of(
-          QUEUED, Set.of(INITIALIZING, CANCELED, SYSTEM_ERROR),
-          INITIALIZING, Set.of(RUNNING, CANCELING, CANCELED, EXECUTOR_ERROR, SYSTEM_ERROR),
-          CANCELING, Set.of(CANCELED, EXECUTOR_ERROR, SYSTEM_ERROR),
-          RUNNING, Set.of(SYSTEM_ERROR, EXECUTOR_ERROR, CANCELED, CANCELING, COMPLETE));
-
   // Run moving into terminal states is removed from db because it's at the end of its lifecycle
   private static final Set<RunState> TERMINAL_STATES =
       Set.of(SYSTEM_ERROR, EXECUTOR_ERROR, CANCELED, COMPLETE);
@@ -65,13 +49,14 @@ public class GateKeeperService {
   private final ActiveRunsRepo repo;
 
   /**
-   * Checks if msg is valid next state for an active run. Returns msgs if allowed and null if not.
+   * Checks if msg is moving run to a valid next state for an active run. Returns msgs with
+   * nextState if allowed and null if not.
    */
   @Transactional
   public Optional<WfMgmtRunMsg> checkWfMgmtRunMsgAndUpdate(WfMgmtRunMsg msg) {
     val knownRunOpt = repo.findActiveRunByRunId(msg.getRunId());
 
-    // short circuit run is new case
+    // short circuit, run is new
     if (knownRunOpt.isEmpty() && msg.getState().equals(QUEUED)) {
       val newRun = repo.save(fromMsg(msg));
       log.debug("Active Run created: {}", newRun);
@@ -81,43 +66,50 @@ public class GateKeeperService {
     }
 
     val knownRun = knownRunOpt.get();
-    val next = msg.getState();
+    val inputState = msg.getState();
 
-    return Optional.ofNullable(fromActiveRun(checkActiveRunAndUpdate(knownRun, next)));
+    return Optional.ofNullable(fromActiveRun(checkActiveRunAndUpdate(knownRun, inputState)));
   }
 
+  /**
+   * Checks if inputState is moving exsisting run to a valid next state. Returns msgs with nextState
+   * if allowed and null if not.
+   */
   @Transactional
-  public Optional<WfMgmtRunMsg> checkWithExistingAndUpdateStateOnly(String runId, RunState next) {
+  public Optional<WfMgmtRunMsg> checkWithExistingAndUpdateStateOnly(
+      String runId, RunState inputState) {
     val knownRunOpt = repo.findActiveRunByRunId(runId);
     if (knownRunOpt.isEmpty()) {
-      log.debug("Active Run not found, so not updated: {} {}", runId, next);
+      log.debug("Active Run not found, so not updated: {} {}", runId, inputState);
       return Optional.empty();
     } else {
-      return Optional.ofNullable(fromActiveRun(checkActiveRunAndUpdate(knownRunOpt.get(), next)));
+      return Optional.ofNullable(
+          fromActiveRun(checkActiveRunAndUpdate(knownRunOpt.get(), inputState)));
     }
   }
 
   @Transactional
-  private ActiveRun checkActiveRunAndUpdate(ActiveRun knownRun, RunState next) {
-    val current = knownRun.getState();
+  private ActiveRun checkActiveRunAndUpdate(ActiveRun knownRun, RunState inputState) {
+    val currentState = knownRun.getState();
 
-    // special case if queued is going to canceling, just make it canceled
-    next = current.equals(QUEUED) && next.equals(CANCELING) ? CANCELED : next;
-
-    if (STATE_LOOKUP.getOrDefault(current, Set.of()).contains(next)) {
-      knownRun.setState(next);
-      if (TERMINAL_STATES.contains(knownRun.getState())) {
-        repo.deleteById(knownRun.getRunId());
-        log.debug("Active Run removed: {}", knownRun);
-        return knownRun;
-      } else {
-        val updatedRun = repo.save(knownRun);
-        log.debug("Active Run updated: {}", updatedRun);
-        return updatedRun;
-      }
+    // check if this is a valid state transition
+    val nextStateOpt = nextState(currentState, inputState);
+    if (nextStateOpt.isEmpty()) {
+      return null;
     }
 
-    return null;
+    val nextState = nextStateOpt.get();
+    knownRun.setState(nextState);
+
+    if (TERMINAL_STATES.contains(knownRun.getState())) {
+      repo.deleteById(knownRun.getRunId());
+      log.debug("Active Run removed: {}", knownRun);
+      return knownRun;
+    } else {
+      val updatedRun = repo.save(knownRun);
+      log.debug("Active Run updated: {}", updatedRun);
+      return updatedRun;
+    }
   }
 
   public Page<ActiveRun> getRuns(Pageable pageable) {

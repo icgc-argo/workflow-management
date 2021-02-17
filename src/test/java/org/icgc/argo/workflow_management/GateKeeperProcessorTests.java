@@ -44,9 +44,15 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.testcontainers.containers.PostgreSQLContainer;
+import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 
+/**
+ * Collection of tests testing RunMsgs and their states as they pass through the
+ * GateKeeperProcessor. Each test sends msgs sequentially (via two testpublisher for the two
+ * input flux) into the GateKeeperProcessor and the output is asserted as expected.
+ */
 @Slf4j
 @ActiveProfiles("gatekeeper-test")
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -63,10 +69,18 @@ public class GateKeeperProcessorTests {
 
   @Autowired GatekeeperProcessor processor;
 
+  /**
+   * Testing given two in flux, assert expected out flux:
+   * gatekeeperInFlux  :---QUEUED---INITIALIZING-------->
+   *                         |             |
+   * weblogInFlux      :-----|-------------|-------RUNNING---COMPLETED----->
+   *                         |             |          |          |
+   * gatekeeperOutFlux :---QUEUED---INITIALIZING---RUNNING---COMPLETED----->
+   */
   @Test
   public void testStreamsHappyPath() {
     val runId = generateWesRunId();
-    assertPassWithNoInvalidMsgs(
+    buildAndAssertValidSequentialMsgsAreProcessed(
         runId,
         RunStateWrapper.builder().runState(RunState.QUEUED).from(MsgFrom.RABBIT_QUEUE).build(),
         RunStateWrapper.builder()
@@ -77,10 +91,18 @@ public class GateKeeperProcessorTests {
         RunStateWrapper.builder().runState(RunState.COMPLETE).from(MsgFrom.WEBLOG).build());
   }
 
+  /**
+   * Testing given two in flux, assert expected out flux:
+   * gatekeeperInFlux  :---QUEUED---INITIALIZING-------->
+   *                         |             |
+   * weblogInFlux      :-----|-------------|-------RUNNING---EXECUTOR_ERROR----->
+   *                         |             |          |          |
+   * gatekeeperOutFlux :---QUEUED---INITIALIZING---RUNNING---EXECUTOR_ERROR----->
+   */
   @Test
   public void testStreamsSadPathWithExecutorError() {
     val runId = generateWesRunId();
-    assertPassWithNoInvalidMsgs(
+    buildAndAssertValidSequentialMsgsAreProcessed(
         runId,
         RunStateWrapper.builder().runState(RunState.QUEUED).from(MsgFrom.RABBIT_QUEUE).build(),
         RunStateWrapper.builder()
@@ -91,10 +113,18 @@ public class GateKeeperProcessorTests {
         RunStateWrapper.builder().runState(RunState.EXECUTOR_ERROR).from(MsgFrom.WEBLOG).build());
   }
 
+  /**
+   * Testing given two in flux, assert expected out flux:
+   * gatekeeperInFlux  :---QUEUED---INITIALIZING-------->
+   *                         |          |
+   * weblogInFlux      :-----|----------|----------RUNNING---SYSTEM_ERROR----->
+   *                         |          |             |           |
+   * gatekeeperOutFlux :---QUEUED---INITIALIZING---RUNNING---SYSTEM_ERROR----->
+   */
   @Test
   public void testStreamsSadPathWithSystemError() {
     val runId = generateWesRunId();
-    assertPassWithNoInvalidMsgs(
+    buildAndAssertValidSequentialMsgsAreProcessed(
         runId,
         RunStateWrapper.builder().runState(RunState.QUEUED).from(MsgFrom.RABBIT_QUEUE).build(),
         RunStateWrapper.builder()
@@ -105,8 +135,16 @@ public class GateKeeperProcessorTests {
         RunStateWrapper.builder().runState(RunState.SYSTEM_ERROR).from(MsgFrom.WEBLOG).build());
   }
 
+  /**
+   * Testing given two in flux, assert expected out flux:
+   * gatekeeperInFlux  :---QUEUED---INITIALIZING-------------INITIALIZING----->
+   *                         |           |                        |
+   * weblogInFlux      :-----|-----------|---------RUNNING--------|---------COMPLETED----->
+   *                         |           |            |          ===            |
+   * gatekeeperOutFlux :---QUEUED---INITIALIZING---RUNNING-----------------COMPLETED----->
+   */
   @Test
-  public void testStreamsInvalidMsgs() {
+  public void testInvalidMsgsAreRejected() {
     val runId = generateWesRunId();
     val gatekeeperInput = TestPublisher.<Transaction<WfMgmtRunMsg>>create();
     val weblogInput = TestPublisher.<Transaction<WfMgmtRunMsg>>create();
@@ -129,7 +167,9 @@ public class GateKeeperProcessorTests {
         .expectNextMatches(tx -> tx.get().getState().equals(RunState.INITIALIZING))
         .then(() -> weblogInput.next(createWfMgmtRunMsgTransaction(runId, RunState.RUNNING)))
         .expectNextMatches(tx -> tx.get().getState().equals(RunState.RUNNING))
-        .then(() -> weblogInput.next(invalidMsg))
+        .then(() -> weblogInput.next(invalidMsg)) // won't be found on nextMatch since rejected
+        .then(() -> weblogInput.next(createWfMgmtRunMsgTransaction(runId, RunState.COMPLETE)))
+        .expectNextMatches(tx -> tx.get().getState().equals(RunState.COMPLETE))
         .then(
             () -> {
               gatekeeperInput.complete();
@@ -145,7 +185,41 @@ public class GateKeeperProcessorTests {
     assertTrue(isRejected(invalidMsg));
   }
 
-  private void assertPassWithNoInvalidMsgs(String runId, RunStateWrapper... statesInOrderToCheck) {
+  /**
+   * Testing given two in flux, assert expected out flux:
+   * gatekeeperInFlux  :---QUEUED---CANCELING--->
+   *                         |           |
+   * weblogInFlux      :-----|-----------|------>
+   *                         |           |
+   * gatekeeperOutFlux :---QUEUED---CANCELED---->
+   */
+  @Test
+  public void testCancellingQueued() {
+    val runId = generateWesRunId();
+    val gatekeeperInput = TestPublisher.<Transaction<WfMgmtRunMsg>>create();
+    val weblogInputFlux = Flux.<Transaction<WfMgmtRunMsg>>just();
+
+    val gatekeeperOutFlux =
+        processor.apply(gatekeeperInput.flux(), weblogInputFlux).timeout(Duration.ofSeconds(300));
+
+    StepVerifier.create(gatekeeperOutFlux)
+        .then(() -> gatekeeperInput.next(createWfMgmtRunMsgTransaction(runId, RunState.QUEUED)))
+        .expectNextMatches(tx -> tx.get().getState().equals(RunState.QUEUED))
+        .then(() -> gatekeeperInput.next(createWfMgmtRunMsgTransaction(runId, RunState.CANCELING)))
+        .expectNextMatches(tx -> tx.get().getState().equals(RunState.CANCELED))
+        .then(gatekeeperInput::complete)
+        .expectComplete()
+        .verifyThenAssertThat()
+        .hasNotDroppedElements()
+        .hasNotDroppedErrors()
+        .hasNotDiscardedElements();
+  }
+
+  // Util function to build common tests which assert that a sequence of valid msgs are processed
+  // and allowed
+  private void buildAndAssertValidSequentialMsgsAreProcessed(
+      String runId, RunStateWrapper... sequenceOfStatesToGenerateAndCheck) {
+    // ** prepare fluxes for GateKeeperProcessor
     val gatekeeperInput = TestPublisher.<Transaction<WfMgmtRunMsg>>create();
     val weblogInput = TestPublisher.<Transaction<WfMgmtRunMsg>>create();
     val gatekeeperOutFlux =
@@ -153,10 +227,10 @@ public class GateKeeperProcessorTests {
             .apply(gatekeeperInput.flux(), weblogInput.flux())
             .timeout(Duration.ofSeconds(300));
 
+    // ** construct step verifier
     StepVerifier.Step<Transaction<WfMgmtRunMsg>> stepVerifier =
         StepVerifier.create(gatekeeperOutFlux);
-
-    for (final RunStateWrapper runStateWrapper : statesInOrderToCheck) {
+    for (final RunStateWrapper runStateWrapper : sequenceOfStatesToGenerateAndCheck) {
       TestPublisher<Transaction<WfMgmtRunMsg>> publisherToUse;
       if (runStateWrapper.from.equals(MsgFrom.RABBIT_QUEUE)) {
         publisherToUse = gatekeeperInput;
@@ -164,6 +238,7 @@ public class GateKeeperProcessorTests {
         publisherToUse = weblogInput;
       }
 
+      // add runState in the sequence to step verifier, as a publish.next then assertNext
       stepVerifier =
           stepVerifier
               .then(
@@ -173,6 +248,7 @@ public class GateKeeperProcessorTests {
               .assertNext(tx -> assertEquals(tx.get().getState(), runStateWrapper.getRunState()));
     }
 
+    // ** run step verifier
     stepVerifier
         .then(
             () -> {
