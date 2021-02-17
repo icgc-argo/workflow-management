@@ -15,6 +15,14 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * Reactive RabbitMQ Streams (ver 0.0.8) doesn't register the schema by contentType when using just
+ * transactional consumers. It registers them via class path which causes all messages already in
+ * queue to be considered invalid since contentType not found. But with transactional producers,
+ * when it produces the message there is a check to see if the contentType exists which adds it if
+ * not. So when you have both working together you don't notice this, but with just consumers it
+ * doesn't work. This config ensures the avro schema is available via contentType
+ */
 @Slf4j
 @ConditionalOnBean(ReactiveRabbitAutoConfiguration.class)
 @Configuration

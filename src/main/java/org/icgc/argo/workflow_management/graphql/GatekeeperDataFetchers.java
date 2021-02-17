@@ -1,17 +1,13 @@
 package org.icgc.argo.workflow_management.graphql;
 
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toUnmodifiableList;
 import static org.icgc.argo.workflow_management.util.JacksonUtils.convertValue;
 
-import com.google.common.collect.ImmutableList;
 import graphql.schema.DataFetcher;
-import java.util.List;
 import lombok.val;
 import org.icgc.argo.workflow_management.gatekeeper.model.ActiveRun;
 import org.icgc.argo.workflow_management.gatekeeper.service.GateKeeperService;
-import org.icgc.argo.workflow_management.graphql.model.GqlPage;
-import org.icgc.argo.workflow_management.graphql.model.GqlSort;
+import org.icgc.argo.workflow_management.graphql.model.GqlSearchQueryArgs;
 import org.icgc.argo.workflow_management.graphql.model.SearchResult;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -30,25 +26,11 @@ public class GatekeeperDataFetchers {
   @Qualifier("activeRunsDataFetcher")
   public DataFetcher getActiveRunsDataFetcher(GateKeeperService gateKeeperService) {
     return environment -> {
-      val args = environment.getArguments();
+      val args = convertValue(environment.getArguments(), GqlSearchQueryArgs.class);
 
-      val sortsBuilder = ImmutableList.<GqlSort>builder();
-      GqlPage page = null;
-      ActiveRun activeRun = null;
-      if (args != null) {
-        if (args.get("example") != null)
-          activeRun = convertValue(args.get("example"), ActiveRun.class);
-        if (args.get("page") != null) page = convertValue(args.get("page"), GqlPage.class);
-        if (args.get("sorts") != null) {
-          val rawSorts = (List<Object>) args.get("sorts");
-          sortsBuilder.addAll(
-              rawSorts.stream()
-                  .map(sort -> convertValue(sort, GqlSort.class))
-                  .collect(toUnmodifiableList()));
-        }
-      }
-
-      val sorts = sortsBuilder.build();
+      val page = args.getPage();
+      val activeRunExample = args.getExample();
+      val sorts = args.getSorts();
 
       val sortable =
           Sort.by(
@@ -68,10 +50,10 @@ public class GatekeeperDataFetchers {
               : PageRequest.of(page.getFrom(), page.getSize(), sortable);
 
       Page<ActiveRun> result;
-      if (activeRun == null) {
+      if (activeRunExample == null) {
         result = gateKeeperService.getRuns(pageable);
       } else {
-        val example = Example.of(activeRun);
+        val example = Example.of(activeRunExample);
         result = gateKeeperService.getRuns(example, pageable);
       }
 

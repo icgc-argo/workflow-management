@@ -4,6 +4,9 @@ import javax.persistence.*;
 import lombok.*;
 import org.icgc.argo.workflow_management.rabbitmq.schema.RunState;
 
+// TODO rename ActiveRun to Run after api is removed.
+// Distinction is being made for now because there are a WesRun and this new Run type in this repo.
+// This entity doesn't need to be migrated and can be easily renamed/updated when the db is clear.
 @Entity(name = "activeruns")
 @Data
 @Builder

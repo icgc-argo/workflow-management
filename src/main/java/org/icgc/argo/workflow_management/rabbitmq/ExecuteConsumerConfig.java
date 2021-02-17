@@ -88,14 +88,15 @@ public class ExecuteConsumerConfig {
       if (initializingByMiddleware.equals(true) && msg.getState().equals(RunState.QUEUED)) {
         log.debug("Got QUEUED msg, expecting initializingByMiddleware: {}", msg);
         tx.commit();
-      } else if (msg.getState().equals(RunState.QUEUED) || msg.getState().equals(RunState.INITIALIZING)) {
+      } else if (msg.getState().equals(RunState.QUEUED)
+          || msg.getState().equals(RunState.INITIALIZING)) {
         val runParams = createRunParams(msg);
         wes.run(runParams)
-                .subscribe(
-                        runsResponse -> {
-                          log.info("Initialized: {}", msg);
-                          tx.commit();
-                        });
+            .subscribe(
+                runsResponse -> {
+                  log.info("Initialized: {}", msg);
+                  tx.commit();
+                });
       } else if (msg.getState().equals(RunState.CANCELING)) {
         wes.cancel(msg.getRunId())
             .retryWhen(RetrySpec.backoff(3, Duration.ofMinutes(3)))
