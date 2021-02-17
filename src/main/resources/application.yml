@@ -69,14 +69,12 @@ spring.profiles: execute
 execute.consumer.topology:
   queueName: "execute-queue"
   topicExchangeName: "gatekeeper-out"
-  topicRoutingKeys: "QUEUED, INITIALIZING, CANCELING" # comma separated Array of keys
+  topicRoutingKeys: "INITIALIZING, CANCELING" # comma separated Array of keys
 
-execute.initializingByMiddleware: false
+execute.initializingByMiddleware: true
 
 ---
 spring.profiles: gatekeeper
-
-execute.initializingByMiddleware: true
 
 gatekeeper.consumer.topology:
   queueName: "gatekeeper-in-queue"

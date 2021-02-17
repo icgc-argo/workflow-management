@@ -33,7 +33,6 @@ import org.icgc.argo.workflow_management.rabbitmq.schema.RunState;
  * these rules, we can create a graph of allowed state transitions where the nodes are the state of
  * Run and the edges are the state in the msg See state transition graph here:
  * https://github.com/icgc-argo/workflow-management/blob/develop/docs/WES%20States%20and%20Transitions.png
- *
  */
 @UtilityClass
 public class StateTransition {

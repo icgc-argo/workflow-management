@@ -50,8 +50,8 @@ import reactor.test.publisher.TestPublisher;
 
 /**
  * Collection of tests testing RunMsgs and their states as they pass through the
- * GateKeeperProcessor. Each test sends msgs sequentially (via two testpublisher for the two
- * input flux) into the GateKeeperProcessor and the output is asserted as expected.
+ * GateKeeperProcessor. Each test sends msgs sequentially (via two testpublisher for the two input
+ * flux) into the GateKeeperProcessor and the output is asserted as expected.
  */
 @Slf4j
 @ActiveProfiles("gatekeeper-test")
@@ -70,12 +70,10 @@ public class GateKeeperProcessorTests {
   @Autowired GatekeeperProcessor processor;
 
   /**
-   * Testing given two in flux, assert expected out flux:
-   * gatekeeperInFlux  :---QUEUED---INITIALIZING-------->
-   *                         |             |
-   * weblogInFlux      :-----|-------------|-------RUNNING---COMPLETED----->
-   *                         |             |          |          |
-   * gatekeeperOutFlux :---QUEUED---INITIALIZING---RUNNING---COMPLETED----->
+   * Testing given two in flux, assert expected out flux: gatekeeperInFlux
+   * :---QUEUED---INITIALIZING--------> | | weblogInFlux
+   * :-----|-------------|-------RUNNING---COMPLETED-----> | | | | gatekeeperOutFlux
+   * :---QUEUED---INITIALIZING---RUNNING---COMPLETED----->
    */
   @Test
   public void testStreamsHappyPath() {
@@ -92,12 +90,10 @@ public class GateKeeperProcessorTests {
   }
 
   /**
-   * Testing given two in flux, assert expected out flux:
-   * gatekeeperInFlux  :---QUEUED---INITIALIZING-------->
-   *                         |             |
-   * weblogInFlux      :-----|-------------|-------RUNNING---EXECUTOR_ERROR----->
-   *                         |             |          |          |
-   * gatekeeperOutFlux :---QUEUED---INITIALIZING---RUNNING---EXECUTOR_ERROR----->
+   * Testing given two in flux, assert expected out flux: gatekeeperInFlux
+   * :---QUEUED---INITIALIZING--------> | | weblogInFlux
+   * :-----|-------------|-------RUNNING---EXECUTOR_ERROR-----> | | | | gatekeeperOutFlux
+   * :---QUEUED---INITIALIZING---RUNNING---EXECUTOR_ERROR----->
    */
   @Test
   public void testStreamsSadPathWithExecutorError() {
@@ -114,12 +110,10 @@ public class GateKeeperProcessorTests {
   }
 
   /**
-   * Testing given two in flux, assert expected out flux:
-   * gatekeeperInFlux  :---QUEUED---INITIALIZING-------->
-   *                         |          |
-   * weblogInFlux      :-----|----------|----------RUNNING---SYSTEM_ERROR----->
-   *                         |          |             |           |
-   * gatekeeperOutFlux :---QUEUED---INITIALIZING---RUNNING---SYSTEM_ERROR----->
+   * Testing given two in flux, assert expected out flux: gatekeeperInFlux
+   * :---QUEUED---INITIALIZING--------> | | weblogInFlux
+   * :-----|----------|----------RUNNING---SYSTEM_ERROR-----> | | | | gatekeeperOutFlux
+   * :---QUEUED---INITIALIZING---RUNNING---SYSTEM_ERROR----->
    */
   @Test
   public void testStreamsSadPathWithSystemError() {
@@ -136,11 +130,9 @@ public class GateKeeperProcessorTests {
   }
 
   /**
-   * Testing given two in flux, assert expected out flux:
-   * gatekeeperInFlux  :---QUEUED---INITIALIZING-------------INITIALIZING----->
-   *                         |           |                        |
-   * weblogInFlux      :-----|-----------|---------RUNNING--------|---------COMPLETED----->
-   *                         |           |            |          ===            |
+   * Testing given two in flux, assert expected out flux: gatekeeperInFlux
+   * :---QUEUED---INITIALIZING-------------INITIALIZING-----> | | | weblogInFlux
+   * :-----|-----------|---------RUNNING--------|---------COMPLETED-----> | | | === |
    * gatekeeperOutFlux :---QUEUED---INITIALIZING---RUNNING-----------------COMPLETED----->
    */
   @Test
@@ -186,12 +178,9 @@ public class GateKeeperProcessorTests {
   }
 
   /**
-   * Testing given two in flux, assert expected out flux:
-   * gatekeeperInFlux  :---QUEUED---CANCELING--->
-   *                         |           |
-   * weblogInFlux      :-----|-----------|------>
-   *                         |           |
-   * gatekeeperOutFlux :---QUEUED---CANCELED---->
+   * Testing given two in flux, assert expected out flux: gatekeeperInFlux
+   * :---QUEUED---CANCELING---> | | weblogInFlux :-----|-----------|------> | | gatekeeperOutFlux
+   * :---QUEUED---CANCELED---->
    */
   @Test
   public void testCancellingQueued() {

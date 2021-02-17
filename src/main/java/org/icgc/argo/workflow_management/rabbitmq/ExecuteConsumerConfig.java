@@ -85,11 +85,9 @@ public class ExecuteConsumerConfig {
     return tx -> {
       val msg = tx.get();
       log.debug("WfMgmtRunMsg received: {}", msg);
-      if (initializingByMiddleware.equals(true) && msg.getState().equals(RunState.QUEUED)) {
-        log.debug("Got QUEUED msg, expecting initializingByMiddleware: {}", msg);
-        tx.commit();
-      } else if (msg.getState().equals(RunState.QUEUED)
-          || msg.getState().equals(RunState.INITIALIZING)) {
+
+      if ((initializingByMiddleware.equals(false) && msg.getState().equals(RunState.QUEUED))
+          || (initializingByMiddleware.equals(true) && msg.getState().equals(RunState.INITIALIZING))) {
         val runParams = createRunParams(msg);
         wes.run(runParams)
             .subscribe(

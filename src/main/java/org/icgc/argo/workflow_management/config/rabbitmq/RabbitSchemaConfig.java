@@ -1,7 +1,6 @@
 package org.icgc.argo.workflow_management.config.rabbitmq;
 
 import com.pivotal.rabbitmq.ReactiveRabbit;
-import com.pivotal.rabbitmq.ReactiveRabbitAutoConfiguration;
 import com.pivotal.rabbitmq.schema.SchemaManager;
 import java.lang.reflect.Method;
 import lombok.SneakyThrows;
@@ -11,9 +10,9 @@ import org.apache.avro.Schema;
 import org.icgc.argo.workflow_management.rabbitmq.schema.WfMgmtRunMsg;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 /**
  * Reactive RabbitMQ Streams (ver 0.0.8) doesn't register the schema by contentType when using just
@@ -24,7 +23,7 @@ import org.springframework.context.annotation.Configuration;
  * doesn't work. This config ensures the avro schema is available via contentType
  */
 @Slf4j
-@ConditionalOnBean(ReactiveRabbitAutoConfiguration.class)
+@Profile({"gatekeeper", "api", "execute"})
 @Configuration
 public class RabbitSchemaConfig {
   private static final String CONTENT_TYPE = "application/vnd.WfMgmtRunMsg+avro";
