@@ -45,7 +45,7 @@ public class StateTransition {
           RUNNING, Set.of(SYSTEM_ERROR, EXECUTOR_ERROR, CANCELED, CANCELING, COMPLETE));
 
   /**
-   * * This function applies the rules of our state graph. It takes the current Run RunState and an
+   * This function applies the rules of our state graph. It takes the current Run RunState and an
    * input RunState trying to change the run. Then it returns the next state or an empty optional if
    * no valid next state.
    *
