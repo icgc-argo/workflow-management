@@ -31,39 +31,52 @@ import org.icgc.argo.workflow_management.rabbitmq.schema.RunState;
  * When updating a Run using a RunMsg state, we need to check whether that run is allowed to go into
  * that state. For example a CANCELLING run can become CANCELLED but never INITIALIZING. With all of
  * these rules, we can create a graph of allowed state transitions where the nodes are the state of
- * Run and the edges are the state in the msg See state transition graph here:
+ * Run and the edges are the inputState from the msg.
+ * See state transition graph here:
  * https://github.com/icgc-argo/workflow-management/blob/develop/docs/WES%20States%20and%20Transitions.png
  *
  */
 @UtilityClass
 public class StateTransition {
   private static final Map<RunState, Set<RunState>> RUN_TO_INPUT_STATE_LOOKUP =
-      Map.of(
-          QUEUED, Set.of(INITIALIZING, CANCELING, CANCELED, SYSTEM_ERROR),
-          INITIALIZING, Set.of(RUNNING, CANCELING, CANCELED, EXECUTOR_ERROR, SYSTEM_ERROR),
-          CANCELING, Set.of(CANCELED, EXECUTOR_ERROR, SYSTEM_ERROR),
-          RUNNING, Set.of(SYSTEM_ERROR, EXECUTOR_ERROR, CANCELED, CANCELING, COMPLETE));
+	  Map.of(
+		  QUEUED, Set.of(INITIALIZING, CANCELING, CANCELED, SYSTEM_ERROR),
+		  INITIALIZING, Set.of(RUNNING, CANCELING, CANCELED, EXECUTOR_ERROR, SYSTEM_ERROR),
+		  CANCELING, Set.of(CANCELED, EXECUTOR_ERROR, SYSTEM_ERROR),
+		  RUNNING, Set.of(SYSTEM_ERROR, EXECUTOR_ERROR, CANCELED, CANCELING, COMPLETE));
 
-  /**
-   * * This function applies the rules of our state graph. It takes the current Run RunState and an
-   * input RunState trying to change the run. Then it returns the next state or an empty optional if
-   * no valid next state.
+  /**   *
+   * This function applies the rules of our state graph. represented bellow as a matrix:
+   * inputState \ currentState     QUEUED        INITIALIZING       RUNNING          CANCELING
+   * QUEUED                          X                X                X                 X
+   * INITIALIZING               INITIALIZING          R                R                 R
+   * RUNNING				         X             RUNNING             X                 X
+   * CANCELING                    CANCELED        CANCELING        CANCELING             X
+   * CANCELED                        X                X                X              CANCELED
+   * COMPLETE                        X                X             COMPLETE             X
+   * EXECUTOR_ERROR                  X           EXECUTOR_ERROR   EXECUTOR_ERROR   EXECUTOR_ERROR
+   * SYSTEM_ERROR               SYSTEM_ERROR      SYSTEM_ERROR	   SYSTEM_ERROR     SYSTEM_ERROR
+   *
+   * Current state can only be QUEUED, INITIALIZING, RUNNING or CANCELING since a run is removed
+   * when it's in a terminal state.
+   * Cells with X can be ignored since they can not occur (by default they will be rejected).
+   * Cells with R will be rejected.
    *
    * @param currentState The current Runstate.
    * @param inputState The input RunState trying to change the current RunState.
    * @return Optional containing valid nextState or empty if there are none.
    */
   public static Optional<RunState> nextState(RunState currentState, RunState inputState) {
-    if (currentState.equals(RunState.QUEUED) & inputState.equals(RunState.CANCELING)) {
-      // For QUEUED and inputState of CANCELING, nextState is CANCELED
-      return Optional.of(RunState.CANCELED);
-    } else if (RUN_TO_INPUT_STATE_LOOKUP.get(currentState).contains(inputState)) {
-      // For all other cases where currentState has a valid inputState, the nextState is the
-      // inputState
-      return Optional.of(inputState);
-    } else {
-      // No valid next state
-      return Optional.empty();
-    }
+	if (currentState.equals(RunState.QUEUED) & inputState.equals(RunState.CANCELING)) {
+	  // For QUEUED and inputState of CANCELING, nextState is CANCELED
+	  return Optional.of(RunState.CANCELED);
+	} else if (RUN_TO_INPUT_STATE_LOOKUP.get(currentState).contains(inputState)) {
+	  // For all other cases where currentState has a valid inputState, the nextState is the
+	  // inputState
+	  return Optional.of(inputState);
+	} else {
+	  // No valid next state
+	  return Optional.empty();
+	}
   }
 }
