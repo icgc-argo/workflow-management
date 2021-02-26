@@ -18,30 +18,37 @@
 
 package org.icgc.argo.workflow_management.rabbitmq;
 
+import static org.icgc.argo.workflow_management.rabbitmq.DisposableManager.EXECUTE_CONSUMER;
 import static org.icgc.argo.workflow_management.rabbitmq.WfMgmtRunMsgConverters.createRunParams;
 import static org.icgc.argo.workflow_management.rabbitmq.WfMgmtRunMsgConverters.createWfMgmtEvent;
+import static org.icgc.argo.workflow_management.util.RabbitmqUtils.createTransConsumerStream;
 
 import com.pivotal.rabbitmq.RabbitEndpointService;
 import com.pivotal.rabbitmq.stream.Transaction;
-import com.pivotal.rabbitmq.topology.ExchangeType;
+import java.time.Duration;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import javax.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.icgc.argo.workflow_management.config.rabbitmq.RabbitSchemaConfig;
 import org.icgc.argo.workflow_management.rabbitmq.schema.RunState;
 import org.icgc.argo.workflow_management.rabbitmq.schema.WfMgmtRunMsg;
 import org.icgc.argo.workflow_management.service.wes.WebLogEventSender;
 import org.icgc.argo.workflow_management.service.wes.WorkflowExecutionService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import reactor.core.Disposable;
+import reactor.util.retry.RetrySpec;
 
 @Profile("execute")
 @Slf4j
+@AutoConfigureAfter(RabbitSchemaConfig.class)
 @Configuration
+@RequiredArgsConstructor
 public class ExecuteConsumerConfig {
   @Value("${execute.consumer.topology.queueName}")
   private String queueName;
@@ -52,65 +59,48 @@ public class ExecuteConsumerConfig {
   @Value("${execute.consumer.topology.topicRoutingKeys}")
   private String[] topicRoutingKeys;
 
+  @Value("${execute.initializingByMiddleware}")
+  private Boolean initializingByMiddleware;
+
   private final WebLogEventSender webLogEventSender;
   private final WorkflowExecutionService wes;
   private final RabbitEndpointService rabbit;
+  private final DisposableManager disposableManager;
 
-  @Autowired
-  public ExecuteConsumerConfig(
-      WorkflowExecutionService wes,
-      RabbitEndpointService rabbit,
-      WebLogEventSender webLogEventSender) {
-    this.wes = wes;
-    this.rabbit = rabbit;
-    this.webLogEventSender = webLogEventSender;
+  @PostConstruct
+  public void init() {
+    disposableManager.registerDisposable(
+        EXECUTE_CONSUMER, this::createWfMgmtRunMsgForExecuteConsumer);
   }
 
-  @Bean
-  public Disposable wfMgmtRunMsgForExecuteConsumer() {
-    val dlxName = topicExchangeName + "-dlx";
-    val dlqName = queueName + "-dlq";
-    return rabbit
-        .declareTopology(
-            topologyBuilder ->
-                topologyBuilder
-                    .declareExchange(dlxName)
-                    .and()
-                    .declareQueue(dlqName)
-                    .boundTo(dlxName)
-                    .and()
-                    .declareExchange(topicExchangeName)
-                    .type(ExchangeType.topic)
-                    .and()
-                    .declareQueue(queueName)
-                    .boundTo(topicExchangeName, topicRoutingKeys)
-                    .withDeadLetterExchange(dlxName))
-        .createTransactionalConsumerStream(queueName, WfMgmtRunMsg.class)
+  private Disposable createWfMgmtRunMsgForExecuteConsumer() {
+    return createTransConsumerStream(rabbit, topicExchangeName, queueName, topicRoutingKeys)
         .receive()
         .doOnNext(consumeAndExecuteInitializeOrCancel())
         .onErrorContinue(handleError())
         .subscribe();
   }
 
-  public Consumer<Transaction<WfMgmtRunMsg>> consumeAndExecuteInitializeOrCancel() {
+  private Consumer<Transaction<WfMgmtRunMsg>> consumeAndExecuteInitializeOrCancel() {
     return tx -> {
       val msg = tx.get();
       log.debug("WfMgmtRunMsg received: {}", msg);
 
-      if (msg.getState().equals(RunState.CANCELING)) {
-        wes.cancel(msg.getRunId())
-            .subscribe(
-                runsResponse -> {
-                  log.info("Cancelled: {}", runsResponse);
-                  tx.commit();
-                });
-      } else if (msg.getState().equals(RunState.INITIALIZING)) {
+      if ((initializingByMiddleware.equals(false) && msg.getState().equals(RunState.QUEUED))
+          || (initializingByMiddleware.equals(true) && msg.getState().equals(RunState.INITIALIZING))) {
         val runParams = createRunParams(msg);
-
         wes.run(runParams)
             .subscribe(
                 runsResponse -> {
                   log.info("Initialized: {}", msg);
+                  tx.commit();
+                });
+      } else if (msg.getState().equals(RunState.CANCELING)) {
+        wes.cancel(msg.getRunId())
+            .retryWhen(RetrySpec.backoff(3, Duration.ofMinutes(3)))
+            .subscribe(
+                runsResponse -> {
+                  log.info("Cancelled: {}", runsResponse);
                   tx.commit();
                 });
       } else {
@@ -120,7 +110,7 @@ public class ExecuteConsumerConfig {
     };
   }
 
-  public BiConsumer<Throwable, Object> handleError() {
+  private BiConsumer<Throwable, Object> handleError() {
     return (t, tx) -> {
       t.printStackTrace();
       log.error("Error occurred with: {}", tx);

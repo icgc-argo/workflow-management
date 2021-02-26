@@ -148,11 +148,31 @@
             <version>0.5.0</version>
         </dependency>
 
-
         <!-- RabbitMQ -->
         <dependency>
             <groupId>com.pivotal.rabbitmq</groupId>
             <artifactId>reactor-rabbitmq-streams-autoconfigure</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>42.2.18</version>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>1.15.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-stream-kafka</artifactId>
+            <version>3.0.1.RELEASE</version>
         </dependency>
     </dependencies>
 

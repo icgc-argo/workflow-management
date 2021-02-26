@@ -16,14 +16,20 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.rabbitmq;
+package org.icgc.argo.workflow_management.gatekeeper.repository;
 
-import com.pivotal.rabbitmq.ReactiveRabbitAutoConfiguration;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.context.annotation.Configuration;
+import java.util.Optional;
+import javax.persistence.LockModeType;
+import org.icgc.argo.workflow_management.gatekeeper.model.ActiveRun;
 import org.springframework.context.annotation.Profile;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.stereotype.Repository;
 
-@Profile("!api & !execute")
-@Configuration
-@EnableAutoConfiguration(exclude = ReactiveRabbitAutoConfiguration.class)
-public class DisabledConfig {}
+@Profile({"gatekeeper-test", "gatekeeper"})
+@Repository
+public interface ActiveRunsRepo extends JpaRepository<ActiveRun, String> {
+
+  @Lock(LockModeType.OPTIMISTIC_FORCE_INCREMENT)
+  Optional<ActiveRun> findActiveRunByRunId(String runId);
+}

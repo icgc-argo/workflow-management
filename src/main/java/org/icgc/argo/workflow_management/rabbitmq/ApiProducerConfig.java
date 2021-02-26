@@ -18,17 +18,19 @@
 
 package org.icgc.argo.workflow_management.rabbitmq;
 
+import static org.icgc.argo.workflow_management.rabbitmq.DisposableManager.API_PRODCUER;
+import static org.icgc.argo.workflow_management.util.RabbitmqUtils.createTransProducerStream;
+
 import com.pivotal.rabbitmq.RabbitEndpointService;
 import com.pivotal.rabbitmq.source.OnDemandSource;
 import com.pivotal.rabbitmq.source.Sender;
-import com.pivotal.rabbitmq.source.Source;
-import com.pivotal.rabbitmq.topology.ExchangeType;
-import java.util.function.Function;
+import javax.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+import org.icgc.argo.workflow_management.config.rabbitmq.RabbitSchemaConfig;
 import org.icgc.argo.workflow_management.rabbitmq.schema.WfMgmtRunMsg;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -36,7 +38,9 @@ import reactor.core.Disposable;
 
 @Slf4j
 @Profile("api")
+@AutoConfigureAfter(RabbitSchemaConfig.class)
 @Configuration
+@RequiredArgsConstructor
 public class ApiProducerConfig {
   @Value("${api.producer.topology.queueName}")
   private String queueName;
@@ -48,37 +52,17 @@ public class ApiProducerConfig {
   private String[] topicRoutingKeys;
 
   private final RabbitEndpointService rabbit;
+  private final DisposableManager disposableManager;
+  private final OnDemandSource<WfMgmtRunMsg> sink = new OnDemandSource<>("apiSource");
 
-  @Autowired
-  public ApiProducerConfig(RabbitEndpointService rabbit) {
-    this.rabbit = rabbit;
+  @PostConstruct
+  public void init() {
+    disposableManager.registerDisposable(API_PRODCUER, this::createWfMgmtRunMsgProducer);
   }
 
-  @Bean
-  public Disposable produceWfMgmtRunMsg(Source<WfMgmtRunMsg> apiSourceMsgs) {
-    val dlxName = topicExchangeName + "-dlx";
-    val dlqName = queueName + "-dlq";
-    return rabbit
-        .declareTopology(
-            topologyBuilder ->
-                topologyBuilder
-                    .declareExchange(dlxName)
-                    .and()
-                    .declareQueue(dlqName)
-                    .boundTo(dlxName)
-                    .and()
-                    .declareExchange(topicExchangeName)
-                    .type(ExchangeType.topic)
-                    .and()
-                    .declareQueue(queueName)
-                    .boundTo(topicExchangeName, topicRoutingKeys)
-                    .withDeadLetterExchange(dlxName))
-        .createTransactionalProducerStream(WfMgmtRunMsg.class)
-        .route()
-        .toExchange(topicExchangeName)
-        .withRoutingKey(routingKeySelector())
-        .then()
-        .send(apiSourceMsgs.source())
+  private Disposable createWfMgmtRunMsgProducer() {
+    return createTransProducerStream(rabbit, topicExchangeName, queueName, topicRoutingKeys)
+        .send(sink.source())
         .subscribe(
             tx -> {
               log.debug("ApiProducer sent WfMgmtRunMsg: {}", tx.get());
@@ -87,16 +71,7 @@ public class ApiProducerConfig {
   }
 
   @Bean
-  OnDemandSource<WfMgmtRunMsg> source() {
-    return new OnDemandSource<>("source");
-  }
-
-  @Bean
-  Sender<WfMgmtRunMsg> sender(OnDemandSource<WfMgmtRunMsg> source) {
-    return source;
-  }
-
-  Function<WfMgmtRunMsg, String> routingKeySelector() {
-    return msg -> msg.getState().toString();
+  Sender<WfMgmtRunMsg> sender() {
+    return sink;
   }
 }

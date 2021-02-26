@@ -44,7 +44,7 @@ secret:
   tokenUri: http://localhost:8080/oauth/token
 
 ---
-spring.profiles: api,execute
+spring.profiles: api,execute,gatekeeper
 
 rabbit:
   default-endpoint-name: standalone
@@ -59,13 +59,61 @@ rabbit:
 spring.profiles: api
 
 api.producer.topology:
-  queueName: "execute-queue"
-  topicExchangeName: "execute"
-  topicRoutingKeys: "INITIALIZING, CANCELLING" # comma separated Array of keys
+  queueName: "gatekeeper-in-queue"
+  topicExchangeName: "gatekeeper-in"
+  topicRoutingKeys:  "#" # comma separated Array of keys
+
 ---
 spring.profiles: execute
 
 execute.consumer.topology:
   queueName: "execute-queue"
-  topicExchangeName: "execute"
-  topicRoutingKeys: "INITIALIZING, CANCELLING" # comma separated Array of keys
+  topicExchangeName: "gatekeeper-out"
+  topicRoutingKeys: "INITIALIZING, CANCELING" # comma separated Array of keys
+
+execute.initializingByMiddleware: true
+
+---
+spring.profiles: gatekeeper
+
+gatekeeper.consumer.topology:
+  queueName: "gatekeeper-in-queue"
+  topicExchangeName: "gatekeeper-in"
+
+gatekeeper.producer.topology:
+  queueName: "gatekeeper-out-default-queue"
+  topicExchangeName: "gatekeeper-out"
+
+spring.cloud.stream:
+  function.definition: weblogConsumer
+  bindings:
+    weblogConsumer-in-0:
+      group: mgmt-weblogConsumer
+      destination: weblog # kafka topic to listen to
+      binder: kafka
+  kafka:
+    binder.brokers: localhost:9092
+    bindings:
+      weblogConsumer-in-0:
+        consumer:
+          enableDlq: true
+          dlqName: weblog-in-0_dlq
+          autoCommitOnError: true
+          autoCommitOffset: true
+#          resetOffsets: true
+#          startOffset: earliest
+
+spring.datasource:
+  url: jdbc:postgresql://localhost:5432/gatekeeperdb
+  username: postgres
+  password: mysecretpassword
+spring.jpa:
+  hibernate:
+    ddl-auto: update
+
+---
+spring.profiles: gatekeeper-test
+
+spring.jpa:
+  hibernate:
+    ddl-auto: create-drop
