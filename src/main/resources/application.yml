@@ -44,7 +44,7 @@ secret:
   tokenUri: http://localhost:8080/oauth/token
 
 ---
-spring.profiles: api,execute,gatekeeper
+spring.profiles: execute,gatekeeper
 
 rabbit:
   default-endpoint-name: standalone
@@ -54,14 +54,6 @@ rabbit:
       port: 5672
       username: user
       password: pass
-
----
-spring.profiles: api
-
-api.producer.topology:
-  queueName: "gatekeeper-in-queue"
-  topicExchangeName: "gatekeeper-in"
-  topicRoutingKeys:  "#" # comma separated Array of keys
 
 ---
 spring.profiles: execute
