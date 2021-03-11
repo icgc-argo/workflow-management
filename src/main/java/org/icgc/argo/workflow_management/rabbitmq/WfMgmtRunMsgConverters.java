@@ -32,40 +32,12 @@ import nextflow.extension.Bolts;
 import org.icgc.argo.workflow_management.rabbitmq.schema.EngineParams;
 import org.icgc.argo.workflow_management.rabbitmq.schema.RunState;
 import org.icgc.argo.workflow_management.rabbitmq.schema.WfMgmtRunMsg;
-import org.icgc.argo.workflow_management.service.wes.model.RunParams;
-import org.icgc.argo.workflow_management.service.wes.model.WfManagementEvent;
-import org.icgc.argo.workflow_management.wes.controller.model.RunsRequest;
-import org.icgc.argo.workflow_management.wes.controller.model.WorkflowEngineParams;
+import org.icgc.argo.workflow_management.execute.model.RunParams;
+import org.icgc.argo.workflow_management.execute.model.WfManagementEvent;
+import org.icgc.argo.workflow_management.execute.model.WorkflowEngineParams;
 
 @UtilityClass
 public class WfMgmtRunMsgConverters {
-  public static WfMgmtRunMsg createWfMgmtRunMsg(
-      String runId, RunsRequest runsRequest, RunState state) {
-    val requestWep = runsRequest.getWorkflowEngineParams();
-
-    val msgWep =
-        EngineParams.newBuilder()
-            .setLatest(requestWep.getLatest())
-            .setDefaultContainer(requestWep.getDefaultContainer())
-            .setLaunchDir(requestWep.getLaunchDir())
-            .setRevision(requestWep.getRevision())
-            .setProjectDir(requestWep.getProjectDir())
-            .setWorkDir(requestWep.getWorkDir());
-
-    if (requestWep.getResume() != null) {
-      msgWep.setResume(requestWep.getResume().toString());
-    }
-
-    return WfMgmtRunMsg.newBuilder()
-        .setRunId(runId)
-        .setState(state)
-        .setWorkflowUrl(runsRequest.getWorkflowUrl())
-        .setWorkflowParamsJsonStr(toJsonString(runsRequest.getWorkflowParams()))
-        .setWorkflowEngineParams(msgWep.build())
-        .setTimestamp(Instant.now().toEpochMilli())
-        .build();
-  }
-
   public static WfMgmtRunMsg createWfMgmtRunMsg(String runId, RunState state) {
     return WfMgmtRunMsg.newBuilder()
         .setRunId(runId)

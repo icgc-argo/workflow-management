@@ -38,7 +38,7 @@ import org.icgc.argo.workflow_management.config.rabbitmq.RabbitSchemaConfig;
 import org.icgc.argo.workflow_management.gatekeeper.service.GatekeeperProcessor;
 import org.icgc.argo.workflow_management.rabbitmq.schema.RunState;
 import org.icgc.argo.workflow_management.rabbitmq.schema.WfMgmtRunMsg;
-import org.icgc.argo.workflow_management.service.wes.WebLogEventSender;
+import org.icgc.argo.workflow_management.execute.WebLogEventSender;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.context.annotation.Bean;

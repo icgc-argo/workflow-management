@@ -16,20 +16,27 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.gatekeeper.repository;
+package org.icgc.argo.workflow_management.execute.model;
 
-import java.util.Optional;
-import javax.persistence.LockModeType;
-import org.icgc.argo.workflow_management.gatekeeper.model.Run;
-import org.springframework.context.annotation.Profile;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Lock;
-import org.springframework.stereotype.Repository;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.util.Map;
+import lombok.*;
 
-@Profile({"gatekeeper-test", "gatekeeper"})
-@Repository
-public interface ActiveRunsRepo extends JpaRepository<Run, String> {
-
-  @Lock(LockModeType.OPTIMISTIC_FORCE_INCREMENT)
-  Optional<Run> findActiveRunByRunId(String runId);
+@Data
+@Builder
+@AllArgsConstructor
+@RequiredArgsConstructor
+@NoArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class WfManagementEvent {
+  @NonNull private String runId;
+  @NonNull private String event;
+  @NonNull private String utcTime;
+  // TODO - workflowUrl needs to be @NonNull, its missing it now because currently only INITIALIZING
+  // events have this info available
+  private String workflowUrl;
+  private String workflowType;
+  private String workflowTypeVersion;
+  private Map<String, Object> workflowParams;
+  private WorkflowEngineParams workflowEngineParams;
 }

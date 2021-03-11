@@ -16,20 +16,29 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.gatekeeper.repository;
+package org.icgc.argo.workflow_management.execute.model;
 
-import java.util.Optional;
-import javax.persistence.LockModeType;
-import org.icgc.argo.workflow_management.gatekeeper.model.Run;
-import org.springframework.context.annotation.Profile;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Lock;
-import org.springframework.stereotype.Repository;
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import java.util.UUID;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 
-@Profile({"gatekeeper-test", "gatekeeper"})
-@Repository
-public interface ActiveRunsRepo extends JpaRepository<Run, String> {
-
-  @Lock(LockModeType.OPTIMISTIC_FORCE_INCREMENT)
-  Optional<Run> findActiveRunByRunId(String runId);
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+@JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class WorkflowEngineParams {
+  private String defaultContainer;
+  private String revision;
+  private UUID resume;
+  private String launchDir;
+  private String projectDir;
+  private String workDir;
+  private Boolean latest;
 }

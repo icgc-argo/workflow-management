@@ -16,20 +16,28 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.gatekeeper.repository;
+package org.icgc.argo.workflow_management.execute.model;
 
-import java.util.Optional;
-import javax.persistence.LockModeType;
-import org.icgc.argo.workflow_management.gatekeeper.model.Run;
-import org.springframework.context.annotation.Profile;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Lock;
-import org.springframework.stereotype.Repository;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 
-@Profile({"gatekeeper-test", "gatekeeper"})
-@Repository
-public interface ActiveRunsRepo extends JpaRepository<Run, String> {
+/**
+ * ENUM of nextflow events from: https://www.nextflow.io/docs/latest/tracing.html#weblog-via-http
+ */
+@RequiredArgsConstructor
+public enum NextflowEvent {
+  STARTED("STARTED"),
 
-  @Lock(LockModeType.OPTIMISTIC_FORCE_INCREMENT)
-  Optional<Run> findActiveRunByRunId(String runId);
+  PROCESS_SUBMITTED("PROCESS_SUBMITTED"),
+
+  PROCESS_STARTED("PROCESS_STARTED"),
+
+  PROCESS_COMPLETED("PROCESS_COMPLETED"),
+
+  ERROR("ERROR"),
+
+  COMPLETED("COMPLETED");
+
+  @Getter @NonNull private final String value;
 }

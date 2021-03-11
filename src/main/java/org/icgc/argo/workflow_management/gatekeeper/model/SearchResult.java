@@ -16,20 +16,25 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.gatekeeper.repository;
+package org.icgc.argo.workflow_management.gatekeeper.model;
 
-import java.util.Optional;
-import javax.persistence.LockModeType;
-import org.icgc.argo.workflow_management.gatekeeper.model.Run;
-import org.springframework.context.annotation.Profile;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Lock;
-import org.springframework.stereotype.Repository;
+import java.util.List;
+import lombok.Value;
 
-@Profile({"gatekeeper-test", "gatekeeper"})
-@Repository
-public interface ActiveRunsRepo extends JpaRepository<Run, String> {
+@Value
+public class SearchResult<T> {
+  List<T> content;
+  Info info;
 
-  @Lock(LockModeType.OPTIMISTIC_FORCE_INCREMENT)
-  Optional<Run> findActiveRunByRunId(String runId);
+  public SearchResult(List<T> content, Boolean hasNextFrom, Long totalHits) {
+    this.content = content;
+    this.info = new Info(hasNextFrom, totalHits, content.size());
+  }
+
+  @Value
+  public static class Info {
+    Boolean hasNextFrom;
+    Long totalHits;
+    Integer contentCount;
+  }
 }

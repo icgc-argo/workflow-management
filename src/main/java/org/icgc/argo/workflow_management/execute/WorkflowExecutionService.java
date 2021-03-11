@@ -16,20 +16,14 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.gatekeeper.repository;
+package org.icgc.argo.workflow_management.execute;
 
-import java.util.Optional;
-import javax.persistence.LockModeType;
-import org.icgc.argo.workflow_management.gatekeeper.model.Run;
-import org.springframework.context.annotation.Profile;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Lock;
-import org.springframework.stereotype.Repository;
+import org.icgc.argo.workflow_management.execute.model.RunsResponse;
+import org.icgc.argo.workflow_management.execute.model.RunParams;
+import reactor.core.publisher.Mono;
 
-@Profile({"gatekeeper-test", "gatekeeper"})
-@Repository
-public interface ActiveRunsRepo extends JpaRepository<Run, String> {
+public interface WorkflowExecutionService {
+  Mono<RunsResponse> run(RunParams params);
 
-  @Lock(LockModeType.OPTIMISTIC_FORCE_INCREMENT)
-  Optional<Run> findActiveRunByRunId(String runId);
+  Mono<RunsResponse> cancel(String runId);
 }

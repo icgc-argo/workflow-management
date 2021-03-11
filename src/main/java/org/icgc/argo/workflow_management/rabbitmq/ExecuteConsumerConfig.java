@@ -35,8 +35,8 @@ import lombok.val;
 import org.icgc.argo.workflow_management.config.rabbitmq.RabbitSchemaConfig;
 import org.icgc.argo.workflow_management.rabbitmq.schema.RunState;
 import org.icgc.argo.workflow_management.rabbitmq.schema.WfMgmtRunMsg;
-import org.icgc.argo.workflow_management.service.wes.WebLogEventSender;
-import org.icgc.argo.workflow_management.service.wes.WorkflowExecutionService;
+import org.icgc.argo.workflow_management.execute.WebLogEventSender;
+import org.icgc.argo.workflow_management.execute.WorkflowExecutionService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.context.annotation.Configuration;
@@ -87,7 +87,8 @@ public class ExecuteConsumerConfig {
       log.debug("WfMgmtRunMsg received: {}", msg);
 
       if ((initializingByMiddleware.equals(false) && msg.getState().equals(RunState.QUEUED))
-          || (initializingByMiddleware.equals(true) && msg.getState().equals(RunState.INITIALIZING))) {
+          || (initializingByMiddleware.equals(true)
+              && msg.getState().equals(RunState.INITIALIZING))) {
         val runParams = createRunParams(msg);
         wes.run(runParams)
             .subscribe(

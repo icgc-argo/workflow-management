@@ -16,20 +16,37 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.gatekeeper.repository;
+package org.icgc.argo.workflow_management.execute.model;
 
-import java.util.Optional;
-import javax.persistence.LockModeType;
-import org.icgc.argo.workflow_management.gatekeeper.model.Run;
-import org.springframework.context.annotation.Profile;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Lock;
-import org.springframework.stereotype.Repository;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 
-@Profile({"gatekeeper-test", "gatekeeper"})
-@Repository
-public interface ActiveRunsRepo extends JpaRepository<Run, String> {
+/**
+ * ENUM of wes state from:
+ * https://github.com/ga4gh/workflow-execution-service-schemas/blob/c3b19854240c4fcbaf3483e22b19db0a918a7ee5/openapi/workflow_execution_service.swagger.yaml#L483
+ */
+@RequiredArgsConstructor
+public enum WesState {
+  UNKNOWN("UNKNOWN"),
 
-  @Lock(LockModeType.OPTIMISTIC_FORCE_INCREMENT)
-  Optional<Run> findActiveRunByRunId(String runId);
+  QUEUED("QUEUED"),
+
+  INITIALIZING("INITIALIZING"),
+
+  RUNNING("RUNNING"),
+
+  PAUSED("PAUSED"),
+
+  CANCELING("CANCELING"),
+
+  CANCELED("CANCELED"),
+
+  COMPLETE("COMPLETE"),
+
+  EXECUTOR_ERROR("EXECUTOR_ERROR"),
+
+  SYSTEM_ERROR("SYSTEM_ERROR");
+
+  @Getter @NonNull private final String value;
 }

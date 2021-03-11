@@ -16,20 +16,39 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.gatekeeper.repository;
+package org.icgc.argo.workflow_management.execute.properties;
 
-import java.util.Optional;
-import javax.persistence.LockModeType;
-import org.icgc.argo.workflow_management.gatekeeper.model.Run;
-import org.springframework.context.annotation.Profile;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Lock;
-import org.springframework.stereotype.Repository;
+import java.util.List;
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Configuration;
 
-@Profile({"gatekeeper-test", "gatekeeper"})
-@Repository
-public interface ActiveRunsRepo extends JpaRepository<Run, String> {
+@Data
+@Configuration
+@EnableConfigurationProperties
+@ConfigurationProperties(prefix = "nextflow")
+public class NextflowProperties {
+  private K8sProperties k8s;
+  private MonitorProperties monitor;
+  private String weblogUrl;
+  private String masterUrl;
+  private boolean trustCertificate;
 
-  @Lock(LockModeType.OPTIMISTIC_FORCE_INCREMENT)
-  Optional<Run> findActiveRunByRunId(String runId);
+  @Data
+  public static class K8sProperties {
+    private Integer runAsUser;
+    private String serviceAccount;
+    private String namespace;
+    private String runNamespace;
+    private List<String> volMounts;
+    private String masterUrl;
+    private boolean trustCertificate;
+  }
+
+  @Data
+  public static class MonitorProperties {
+    private Integer sleepInterval;
+    private Integer maxErrorLogLines;
+  }
 }

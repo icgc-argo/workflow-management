@@ -36,7 +36,6 @@ import reactor.core.Disposable;
 @AutoConfigureAfter(RabbitSchemaConfig.class)
 @Configuration
 public class DisposableManager {
-  public static final String API_PRODCUER = "apiProducer";
   public static final String EXECUTE_CONSUMER = "executeConsumer";
   public static final String GATEKEEPER_PRODUCER = "gatekeeperProducer";
 
