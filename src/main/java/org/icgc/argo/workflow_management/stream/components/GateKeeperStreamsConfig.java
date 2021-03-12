@@ -16,10 +16,10 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.rabbitmq;
+package org.icgc.argo.workflow_management.stream.components;
 
-import static org.icgc.argo.workflow_management.rabbitmq.DisposableManager.GATEKEEPER_PRODUCER;
-import static org.icgc.argo.workflow_management.rabbitmq.WfMgmtRunMsgConverters.createWfMgmtEvent;
+import static org.icgc.argo.workflow_management.stream.WfMgmtRunMsgConverters.createWfMgmtEvent;
+import static org.icgc.argo.workflow_management.stream.components.DisposableManager.GATEKEEPER_PRODUCER;
 import static org.icgc.argo.workflow_management.util.RabbitmqUtils.createTransConsumerStream;
 import static org.icgc.argo.workflow_management.util.RabbitmqUtils.createTransProducerStream;
 
@@ -36,9 +36,9 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.icgc.argo.workflow_management.config.rabbitmq.RabbitSchemaConfig;
 import org.icgc.argo.workflow_management.gatekeeper.service.GatekeeperProcessor;
-import org.icgc.argo.workflow_management.rabbitmq.schema.RunState;
-import org.icgc.argo.workflow_management.rabbitmq.schema.WfMgmtRunMsg;
-import org.icgc.argo.workflow_management.execute.WebLogEventSender;
+import org.icgc.argo.workflow_management.stream.model.WeblogEvent;
+import org.icgc.argo.workflow_management.stream.schema.RunState;
+import org.icgc.argo.workflow_management.stream.schema.WfMgmtRunMsg;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.context.annotation.Bean;

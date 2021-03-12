@@ -16,30 +16,14 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.secret.impl;
+package org.icgc.argo.workflow_management.execute.exception;
 
-import java.util.List;
-import java.util.Optional;
-import lombok.extern.slf4j.Slf4j;
-import org.icgc.argo.workflow_management.secret.SecretProvider;
-
-@Slf4j
-public class NoSecretProvider extends SecretProvider {
-
-  @Override
-  public Optional<String> generateSecret() {
-    log.debug("NoSecretProvider returning empty optional.");
-    return Optional.empty();
+public class ReflectionUtilsException extends Exception {
+  public ReflectionUtilsException(String exception) {
+    super(exception);
   }
 
-  @Override
-  public Optional<String> generateSecretWithScopes(List<String> scopes) {
-    log.debug("NoSecretProvider returning empty optional.");
-    return Optional.empty();
-  }
-
-  @Override
-  public Boolean isEnabled() {
-    return false;
+  public ReflectionUtilsException() {
+    super();
   }
 }

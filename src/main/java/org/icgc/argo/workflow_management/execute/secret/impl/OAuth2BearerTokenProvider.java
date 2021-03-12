@@ -16,7 +16,7 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.secret.impl;
+package org.icgc.argo.workflow_management.execute.secret.impl;
 
 import java.util.List;
 import java.util.Optional;
@@ -24,7 +24,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.icgc.argo.workflow_management.secret.SecretProvider;
+import org.icgc.argo.workflow_management.execute.secret.SecretProvider;
 import org.springframework.security.oauth2.client.OAuth2RestTemplate;
 import org.springframework.security.oauth2.client.token.grant.client.ClientCredentialsResourceDetails;
 

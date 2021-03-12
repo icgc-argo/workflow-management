@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.icgc.argo.workflow_management.exception.ReflectionUtilsException;
+import org.icgc.argo.workflow_management.execute.exception.ReflectionUtilsException;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.web.bind.annotation.ResponseStatus;
 

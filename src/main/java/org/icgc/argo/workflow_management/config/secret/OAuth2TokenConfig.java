@@ -18,8 +18,8 @@
 
 package org.icgc.argo.workflow_management.config.secret;
 
-import org.icgc.argo.workflow_management.secret.SecretProvider;
-import org.icgc.argo.workflow_management.secret.impl.OAuth2BearerTokenProvider;
+import org.icgc.argo.workflow_management.execute.secret.SecretProvider;
+import org.icgc.argo.workflow_management.execute.secret.impl.OAuth2BearerTokenProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

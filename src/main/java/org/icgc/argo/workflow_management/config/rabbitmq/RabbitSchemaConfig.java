@@ -7,7 +7,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.avro.Schema;
-import org.icgc.argo.workflow_management.rabbitmq.schema.WfMgmtRunMsg;
+import org.icgc.argo.workflow_management.stream.schema.WfMgmtRunMsg;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ApplicationContext;

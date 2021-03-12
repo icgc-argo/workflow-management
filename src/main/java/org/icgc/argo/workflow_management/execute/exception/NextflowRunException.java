@@ -16,27 +16,14 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.execute.model;
+package org.icgc.argo.workflow_management.execute.exception;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import java.util.Map;
-import lombok.*;
+public class NextflowRunException extends RuntimeException {
+  public NextflowRunException(String exception) {
+    super(exception);
+  }
 
-@Data
-@Builder
-@AllArgsConstructor
-@RequiredArgsConstructor
-@NoArgsConstructor
-@JsonIgnoreProperties(ignoreUnknown = true)
-public class WfManagementEvent {
-  @NonNull private String runId;
-  @NonNull private String event;
-  @NonNull private String utcTime;
-  // TODO - workflowUrl needs to be @NonNull, its missing it now because currently only INITIALIZING
-  // events have this info available
-  private String workflowUrl;
-  private String workflowType;
-  private String workflowTypeVersion;
-  private Map<String, Object> workflowParams;
-  private WorkflowEngineParams workflowEngineParams;
+  public NextflowRunException() {
+    super();
+  }
 }

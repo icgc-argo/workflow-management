@@ -5,9 +5,9 @@ import static org.icgc.argo.workflow_management.util.JacksonUtils.convertValue;
 
 import graphql.schema.DataFetcher;
 import lombok.val;
-import org.icgc.argo.workflow_management.gatekeeper.service.GateKeeperService;
 import org.icgc.argo.workflow_management.gatekeeper.model.GqlSearchQueryArgs;
 import org.icgc.argo.workflow_management.gatekeeper.model.SearchResult;
+import org.icgc.argo.workflow_management.gatekeeper.service.GateKeeperService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;

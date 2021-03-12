@@ -25,7 +25,7 @@ import com.pivotal.rabbitmq.topology.ExchangeType;
 import java.util.function.Function;
 import lombok.experimental.UtilityClass;
 import lombok.val;
-import org.icgc.argo.workflow_management.rabbitmq.schema.WfMgmtRunMsg;
+import org.icgc.argo.workflow_management.stream.schema.WfMgmtRunMsg;
 
 @UtilityClass
 public class RabbitmqUtils {

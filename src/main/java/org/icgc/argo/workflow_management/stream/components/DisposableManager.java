@@ -16,14 +16,33 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.exception;
+package org.icgc.argo.workflow_management.stream.components;
 
-public class NextflowRunException extends RuntimeException {
-  public NextflowRunException(String exception) {
-    super(exception);
-  }
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import org.icgc.argo.workflow_management.config.rabbitmq.RabbitSchemaConfig;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
+import reactor.core.Disposable;
 
-  public NextflowRunException() {
-    super();
+@Slf4j
+@Profile({"gatekeeper", "api", "execute"})
+@AutoConfigureAfter(RabbitSchemaConfig.class)
+@Configuration
+public class DisposableManager {
+  public static final String EXECUTE_CONSUMER = "executeConsumer";
+  public static final String GATEKEEPER_PRODUCER = "gatekeeperProducer";
+
+  private final Map<String, Disposable> disposablesRegistry =
+      Collections.synchronizedMap(new HashMap<>());
+
+  @SneakyThrows
+  public void registerDisposable(String name, Callable<Disposable> disposableCallable) {
+    this.disposablesRegistry.put(name, disposableCallable.call());
   }
 }

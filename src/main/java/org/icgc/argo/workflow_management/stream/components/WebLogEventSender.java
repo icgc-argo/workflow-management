@@ -16,7 +16,7 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.execute;
+package org.icgc.argo.workflow_management.stream.components;
 
 import static org.icgc.argo.workflow_management.util.JacksonUtils.toJsonString;
 
@@ -28,6 +28,8 @@ import lombok.val;
 import nextflow.Const;
 import nextflow.extension.Bolts;
 import org.icgc.argo.workflow_management.execute.model.*;
+import org.icgc.argo.workflow_management.stream.model.WfManagementEvent;
+import org.icgc.argo.workflow_management.stream.model.WorkflowEvent;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;

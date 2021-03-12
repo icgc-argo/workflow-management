@@ -17,17 +17,6 @@ secret:
   enabled: false
 
 ---
-spring.profiles: secure
-auth:
-  jwtPublicKeyUrl: ""
-  jwtPublicKeyStr: "-----BEGIN PUBLIC KEY-----\nSET ME IF YOU DONT HAVE A URL, BUT URL TAKES PRIORITY\n-----END PUBLIC KEY-----"
-  graphqlScopes:
-    queryOnly:
-      - RDPC-CA.READ
-    queryAndMutation:
-      - RDPC-CA.WRITE
-
----
 spring.profiles: apiKey
 
 secret:

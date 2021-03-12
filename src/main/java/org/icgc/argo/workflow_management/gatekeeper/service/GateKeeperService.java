@@ -19,7 +19,7 @@
 package org.icgc.argo.workflow_management.gatekeeper.service;
 
 import static org.icgc.argo.workflow_management.gatekeeper.service.StateTransition.nextState;
-import static org.icgc.argo.workflow_management.rabbitmq.schema.RunState.*;
+import static org.icgc.argo.workflow_management.stream.schema.RunState.*;
 
 import java.util.Optional;
 import java.util.Set;
@@ -28,8 +28,9 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.icgc.argo.workflow_management.gatekeeper.model.Run;
 import org.icgc.argo.workflow_management.gatekeeper.repository.ActiveRunsRepo;
-import org.icgc.argo.workflow_management.rabbitmq.schema.RunState;
-import org.icgc.argo.workflow_management.rabbitmq.schema.WfMgmtRunMsg;
+import org.icgc.argo.workflow_management.stream.schema.EngineParams;
+import org.icgc.argo.workflow_management.stream.schema.RunState;
+import org.icgc.argo.workflow_management.stream.schema.WfMgmtRunMsg;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
@@ -163,7 +164,7 @@ public class GateKeeperService {
 
     val msgWep = run.getWorkflowEngineParams();
     val runWep =
-        org.icgc.argo.workflow_management.rabbitmq.schema.EngineParams.newBuilder()
+        EngineParams.newBuilder()
             .setLatest(msgWep.getLatest())
             .setDefaultContainer(msgWep.getDefaultContainer())
             .setLaunchDir(msgWep.getLaunchDir())

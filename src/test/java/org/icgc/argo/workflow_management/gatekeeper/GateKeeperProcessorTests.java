@@ -16,9 +16,9 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management;
+package org.icgc.argo.workflow_management.gatekeeper;
 
-import static org.icgc.argo.workflow_management.rabbitmq.WfMgmtRunMsgConverters.createWfMgmtRunMsg;
+import static org.icgc.argo.workflow_management.stream.WfMgmtRunMsgConverters.createWfMgmtRunMsg;
 import static org.icgc.argo.workflow_management.util.TransactionUtils.*;
 import static org.icgc.argo.workflow_management.util.WesUtils.generateWesRunId;
 import static org.junit.Assert.*;
@@ -30,8 +30,8 @@ import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.icgc.argo.workflow_management.gatekeeper.service.GatekeeperProcessor;
-import org.icgc.argo.workflow_management.rabbitmq.schema.RunState;
-import org.icgc.argo.workflow_management.rabbitmq.schema.WfMgmtRunMsg;
+import org.icgc.argo.workflow_management.stream.schema.RunState;
+import org.icgc.argo.workflow_management.stream.schema.WfMgmtRunMsg;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;

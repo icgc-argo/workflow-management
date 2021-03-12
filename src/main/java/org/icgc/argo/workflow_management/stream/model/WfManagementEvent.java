@@ -16,32 +16,28 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.secret;
+package org.icgc.argo.workflow_management.stream.model;
 
-import java.util.List;
-import java.util.Optional;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.util.Map;
+import lombok.*;
+import org.icgc.argo.workflow_management.execute.model.WorkflowEngineParams;
 
-public abstract class SecretProvider {
-
-  /**
-   * Return a secret with default scopes
-   *
-   * @return Secret String
-   */
-  public abstract Optional<String> generateSecret();
-
-  /**
-   * Return secret scoped to requested scopes
-   *
-   * @param scopes Scopes to generate secret with
-   * @return Secret String
-   */
-  public abstract Optional<String> generateSecretWithScopes(List<String> scopes);
-
-  /**
-   * Is this secret provider enabled?
-   *
-   * @return Enabled state
-   */
-  public abstract Boolean isEnabled();
+@Data
+@Builder
+@AllArgsConstructor
+@RequiredArgsConstructor
+@NoArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class WfManagementEvent {
+  @NonNull private String runId;
+  @NonNull private String event;
+  @NonNull private String utcTime;
+  // TODO - workflowUrl needs to be @NonNull, its missing it now because currently only INITIALIZING
+  // events have this info available
+  private String workflowUrl;
+  private String workflowType;
+  private String workflowTypeVersion;
+  private Map<String, Object> workflowParams;
+  private WorkflowEngineParams workflowEngineParams;
 }

@@ -16,7 +16,7 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.execute;
+package org.icgc.argo.workflow_management.execute.service;
 
 import static java.lang.String.format;
 import static java.util.Objects.nonNull;
@@ -42,13 +42,14 @@ import nextflow.cli.CmdKubeRun;
 import nextflow.cli.Launcher;
 import nextflow.k8s.K8sDriverLauncher;
 import nextflow.script.ScriptBinding;
-import org.icgc.argo.workflow_management.exception.NextflowRunException;
-import org.icgc.argo.workflow_management.exception.ReflectionUtilsException;
-import org.icgc.argo.workflow_management.secret.SecretProvider;
+import org.icgc.argo.workflow_management.execute.exception.NextflowRunException;
+import org.icgc.argo.workflow_management.execute.exception.ReflectionUtilsException;
+import org.icgc.argo.workflow_management.execute.model.*;
 import org.icgc.argo.workflow_management.execute.model.RunsResponse;
 import org.icgc.argo.workflow_management.execute.properties.NextflowProperties;
+import org.icgc.argo.workflow_management.execute.secret.SecretProvider;
+import org.icgc.argo.workflow_management.stream.components.WebLogEventSender;
 import org.icgc.argo.workflow_management.util.ConditionalPutMap;
-import org.icgc.argo.workflow_management.execute.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;

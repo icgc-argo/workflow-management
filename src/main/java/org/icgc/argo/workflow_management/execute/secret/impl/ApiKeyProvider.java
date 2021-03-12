@@ -16,14 +16,44 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.exception;
+package org.icgc.argo.workflow_management.execute.secret.impl;
 
-public class ReflectionUtilsException extends Exception {
-  public ReflectionUtilsException(String exception) {
-    super(exception);
+import java.util.List;
+import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.icgc.argo.workflow_management.execute.secret.SecretProvider;
+
+@Slf4j
+@RequiredArgsConstructor
+public class ApiKeyProvider extends SecretProvider {
+
+  /** Dependencies */
+  private final Boolean enabled;
+
+  private final String apiKey;
+
+  @Override
+  public Optional<String> generateSecret() {
+    log.debug("ApiKeyProvider returning secret.");
+    return enabled ? Optional.of(apiKey) : Optional.empty();
   }
 
-  public ReflectionUtilsException() {
-    super();
+  /**
+   * API Keys do not have the ability to have their scopes modified as they are already issued at
+   * call time.
+   *
+   * @return API Key
+   */
+  @Override
+  public Optional<String> generateSecretWithScopes(List<String> scopes) {
+    log.debug("ApiKeyProvider returning secret.");
+    log.warn("Trying to generate API key that is scoped. API Keys cannot be dynamically scoped!");
+    return generateSecret();
+  }
+
+  @Override
+  public Boolean isEnabled() {
+    return enabled;
   }
 }

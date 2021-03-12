@@ -16,7 +16,7 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.rabbitmq;
+package org.icgc.argo.workflow_management.stream;
 
 import static org.icgc.argo.workflow_management.util.JacksonUtils.*;
 
@@ -29,12 +29,12 @@ import lombok.experimental.UtilityClass;
 import lombok.val;
 import nextflow.Const;
 import nextflow.extension.Bolts;
-import org.icgc.argo.workflow_management.rabbitmq.schema.EngineParams;
-import org.icgc.argo.workflow_management.rabbitmq.schema.RunState;
-import org.icgc.argo.workflow_management.rabbitmq.schema.WfMgmtRunMsg;
 import org.icgc.argo.workflow_management.execute.model.RunParams;
-import org.icgc.argo.workflow_management.execute.model.WfManagementEvent;
 import org.icgc.argo.workflow_management.execute.model.WorkflowEngineParams;
+import org.icgc.argo.workflow_management.stream.model.WfManagementEvent;
+import org.icgc.argo.workflow_management.stream.schema.EngineParams;
+import org.icgc.argo.workflow_management.stream.schema.RunState;
+import org.icgc.argo.workflow_management.stream.schema.WfMgmtRunMsg;
 
 @UtilityClass
 public class WfMgmtRunMsgConverters {

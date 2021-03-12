@@ -16,10 +16,10 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.execute;
+package org.icgc.argo.workflow_management.execute.service;
 
-import org.icgc.argo.workflow_management.execute.model.RunsResponse;
 import org.icgc.argo.workflow_management.execute.model.RunParams;
+import org.icgc.argo.workflow_management.execute.model.RunsResponse;
 import reactor.core.publisher.Mono;
 
 public interface WorkflowExecutionService {

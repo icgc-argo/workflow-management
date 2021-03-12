@@ -16,7 +16,7 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.rabbitmq;
+package org.icgc.argo.workflow_management.stream.model;
 
 import static javax.xml.bind.DatatypeConverter.parseDateTime;
 
@@ -24,9 +24,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.val;
-import org.icgc.argo.workflow_management.rabbitmq.schema.EngineParams;
-import org.icgc.argo.workflow_management.rabbitmq.schema.RunState;
-import org.icgc.argo.workflow_management.rabbitmq.schema.WfMgmtRunMsg;
+import org.icgc.argo.workflow_management.stream.schema.EngineParams;
+import org.icgc.argo.workflow_management.stream.schema.RunState;
+import org.icgc.argo.workflow_management.stream.schema.WfMgmtRunMsg;
 
 @Getter
 public class WeblogEvent {

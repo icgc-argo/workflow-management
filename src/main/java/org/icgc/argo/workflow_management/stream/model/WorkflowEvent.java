@@ -16,22 +16,19 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.exception.model;
+package org.icgc.argo.workflow_management.stream.model;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.*;
+import lombok.Builder;
+import lombok.NonNull;
+import lombok.Value;
+import org.icgc.argo.workflow_management.execute.model.NextflowMetadata;
 
-@Data
+@Value
 @Builder
-@ToString
-@NoArgsConstructor
-@AllArgsConstructor
-@EqualsAndHashCode
-public class ErrorResponse {
-
-  @JsonProperty("msg")
-  private String msg;
-
-  @JsonProperty("status_code")
-  private Integer statusCode;
+public class WorkflowEvent {
+  @NonNull String runId;
+  @NonNull String runName;
+  @NonNull String event;
+  @NonNull String utcTime;
+  @NonNull NextflowMetadata metadata;
 }

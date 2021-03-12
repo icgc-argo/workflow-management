@@ -16,11 +16,11 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.execute;
+package org.icgc.argo.workflow_management.execute.service;
 
 import static java.lang.String.format;
 import static java.time.OffsetDateTime.now;
-import static org.icgc.argo.workflow_management.execute.NextflowService.NEXTFLOW_PREFIX;
+import static org.icgc.argo.workflow_management.execute.service.NextflowService.NEXTFLOW_PREFIX;
 
 import io.fabric8.kubernetes.api.model.DoneablePod;
 import io.fabric8.kubernetes.api.model.Pod;
@@ -34,6 +34,7 @@ import lombok.val;
 import org.icgc.argo.workflow_management.execute.model.KubernetesPhase;
 import org.icgc.argo.workflow_management.execute.model.NextflowEvent;
 import org.icgc.argo.workflow_management.execute.model.NextflowMetadata;
+import org.icgc.argo.workflow_management.stream.components.WebLogEventSender;
 
 @Slf4j
 @AllArgsConstructor

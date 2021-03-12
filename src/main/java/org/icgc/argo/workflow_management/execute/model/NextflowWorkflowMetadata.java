@@ -34,7 +34,7 @@ import nextflow.config.Manifest;
 import nextflow.k8s.K8sDriverLauncher;
 import nextflow.trace.WorkflowStats;
 import nextflow.util.Duration;
-import org.icgc.argo.workflow_management.exception.ReflectionUtilsException;
+import org.icgc.argo.workflow_management.execute.exception.ReflectionUtilsException;
 
 /** Side effect-free data object mimic-ing nextflow's WorkflowMetadata class... */
 @Slf4j

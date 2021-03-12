@@ -2,7 +2,7 @@ package org.icgc.argo.workflow_management.gatekeeper.model;
 
 import javax.persistence.*;
 import lombok.*;
-import org.icgc.argo.workflow_management.rabbitmq.schema.RunState;
+import org.icgc.argo.workflow_management.stream.schema.RunState;
 
 @Entity(name = "runs")
 @Data

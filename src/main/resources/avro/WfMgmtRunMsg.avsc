@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "WfMgmtRunMsg",
-  "namespace": "org.icgc.argo.workflow_management.rabbitmq.schema",
+  "namespace": "org.icgc.argo.workflow_management.stream.schema",
   "fields": [
     {
       "name": "timestamp",

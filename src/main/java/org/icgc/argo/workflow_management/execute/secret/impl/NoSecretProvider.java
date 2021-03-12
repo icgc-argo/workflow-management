@@ -16,18 +16,30 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.execute.model;
+package org.icgc.argo.workflow_management.execute.secret.impl;
 
-import lombok.Builder;
-import lombok.NonNull;
-import lombok.Value;
+import java.util.List;
+import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
+import org.icgc.argo.workflow_management.execute.secret.SecretProvider;
 
-@Value
-@Builder
-public class WorkflowEvent {
-  @NonNull String runId;
-  @NonNull String runName;
-  @NonNull String event;
-  @NonNull String utcTime;
-  @NonNull NextflowMetadata metadata;
+@Slf4j
+public class NoSecretProvider extends SecretProvider {
+
+  @Override
+  public Optional<String> generateSecret() {
+    log.debug("NoSecretProvider returning empty optional.");
+    return Optional.empty();
+  }
+
+  @Override
+  public Optional<String> generateSecretWithScopes(List<String> scopes) {
+    log.debug("NoSecretProvider returning empty optional.");
+    return Optional.empty();
+  }
+
+  @Override
+  public Boolean isEnabled() {
+    return false;
+  }
 }
