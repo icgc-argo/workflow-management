@@ -38,7 +38,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class GraphQLProvider {
-  private final DataFetcher activeRunsDataFetcher;
+  private final DataFetcher runsDataFetcher;
   private GraphQL graphQL;
 
   @Bean
@@ -61,7 +61,7 @@ public class GraphQLProvider {
   private RuntimeWiring buildWiring() {
     return RuntimeWiring.newRuntimeWiring()
         .scalar(ExtendedScalars.Json)
-        .type(newTypeWiring("Query").dataFetcher("runs", activeRunsDataFetcher))
+        .type(newTypeWiring("Query").dataFetcher("runs", runsDataFetcher))
         .build();
   }
 }

@@ -121,6 +121,7 @@ public class WesConsumerConfig {
       }
     };
   }
+
   private BiConsumer<Throwable, Object> handleWesError(Transaction<?> tx) {
     return (t, obj) -> {
       t.printStackTrace();

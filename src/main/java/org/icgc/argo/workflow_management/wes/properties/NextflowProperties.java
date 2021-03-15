@@ -16,6 +16,39 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.streams.properties;
+package org.icgc.argo.workflow_management.wes.properties;
 
-public class GatekeeperStreamsProps {}
+import java.util.List;
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Configuration;
+
+@Data
+@Configuration
+@EnableConfigurationProperties
+@ConfigurationProperties(prefix = "nextflow")
+public class NextflowProperties {
+  private K8sProperties k8s;
+  private MonitorProperties monitor;
+  private String weblogUrl;
+  private String masterUrl;
+  private boolean trustCertificate;
+
+  @Data
+  public static class K8sProperties {
+    private Integer runAsUser;
+    private String serviceAccount;
+    private String namespace;
+    private String runNamespace;
+    private List<String> volMounts;
+    private String masterUrl;
+    private boolean trustCertificate;
+  }
+
+  @Data
+  public static class MonitorProperties {
+    private Integer sleepInterval;
+    private Integer maxErrorLogLines;
+  }
+}

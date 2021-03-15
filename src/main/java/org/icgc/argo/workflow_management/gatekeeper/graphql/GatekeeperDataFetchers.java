@@ -39,13 +39,13 @@ public class GatekeeperDataFetchers {
 
   @Bean
   @Profile("gatekeeper")
-  @Qualifier("activeRunsDataFetcher")
+  @Qualifier("runsDataFetcher")
   public DataFetcher getActiveRunsDataFetcher(GateKeeperService gateKeeperService) {
     return environment -> {
       val args = convertValue(environment.getArguments(), GqlSearchQueryArgs.class);
 
       val page = args.getPage();
-      val activeRunExample = args.getExample();
+      val runExample = args.getExample();
       val sorts = args.getSorts();
 
       val sortable =
@@ -68,9 +68,9 @@ public class GatekeeperDataFetchers {
               : PageRequest.of(page.getFrom(), page.getSize(), sortable);
 
       val result =
-          activeRunExample == null
+          runExample == null
               ? gateKeeperService.getRuns(pageable)
-              : gateKeeperService.getRuns(Example.of(activeRunExample), pageable);
+              : gateKeeperService.getRuns(Example.of(runExample), pageable);
 
       return new SearchResult<>(result.getContent(), result.hasNext(), result.getTotalElements());
     };
@@ -78,7 +78,7 @@ public class GatekeeperDataFetchers {
 
   @Bean
   @Profile("!gatekeeper")
-  @Qualifier("activeRunsDataFetcher")
+  @Qualifier("runsDataFetcher")
   public DataFetcher getActiveRunsDisabledDataFetcher() {
     return environment -> null;
   }
