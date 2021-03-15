@@ -7,7 +7,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.avro.Schema;
-import org.icgc.argo.workflow_management.rabbitmq.schema.WfMgmtRunMsg;
+import org.icgc.argo.workflow_management.streams.schema.WfMgmtRunMsg;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ApplicationContext;
@@ -23,7 +23,7 @@ import org.springframework.context.annotation.Profile;
  * doesn't work. This config ensures the avro schema is available via contentType
  */
 @Slf4j
-@Profile({"gatekeeper", "api", "execute"})
+@Profile("!test")
 @Configuration
 public class RabbitSchemaConfig {
   private static final String CONTENT_TYPE = "application/vnd.WfMgmtRunMsg+avro";

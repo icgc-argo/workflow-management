@@ -8,18 +8,18 @@ import lombok.extern.slf4j.Slf4j;
 
 @Converter
 @Slf4j
-public class EngineParamsConverter implements AttributeConverter<ActiveRun.EngineParams, String> {
+public class EngineParamsConverter implements AttributeConverter<Run.EngineParams, String> {
   private static final ObjectMapper objectMapper = new ObjectMapper();
 
   @SneakyThrows
   @Override
-  public String convertToDatabaseColumn(ActiveRun.EngineParams engineParams) {
+  public String convertToDatabaseColumn(Run.EngineParams engineParams) {
     return objectMapper.writeValueAsString(engineParams);
   }
 
   @SneakyThrows
   @Override
-  public ActiveRun.EngineParams convertToEntityAttribute(String dbData) {
-    return objectMapper.readValue(dbData, ActiveRun.EngineParams.class);
+  public Run.EngineParams convertToEntityAttribute(String dbData) {
+    return objectMapper.readValue(dbData, Run.EngineParams.class);
   }
 }

@@ -19,17 +19,18 @@
 package org.icgc.argo.workflow_management.gatekeeper.service;
 
 import static org.icgc.argo.workflow_management.gatekeeper.service.StateTransition.nextState;
-import static org.icgc.argo.workflow_management.rabbitmq.schema.RunState.*;
+import static org.icgc.argo.workflow_management.streams.schema.RunState.*;
 
 import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.icgc.argo.workflow_management.gatekeeper.model.ActiveRun;
+import org.icgc.argo.workflow_management.gatekeeper.model.Run;
 import org.icgc.argo.workflow_management.gatekeeper.repository.ActiveRunsRepo;
-import org.icgc.argo.workflow_management.rabbitmq.schema.RunState;
-import org.icgc.argo.workflow_management.rabbitmq.schema.WfMgmtRunMsg;
+import org.icgc.argo.workflow_management.streams.schema.EngineParams;
+import org.icgc.argo.workflow_management.streams.schema.RunState;
+import org.icgc.argo.workflow_management.streams.schema.WfMgmtRunMsg;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
@@ -37,7 +38,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-@Profile({"gatekeeper-test", "gatekeeper"})
+@Profile("gatekeeper")
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -58,7 +59,7 @@ public class GateKeeperService {
 
     // short circuit, run is new
     if (knownRunOpt.isEmpty() && msg.getState().equals(QUEUED)) {
-      val newRun = repo.save(fromMsg(msg));
+      val newRun = repo.save(runFromMsg(msg));
       log.debug("Active Run created: {}", newRun);
       return Optional.of(msg);
     } else if (knownRunOpt.isEmpty()) {
@@ -66,9 +67,13 @@ public class GateKeeperService {
     }
 
     val knownRun = knownRunOpt.get();
+    // update parmas from msg
+    knownRun.setWorkflowEngineParams(runEngParamFromMsg(msg.getWorkflowEngineParams()));
+    knownRun.setWorkflowParamsJsonStr(msg.getWorkflowParamsJsonStr());
+
     val inputState = msg.getState();
 
-    return Optional.ofNullable(fromActiveRun(checkActiveRunAndUpdate(knownRun, inputState)));
+    return Optional.ofNullable(msgFromRun(checkActiveRunAndUpdate(knownRun, inputState)));
   }
 
   /**
@@ -84,12 +89,12 @@ public class GateKeeperService {
       return Optional.empty();
     } else {
       return Optional.ofNullable(
-          fromActiveRun(checkActiveRunAndUpdate(knownRunOpt.get(), inputState)));
+          msgFromRun(checkActiveRunAndUpdate(knownRunOpt.get(), inputState)));
     }
   }
 
   @Transactional
-  private ActiveRun checkActiveRunAndUpdate(ActiveRun knownRun, RunState inputState) {
+  private Run checkActiveRunAndUpdate(Run knownRun, RunState inputState) {
     val currentState = knownRun.getState();
 
     // check if this is a valid state transition
@@ -112,18 +117,18 @@ public class GateKeeperService {
     }
   }
 
-  public Page<ActiveRun> getRuns(Pageable pageable) {
+  public Page<Run> getRuns(Pageable pageable) {
     return getRuns(null, pageable);
   }
 
-  public Page<ActiveRun> getRuns(Example<ActiveRun> example, Pageable pageable) {
+  public Page<Run> getRuns(Example<Run> example, Pageable pageable) {
     return example == null ? repo.findAll(pageable) : repo.findAll(example, pageable);
   }
 
-  private ActiveRun fromMsg(WfMgmtRunMsg msg) {
+  private Run runFromMsg(WfMgmtRunMsg msg) {
     val msgWep = msg.getWorkflowEngineParams();
     val runWep =
-        ActiveRun.EngineParams.builder()
+        Run.EngineParams.builder()
             .latest(msgWep.getLatest())
             .defaultContainer(msgWep.getDefaultContainer())
             .launchDir(msgWep.getLaunchDir())
@@ -133,7 +138,7 @@ public class GateKeeperService {
             .resume(msgWep.getResume())
             .build();
 
-    return ActiveRun.builder()
+    return Run.builder()
         .runId(msg.getRunId())
         .state(msg.getState())
         .workflowUrl(msg.getWorkflowUrl())
@@ -143,12 +148,12 @@ public class GateKeeperService {
         .build();
   }
 
-  private WfMgmtRunMsg fromActiveRun(ActiveRun activeRun) {
-    if (activeRun == null) return null;
+  private WfMgmtRunMsg msgFromRun(Run run) {
+    if (run == null) return null;
 
-    val msgWep = activeRun.getWorkflowEngineParams();
+    val msgWep = run.getWorkflowEngineParams();
     val runWep =
-        org.icgc.argo.workflow_management.rabbitmq.schema.EngineParams.newBuilder()
+        EngineParams.newBuilder()
             .setLatest(msgWep.getLatest())
             .setDefaultContainer(msgWep.getDefaultContainer())
             .setLaunchDir(msgWep.getLaunchDir())
@@ -159,12 +164,24 @@ public class GateKeeperService {
             .build();
 
     return WfMgmtRunMsg.newBuilder()
-        .setRunId(activeRun.getRunId())
-        .setState(activeRun.getState())
-        .setWorkflowUrl(activeRun.getWorkflowUrl())
-        .setWorkflowParamsJsonStr(activeRun.getWorkflowParamsJsonStr())
+        .setRunId(run.getRunId())
+        .setState(run.getState())
+        .setWorkflowUrl(run.getWorkflowUrl())
+        .setWorkflowParamsJsonStr(run.getWorkflowParamsJsonStr())
         .setWorkflowEngineParams(runWep)
-        .setTimestamp(activeRun.getTimestamp())
+        .setTimestamp(run.getTimestamp())
+        .build();
+  }
+
+  private Run.EngineParams runEngParamFromMsg(EngineParams msgWep) {
+    return Run.EngineParams.builder()
+        .latest(msgWep.getLatest())
+        .defaultContainer(msgWep.getDefaultContainer())
+        .launchDir(msgWep.getLaunchDir())
+        .revision(msgWep.getRevision())
+        .projectDir(msgWep.getProjectDir())
+        .workDir(msgWep.getWorkDir())
+        .resume(msgWep.getResume())
         .build();
   }
 }

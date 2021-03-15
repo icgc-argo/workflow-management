@@ -16,33 +16,37 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.config.secret;
+package org.icgc.argo.workflow_management.wes.model;
 
-import org.icgc.argo.workflow_management.wes.secret.SecretProvider;
-import org.icgc.argo.workflow_management.wes.secret.impl.OAuth2BearerTokenProvider;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 
-@Profile("oauth2Token")
-@Configuration
-public class OAuth2TokenConfig {
+/**
+ * ENUM of wes state from:
+ * https://github.com/ga4gh/workflow-execution-service-schemas/blob/c3b19854240c4fcbaf3483e22b19db0a918a7ee5/openapi/workflow_execution_service.swagger.yaml#L483
+ */
+@RequiredArgsConstructor
+public enum WesState {
+  UNKNOWN("UNKNOWN"),
 
-  @Value("${secret.enabled}")
-  private Boolean enabled;
+  QUEUED("QUEUED"),
 
-  @Value("${secret.clientId}")
-  private String clientId;
+  INITIALIZING("INITIALIZING"),
 
-  @Value("${secret.clientSecret}")
-  private String clientSecret;
+  RUNNING("RUNNING"),
 
-  @Value("${secret.tokenUri}")
-  private String tokenUri;
+  PAUSED("PAUSED"),
 
-  @Bean
-  public SecretProvider getOAuth2BearerTokenProvider() {
-    return new OAuth2BearerTokenProvider(enabled, clientId, clientSecret, tokenUri);
-  }
+  CANCELING("CANCELING"),
+
+  CANCELED("CANCELED"),
+
+  COMPLETE("COMPLETE"),
+
+  EXECUTOR_ERROR("EXECUTOR_ERROR"),
+
+  SYSTEM_ERROR("SYSTEM_ERROR");
+
+  @Getter @NonNull private final String value;
 }

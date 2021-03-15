@@ -20,16 +20,16 @@ package org.icgc.argo.workflow_management.gatekeeper.repository;
 
 import java.util.Optional;
 import javax.persistence.LockModeType;
-import org.icgc.argo.workflow_management.gatekeeper.model.ActiveRun;
+import org.icgc.argo.workflow_management.gatekeeper.model.Run;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.stereotype.Repository;
 
-@Profile({"gatekeeper-test", "gatekeeper"})
+@Profile("gatekeeper")
 @Repository
-public interface ActiveRunsRepo extends JpaRepository<ActiveRun, String> {
+public interface ActiveRunsRepo extends JpaRepository<Run, String> {
 
   @Lock(LockModeType.OPTIMISTIC_FORCE_INCREMENT)
-  Optional<ActiveRun> findActiveRunByRunId(String runId);
+  Optional<Run> findActiveRunByRunId(String runId);
 }

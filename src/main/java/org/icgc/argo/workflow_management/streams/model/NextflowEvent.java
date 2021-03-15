@@ -16,33 +16,28 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.config.secret;
+package org.icgc.argo.workflow_management.streams.model;
 
-import org.icgc.argo.workflow_management.wes.secret.SecretProvider;
-import org.icgc.argo.workflow_management.wes.secret.impl.OAuth2BearerTokenProvider;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 
-@Profile("oauth2Token")
-@Configuration
-public class OAuth2TokenConfig {
+/**
+ * ENUM of nextflow events from: https://www.nextflow.io/docs/latest/tracing.html#weblog-via-http
+ */
+@RequiredArgsConstructor
+public enum NextflowEvent {
+  STARTED("STARTED"),
 
-  @Value("${secret.enabled}")
-  private Boolean enabled;
+  PROCESS_SUBMITTED("PROCESS_SUBMITTED"),
 
-  @Value("${secret.clientId}")
-  private String clientId;
+  PROCESS_STARTED("PROCESS_STARTED"),
 
-  @Value("${secret.clientSecret}")
-  private String clientSecret;
+  PROCESS_COMPLETED("PROCESS_COMPLETED"),
 
-  @Value("${secret.tokenUri}")
-  private String tokenUri;
+  ERROR("ERROR"),
 
-  @Bean
-  public SecretProvider getOAuth2BearerTokenProvider() {
-    return new OAuth2BearerTokenProvider(enabled, clientId, clientSecret, tokenUri);
-  }
+  COMPLETED("COMPLETED");
+
+  @Getter @NonNull private final String value;
 }

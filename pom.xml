@@ -39,7 +39,7 @@
     <properties>
         <java.version>11</java.version>
         <springfox.version>3.0.0-SNAPSHOT</springfox.version>
-        <reactor-rabbitmq-streams.version>0.0.8</reactor-rabbitmq-streams.version>
+        <reactor-rabbitmq-streams.version>0.0.7</reactor-rabbitmq-streams.version>
     </properties>
 
     <dependencies>
@@ -75,23 +75,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
-        </dependency>
-
-        <!-- SpringFox dependencies (SWAGGER) -->
-        <dependency>
-            <groupId>io.springfox</groupId>
-            <artifactId>springfox-swagger2</artifactId>
-            <version>${springfox.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.springfox</groupId>
-            <artifactId>springfox-spring-webflux</artifactId>
-            <version>${springfox.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.springfox</groupId>
-            <artifactId>springfox-swagger-ui</artifactId>
-            <version>${springfox.version}</version>
         </dependency>
 
         <dependency>
@@ -181,7 +164,7 @@
             <dependency>
                 <groupId>com.pivotal.rabbitmq</groupId>
                 <artifactId>reactor-rabbitmq-streams</artifactId>
-                <version>0.0.7</version>
+                <version>${reactor-rabbitmq-streams.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>

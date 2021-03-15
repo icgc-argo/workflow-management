@@ -16,33 +16,44 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.config.secret;
+package org.icgc.argo.workflow_management.wes.secret.impl;
 
+import java.util.List;
+import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.icgc.argo.workflow_management.wes.secret.SecretProvider;
-import org.icgc.argo.workflow_management.wes.secret.impl.OAuth2BearerTokenProvider;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 
-@Profile("oauth2Token")
-@Configuration
-public class OAuth2TokenConfig {
+@Slf4j
+@RequiredArgsConstructor
+public class ApiKeyProvider extends SecretProvider {
 
-  @Value("${secret.enabled}")
-  private Boolean enabled;
+  /** Dependencies */
+  private final Boolean enabled;
 
-  @Value("${secret.clientId}")
-  private String clientId;
+  private final String apiKey;
 
-  @Value("${secret.clientSecret}")
-  private String clientSecret;
+  @Override
+  public Optional<String> generateSecret() {
+    log.debug("ApiKeyProvider returning secret.");
+    return enabled ? Optional.of(apiKey) : Optional.empty();
+  }
 
-  @Value("${secret.tokenUri}")
-  private String tokenUri;
+  /**
+   * API Keys do not have the ability to have their scopes modified as they are already issued at
+   * call time.
+   *
+   * @return API Key
+   */
+  @Override
+  public Optional<String> generateSecretWithScopes(List<String> scopes) {
+    log.debug("ApiKeyProvider returning secret.");
+    log.warn("Trying to generate API key that is scoped. API Keys cannot be dynamically scoped!");
+    return generateSecret();
+  }
 
-  @Bean
-  public SecretProvider getOAuth2BearerTokenProvider() {
-    return new OAuth2BearerTokenProvider(enabled, clientId, clientSecret, tokenUri);
+  @Override
+  public Boolean isEnabled() {
+    return enabled;
   }
 }
