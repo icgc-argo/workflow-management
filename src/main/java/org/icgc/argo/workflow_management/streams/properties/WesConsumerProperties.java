@@ -16,22 +16,6 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.exception.model;
+package org.icgc.argo.workflow_management.streams.properties;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.*;
-
-@Data
-@Builder
-@ToString
-@NoArgsConstructor
-@AllArgsConstructor
-@EqualsAndHashCode
-public class ErrorResponse {
-
-  @JsonProperty("msg")
-  private String msg;
-
-  @JsonProperty("status_code")
-  private Integer statusCode;
-}
+public class WesConsumerProperties {}
