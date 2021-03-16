@@ -16,33 +16,26 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.config.secret;
+package org.icgc.argo.workflow_management.streams;
 
-import org.icgc.argo.workflow_management.wes.secret.SecretProvider;
-import org.icgc.argo.workflow_management.wes.secret.impl.OAuth2BearerTokenProvider;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import lombok.SneakyThrows;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
+import reactor.core.Disposable;
 
-@Profile("oauth2Token")
 @Configuration
-public class OAuth2TokenConfig {
+public class DisposableManager {
+  public static final String WES_CONSUMER = "WESConsumer";
+  public static final String GATEKEEPER_PRODUCER = "gatekeeperProducer";
 
-  @Value("${secret.enabled}")
-  private Boolean enabled;
+  private final Map<String, Disposable> disposablesRegistry =
+      Collections.synchronizedMap(new HashMap<>());
 
-  @Value("${secret.clientId}")
-  private String clientId;
-
-  @Value("${secret.clientSecret}")
-  private String clientSecret;
-
-  @Value("${secret.tokenUri}")
-  private String tokenUri;
-
-  @Bean
-  public SecretProvider getOAuth2BearerTokenProvider() {
-    return new OAuth2BearerTokenProvider(enabled, clientId, clientSecret, tokenUri);
+  @SneakyThrows
+  public void registerDisposable(String name, Callable<Disposable> disposableCallable) {
+    this.disposablesRegistry.put(name, disposableCallable.call());
   }
 }

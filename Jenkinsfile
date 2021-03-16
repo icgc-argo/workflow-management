@@ -37,8 +37,6 @@ spec:
     volumeMounts:
     - mountPath: /var/run/docker.sock
       name: docker-sock
-  - name: postgres
-    image: postgres:10-alpine
   volumes:
   - name: docker-sock
     hostPath:

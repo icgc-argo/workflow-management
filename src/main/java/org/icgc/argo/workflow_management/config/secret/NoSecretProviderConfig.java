@@ -18,8 +18,8 @@
 
 package org.icgc.argo.workflow_management.config.secret;
 
-import org.icgc.argo.workflow_management.secret.SecretProvider;
-import org.icgc.argo.workflow_management.secret.impl.NoSecretProvider;
+import org.icgc.argo.workflow_management.wes.secret.SecretProvider;
+import org.icgc.argo.workflow_management.wes.secret.impl.NoSecretProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;

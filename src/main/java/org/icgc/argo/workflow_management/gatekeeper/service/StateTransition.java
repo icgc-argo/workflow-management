@@ -18,14 +18,14 @@
 
 package org.icgc.argo.workflow_management.gatekeeper.service;
 
-import static org.icgc.argo.workflow_management.rabbitmq.schema.RunState.*;
-import static org.icgc.argo.workflow_management.rabbitmq.schema.RunState.COMPLETE;
+import static org.icgc.argo.workflow_management.streams.schema.RunState.*;
+import static org.icgc.argo.workflow_management.streams.schema.RunState.COMPLETE;
 
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import lombok.experimental.UtilityClass;
-import org.icgc.argo.workflow_management.rabbitmq.schema.RunState;
+import org.icgc.argo.workflow_management.streams.schema.RunState;
 
 /**
  * When updating a Run using a RunMsg state, we need to check whether that run is allowed to go into

@@ -28,7 +28,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
 @Configuration
-@Profile("!gatekeeper & !gatekeeper-test")
+@Profile("!gatekeeper")
 @EnableAutoConfiguration(
     exclude = {
       DataSourceAutoConfiguration.class,

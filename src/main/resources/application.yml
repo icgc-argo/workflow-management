@@ -16,6 +16,11 @@ nextflow:
 secret:
   enabled: false
 
+logging.level:
+  com.pivotal: debug
+  #  org.springframework: debug
+  org.icgc.argo: debug
+
 ---
 spring.profiles: secure
 auth:
@@ -44,8 +49,6 @@ secret:
   tokenUri: http://localhost:8080/oauth/token
 
 ---
-spring.profiles: api,execute,gatekeeper
-
 rabbit:
   default-endpoint-name: standalone
   endpoints:
@@ -55,33 +58,20 @@ rabbit:
       username: user
       password: pass
 
----
-spring.profiles: api
-
-api.producer.topology:
-  queueName: "gatekeeper-in-queue"
-  topicExchangeName: "gatekeeper-in"
-  topicRoutingKeys:  "#" # comma separated Array of keys
-
----
-spring.profiles: execute
-
-execute.consumer.topology:
+wes.consumer.topology:
   queueName: "execute-queue"
-  topicExchangeName: "gatekeeper-out"
+  topicExchangeName: "mgmt-in"
   topicRoutingKeys: "INITIALIZING, CANCELING" # comma separated Array of keys
-
-execute.initializingByMiddleware: true
 
 ---
 spring.profiles: gatekeeper
 
 gatekeeper.consumer.topology:
   queueName: "gatekeeper-in-queue"
-  topicExchangeName: "gatekeeper-in"
+  topicExchangeName: "mgmt-in"
 
 gatekeeper.producer.topology:
-  queueName: "gatekeeper-out-default-queue"
+  queueName: "gatekeeper-out-default"
   topicExchangeName: "gatekeeper-out"
 
 spring.cloud.stream:
@@ -112,7 +102,7 @@ spring.jpa:
     ddl-auto: update
 
 ---
-spring.profiles: gatekeeper-test
+spring.profiles: test
 
 spring.jpa:
   hibernate:

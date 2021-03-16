@@ -16,33 +16,25 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.config.secret;
+package org.icgc.argo.workflow_management.gatekeeper.graphql.model;
 
-import org.icgc.argo.workflow_management.wes.secret.SecretProvider;
-import org.icgc.argo.workflow_management.wes.secret.impl.OAuth2BearerTokenProvider;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
+import java.util.List;
+import lombok.Value;
 
-@Profile("oauth2Token")
-@Configuration
-public class OAuth2TokenConfig {
+@Value
+public class SearchResult<T> {
+  List<T> content;
+  Info info;
 
-  @Value("${secret.enabled}")
-  private Boolean enabled;
+  public SearchResult(List<T> content, Boolean hasNextFrom, Long totalHits) {
+    this.content = content;
+    this.info = new Info(hasNextFrom, totalHits, content.size());
+  }
 
-  @Value("${secret.clientId}")
-  private String clientId;
-
-  @Value("${secret.clientSecret}")
-  private String clientSecret;
-
-  @Value("${secret.tokenUri}")
-  private String tokenUri;
-
-  @Bean
-  public SecretProvider getOAuth2BearerTokenProvider() {
-    return new OAuth2BearerTokenProvider(enabled, clientId, clientSecret, tokenUri);
+  @Value
+  public static class Info {
+    Boolean hasNextFrom;
+    Long totalHits;
+    Integer contentCount;
   }
 }

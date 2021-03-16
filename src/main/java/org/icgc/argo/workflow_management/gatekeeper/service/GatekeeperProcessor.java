@@ -24,7 +24,7 @@ import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.icgc.argo.workflow_management.rabbitmq.schema.WfMgmtRunMsg;
+import org.icgc.argo.workflow_management.streams.schema.WfMgmtRunMsg;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
@@ -34,7 +34,7 @@ import reactor.core.publisher.Flux;
  * wfmgmtrunmsgs) and returning one merged flux of allowed wfmgmtrunmsgs
  */
 @Slf4j
-@Profile({"gatekeeper", "gatekeeper-test"})
+@Profile("gatekeeper")
 @Component
 @RequiredArgsConstructor
 public class GatekeeperProcessor

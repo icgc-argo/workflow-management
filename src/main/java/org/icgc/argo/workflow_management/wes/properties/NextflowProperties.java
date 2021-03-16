@@ -16,33 +16,39 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.config.secret;
+package org.icgc.argo.workflow_management.wes.properties;
 
-import org.icgc.argo.workflow_management.wes.secret.SecretProvider;
-import org.icgc.argo.workflow_management.wes.secret.impl.OAuth2BearerTokenProvider;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
+import java.util.List;
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 
-@Profile("oauth2Token")
+@Data
 @Configuration
-public class OAuth2TokenConfig {
+@EnableConfigurationProperties
+@ConfigurationProperties(prefix = "nextflow")
+public class NextflowProperties {
+  private K8sProperties k8s;
+  private MonitorProperties monitor;
+  private String weblogUrl;
+  private String masterUrl;
+  private boolean trustCertificate;
 
-  @Value("${secret.enabled}")
-  private Boolean enabled;
+  @Data
+  public static class K8sProperties {
+    private Integer runAsUser;
+    private String serviceAccount;
+    private String namespace;
+    private String runNamespace;
+    private List<String> volMounts;
+    private String masterUrl;
+    private boolean trustCertificate;
+  }
 
-  @Value("${secret.clientId}")
-  private String clientId;
-
-  @Value("${secret.clientSecret}")
-  private String clientSecret;
-
-  @Value("${secret.tokenUri}")
-  private String tokenUri;
-
-  @Bean
-  public SecretProvider getOAuth2BearerTokenProvider() {
-    return new OAuth2BearerTokenProvider(enabled, clientId, clientSecret, tokenUri);
+  @Data
+  public static class MonitorProperties {
+    private Integer sleepInterval;
+    private Integer maxErrorLogLines;
   }
 }

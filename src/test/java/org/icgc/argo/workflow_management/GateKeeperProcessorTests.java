@@ -18,7 +18,7 @@
 
 package org.icgc.argo.workflow_management;
 
-import static org.icgc.argo.workflow_management.rabbitmq.WfMgmtRunMsgConverters.createWfMgmtRunMsg;
+import static org.icgc.argo.workflow_management.streams.utils.WfMgmtRunMsgConverters.createWfMgmtRunMsg;
 import static org.icgc.argo.workflow_management.util.TransactionUtils.*;
 import static org.icgc.argo.workflow_management.util.WesUtils.generateWesRunId;
 import static org.junit.Assert.*;
@@ -30,8 +30,8 @@ import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.icgc.argo.workflow_management.gatekeeper.service.GatekeeperProcessor;
-import org.icgc.argo.workflow_management.rabbitmq.schema.RunState;
-import org.icgc.argo.workflow_management.rabbitmq.schema.WfMgmtRunMsg;
+import org.icgc.argo.workflow_management.streams.schema.RunState;
+import org.icgc.argo.workflow_management.streams.schema.WfMgmtRunMsg;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -54,7 +54,7 @@ import reactor.test.publisher.TestPublisher;
  * flux) into the GateKeeperProcessor and the output is asserted as expected.
  */
 @Slf4j
-@ActiveProfiles("gatekeeper-test")
+@ActiveProfiles({"gatekeeper", "test"})
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest
 @ContextConfiguration(initializers = {GateKeeperProcessorTests.Initializer.class})

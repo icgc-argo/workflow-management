@@ -16,33 +16,14 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.config.secret;
+package org.icgc.argo.workflow_management.wes;
 
-import org.icgc.argo.workflow_management.wes.secret.SecretProvider;
-import org.icgc.argo.workflow_management.wes.secret.impl.OAuth2BearerTokenProvider;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
+import org.icgc.argo.workflow_management.wes.model.RunParams;
+import org.icgc.argo.workflow_management.wes.model.RunsResponse;
+import reactor.core.publisher.Mono;
 
-@Profile("oauth2Token")
-@Configuration
-public class OAuth2TokenConfig {
+public interface WorkflowExecutionService {
+  Mono<RunsResponse> run(RunParams params);
 
-  @Value("${secret.enabled}")
-  private Boolean enabled;
-
-  @Value("${secret.clientId}")
-  private String clientId;
-
-  @Value("${secret.clientSecret}")
-  private String clientSecret;
-
-  @Value("${secret.tokenUri}")
-  private String tokenUri;
-
-  @Bean
-  public SecretProvider getOAuth2BearerTokenProvider() {
-    return new OAuth2BearerTokenProvider(enabled, clientId, clientSecret, tokenUri);
-  }
+  Mono<RunsResponse> cancel(String runId);
 }

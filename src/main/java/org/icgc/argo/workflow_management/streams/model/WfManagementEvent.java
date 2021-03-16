@@ -16,33 +16,28 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.config.secret;
+package org.icgc.argo.workflow_management.streams.model;
 
-import org.icgc.argo.workflow_management.wes.secret.SecretProvider;
-import org.icgc.argo.workflow_management.wes.secret.impl.OAuth2BearerTokenProvider;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.util.Map;
+import lombok.*;
+import org.icgc.argo.workflow_management.wes.model.WorkflowEngineParams;
 
-@Profile("oauth2Token")
-@Configuration
-public class OAuth2TokenConfig {
-
-  @Value("${secret.enabled}")
-  private Boolean enabled;
-
-  @Value("${secret.clientId}")
-  private String clientId;
-
-  @Value("${secret.clientSecret}")
-  private String clientSecret;
-
-  @Value("${secret.tokenUri}")
-  private String tokenUri;
-
-  @Bean
-  public SecretProvider getOAuth2BearerTokenProvider() {
-    return new OAuth2BearerTokenProvider(enabled, clientId, clientSecret, tokenUri);
-  }
+@Data
+@Builder
+@AllArgsConstructor
+@RequiredArgsConstructor
+@NoArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class WfManagementEvent {
+  @NonNull private String runId;
+  @NonNull private String event;
+  @NonNull private String utcTime;
+  // TODO - workflowUrl needs to be @NonNull, its missing it now because currently only INITIALIZING
+  // events have this info available
+  private String workflowUrl;
+  private String workflowType;
+  private String workflowTypeVersion;
+  private Map<String, Object> workflowParams;
+  private WorkflowEngineParams workflowEngineParams;
 }
