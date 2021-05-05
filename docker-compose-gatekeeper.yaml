@@ -2,7 +2,7 @@ version: '3'
 
 services:
   gatekeeper-db:
-    image: postgres:10-alpine
+    image: docker.io/bitnami/postgresql:10-debian-10
     environment:
       POSTGRES_DB: gatekeeperdb
       POSTGRES_PASSWORD: mysecretpassword
