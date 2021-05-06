@@ -94,7 +94,7 @@ spring.cloud.stream:
 #          startOffset: earliest
 
 spring.datasource:
-  url: jdbc:postgresql://localhost:5432/gatekeeperdb
+  url: jdbc:postgresql://localhost:5432/gatekeeperdb?stringtype=unspecified
   username: postgres
   password: mysecretpassword
 spring.jpa:
