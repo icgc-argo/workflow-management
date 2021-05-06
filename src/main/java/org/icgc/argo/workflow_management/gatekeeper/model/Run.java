@@ -16,12 +16,15 @@ public class Run {
   private String workflowUrl;
   private String workflowType;
   private String workflowTypeVersion;
+
+  @Column(columnDefinition = "json")
   private String workflowParamsJsonStr;
 
   @Enumerated(EnumType.STRING)
   private RunState state;
 
   @Convert(converter = EngineParamsConverter.class)
+  @Column(columnDefinition = "json")
   private EngineParams workflowEngineParams;
 
   private Long timestamp;

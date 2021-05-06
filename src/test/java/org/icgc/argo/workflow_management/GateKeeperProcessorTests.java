@@ -259,7 +259,9 @@ public class GateKeeperProcessorTests {
       implements ApplicationContextInitializer<ConfigurableApplicationContext> {
     public void initialize(ConfigurableApplicationContext configurableApplicationContext) {
       TestPropertyValues.of(
-              "spring.datasource.url=" + postgreSQLContainer.getJdbcUrl(),
+              "spring.datasource.url="
+                  + postgreSQLContainer.getJdbcUrl()
+                  + "&stringtype=unspecified",
               "spring.datasource.username=" + postgreSQLContainer.getUsername(),
               "spring.datasource.password=" + postgreSQLContainer.getPassword())
           .applyTo(configurableApplicationContext.getEnvironment());
