@@ -21,7 +21,6 @@ package org.icgc.argo.workflow_management.health;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.icgc.argo.workflow_management.streams.DisposableManager;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.boot.actuate.health.Status;
@@ -31,22 +30,25 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class DisposableHealthIndicator implements HealthIndicator {
 
-    private DisposableManager disposableManager;
+  private final DisposableManager disposableManager;
 
-    @Override
-    public Health health() {
-        // assume healthy
-        val healthBuilder = Health.up();
+  @Override
+  public Health health() {
+    // assume healthy
+    val healthBuilder = Health.up();
 
-        disposableManager.getDisposablesRegistry().forEach((disposableKey, disposable) -> {
-            val disposed = disposable.isDisposed();
-            if (disposed) {
+    disposableManager
+        .getDisposablesRegistry()
+        .forEach(
+            (disposableKey, disposable) -> {
+              val disposed = disposable.isDisposed();
+              if (disposed) {
                 // if any disposable is dispose, we're down :(
                 healthBuilder.status(Status.DOWN);
-            }
-            healthBuilder.withDetail(disposableKey, disposed);
-        });
+              }
+              healthBuilder.withDetail(disposableKey, disposed);
+            });
 
-        return healthBuilder.build();
-    }
+    return healthBuilder.build();
+  }
 }

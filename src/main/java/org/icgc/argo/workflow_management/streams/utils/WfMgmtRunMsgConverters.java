@@ -18,7 +18,7 @@
 
 package org.icgc.argo.workflow_management.streams.utils;
 
-import static org.icgc.argo.workflow_management.util.JacksonUtils.*;
+import static org.icgc.argo.workflow_management.util.JacksonUtils.readValue;
 
 import java.time.Instant;
 import java.util.Date;
