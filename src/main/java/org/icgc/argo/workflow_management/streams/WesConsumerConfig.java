@@ -71,8 +71,8 @@ public class WesConsumerConfig {
   private Disposable createWfMgmtRunMsgForExecuteConsumer() {
     return createTransConsumerStream(rabbit, topicExchangeName, queueName, topicRoutingKeys)
         .receive()
-        // consume each tx msg and flatMap into publisher of Mono<Void>.
-        // Mono<Void> is used so reactor can manage subscriptions and publisher signals.
+        // consume each tx msg and flatMap into publisher of Mono<Boolean>.
+        // Mono<Boolean> is used so reactor can manage subscriptions and publisher signals.
         .flatMap(this::consumeMessageAndExecuteInitializeOrCancel)
         // Continue on error so disposable doesn't die.
         // The tx commit/reject is handled in the flatmap so no need to worry about that here
@@ -81,7 +81,7 @@ public class WesConsumerConfig {
         .subscribe();
   }
 
-  private Mono<Void> consumeMessageAndExecuteInitializeOrCancel(Transaction<WfMgmtRunMsg> tx) {
+  private Mono<Boolean> consumeMessageAndExecuteInitializeOrCancel(Transaction<WfMgmtRunMsg> tx) {
     val msg = tx.get();
     log.debug("WfMgmtRunMsg received: {}", msg);
 
@@ -99,13 +99,13 @@ public class WesConsumerConfig {
     }
   }
 
-  private Mono<Void> commitTx(String actionMsg, Transaction<WfMgmtRunMsg> tx) {
+  private Mono<Boolean> commitTx(String actionMsg, Transaction<WfMgmtRunMsg> tx) {
     log.info(actionMsg, tx.get());
     tx.commit();
-    return Mono.empty();
+    return Mono.just(true);
   }
 
-  private Mono<Void> rejectAndWeblogTx(Throwable t, Transaction<WfMgmtRunMsg> tx) {
+  private Mono<Boolean> rejectAndWeblogTx(Throwable t, Transaction<WfMgmtRunMsg> tx) {
     val msg = tx.get();
     msg.setState(RunState.SYSTEM_ERROR);
 
@@ -113,7 +113,7 @@ public class WesConsumerConfig {
     log.error("WES SYSTEM_ERROR msg: {}", msg);
     tx.reject();
 
-    return webLogEventSender.sendWfMgmtEvent(createWfMgmtEvent(msg)).then();
+    return webLogEventSender.sendWfMgmtEvent(createWfMgmtEvent(msg)).thenReturn(false);
   }
 
   private BiConsumer<Throwable, Object> catchStreamError() {

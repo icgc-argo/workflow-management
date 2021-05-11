@@ -22,33 +22,32 @@ import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.icgc.argo.workflow_management.streams.DisposableManager;
 import org.springframework.boot.actuate.health.Health;
-import org.springframework.boot.actuate.health.HealthIndicator;
+import org.springframework.boot.actuate.health.ReactiveHealthIndicator;
 import org.springframework.boot.actuate.health.Status;
+import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @Component
 @RequiredArgsConstructor
-public class DisposableHealthIndicator implements HealthIndicator {
+public class DisposableHealthIndicator implements ReactiveHealthIndicator {
 
   private final DisposableManager disposableManager;
 
-  @Override
-  public Health health() {
-    // assume healthy
-    val healthBuilder = Health.up();
-
-    disposableManager
-        .getDisposablesRegistry()
-        .forEach(
-            (disposableKey, disposable) -> {
-              val disposed = disposable.isDisposed();
+  @Bean
+  public Mono<Health> health() {
+    return Flux.fromIterable(disposableManager.getDisposablesRegistry().entrySet())
+        .reduce(
+            Health.up(),
+            (healthBuilder, entry) -> {
+              val disposed = entry.getValue().isDisposed();
               if (disposed) {
-                // if any disposable is dispose, we're down :(
                 healthBuilder.status(Status.DOWN);
               }
-              healthBuilder.withDetail(disposableKey, disposed);
-            });
-
-    return healthBuilder.build();
+              healthBuilder.withDetail(entry.getKey(), disposed);
+              return healthBuilder;
+            })
+        .map(Health.Builder::build);
   }
 }
