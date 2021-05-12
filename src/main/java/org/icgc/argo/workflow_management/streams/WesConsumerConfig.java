@@ -27,7 +27,6 @@ import com.pivotal.rabbitmq.RabbitEndpointService;
 import com.pivotal.rabbitmq.stream.Transaction;
 import java.time.Duration;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import javax.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +40,7 @@ import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import reactor.core.Disposable;
+import reactor.core.publisher.Mono;
 import reactor.util.retry.RetrySpec;
 
 @Slf4j
@@ -71,70 +71,55 @@ public class WesConsumerConfig {
   private Disposable createWfMgmtRunMsgForExecuteConsumer() {
     return createTransConsumerStream(rabbit, topicExchangeName, queueName, topicRoutingKeys)
         .receive()
-        .doOnNext(consumeAndExecuteInitializeOrCancel())
-        .onErrorContinue(handleRabbitStreamError())
+        // consume each tx msg and flatMap into publisher of Mono<Boolean>.
+        // Mono<Boolean> is used so reactor can manage subscriptions and publisher signals.
+        .flatMap(this::consumeMessageAndExecuteInitializeOrCancel)
+        // Continue on error so disposable doesn't die.
+        // The tx commit/reject is handled in the flatmap so no need to worry about that here
+        .onErrorContinue(catchStreamError())
+        .log(WES_CONSUMER)
         .subscribe();
   }
 
-  private Consumer<Transaction<WfMgmtRunMsg>> consumeAndExecuteInitializeOrCancel() {
-    return tx -> {
-      val msg = tx.get();
-      log.debug("WfMgmtRunMsg received: {}", msg);
+  private Mono<Boolean> consumeMessageAndExecuteInitializeOrCancel(Transaction<WfMgmtRunMsg> tx) {
+    val msg = tx.get();
+    log.debug("WfMgmtRunMsg received: {}", msg);
 
-      if (msg.getState().equals(RunState.INITIALIZING)) {
-        val runParams = createRunParams(msg);
-        wes.run(runParams)
-            .onErrorContinue(handleWesError(tx))
-            .subscribe(
-                runsResponse -> {
-                  log.info("Initialized: {}", msg);
-                  tx.commit();
-                });
-      } else if (msg.getState().equals(RunState.CANCELING)) {
-        wes.cancel(msg.getRunId())
-            .retryWhen(RetrySpec.backoff(3, Duration.ofMinutes(3)))
-            .onErrorContinue(handleWesError(tx))
-            .subscribe(
-                runsResponse -> {
-                  log.info("Cancelled: {}", runsResponse);
-                  tx.commit();
-                });
-      } else {
-        log.debug("Ignoring: {}", msg);
-        tx.commit();
-      }
-    };
+    if (msg.getState().equals(RunState.INITIALIZING)) {
+      return wes.run(createRunParams(msg))
+          .flatMap(runsResponse -> commitTx("Initialized", tx))
+          .onErrorResume(t -> rejectAndWeblogTx(t, tx));
+    } else if (msg.getState().equals(RunState.CANCELING)) {
+      return wes.cancel(msg.getRunId())
+          .retryWhen(RetrySpec.backoff(3, Duration.ofMinutes(3)))
+          .flatMap(runsResponse -> commitTx("Cancelled", tx))
+          .onErrorResume(t -> rejectAndWeblogTx(t, tx));
+    } else {
+      return commitTx("Ignored", tx);
+    }
   }
 
-  private BiConsumer<Throwable, Object> handleRabbitStreamError() {
-    return (t, tx) -> {
-      t.printStackTrace();
-      log.error("Error occurred with: {}", tx);
-      if (tx instanceof Transaction<?> && ((Transaction<?>) tx).get() instanceof WfMgmtRunMsg) {
-        val msg = (WfMgmtRunMsg) ((Transaction<?>) tx).get();
-        msg.setState(RunState.SYSTEM_ERROR);
-        log.info("Rabbit stream SYSTEM_ERROR msg: {}", msg);
-        webLogEventSender.sendWfMgmtEventAsync(createWfMgmtEvent(msg));
-        ((Transaction<?>) tx).reject();
-      } else {
-        log.error("Transaction is lost, nothing to ack!");
-      }
-    };
+  private Mono<Boolean> commitTx(String actionMsg, Transaction<WfMgmtRunMsg> tx) {
+    log.info(actionMsg, tx.get());
+    tx.commit();
+    return Mono.just(true);
   }
 
-  private BiConsumer<Throwable, Object> handleWesError(Transaction<?> tx) {
+  private Mono<Boolean> rejectAndWeblogTx(Throwable t, Transaction<WfMgmtRunMsg> tx) {
+    val msg = tx.get();
+    msg.setState(RunState.SYSTEM_ERROR);
+
+    log.error("Error occurred", t);
+    log.error("WES SYSTEM_ERROR msg: {}", msg);
+    tx.reject();
+
+    return webLogEventSender.sendWfMgmtEvent(createWfMgmtEvent(msg)).thenReturn(false);
+  }
+
+  private BiConsumer<Throwable, Object> catchStreamError() {
     return (t, obj) -> {
-      t.printStackTrace();
-      log.error("Error occurred with: {}", obj);
-      if (tx.get() instanceof WfMgmtRunMsg) {
-        val msg = (WfMgmtRunMsg) tx.get();
-        msg.setState(RunState.SYSTEM_ERROR);
-        webLogEventSender.sendWfMgmtEventAsync(createWfMgmtEvent(msg));
-        log.error("WES SYSTEM_ERROR msg: {}", msg);
-      } else {
-        log.error("Can't get WfMgmtRunMsg, nothing to weblog with here!");
-      }
-      tx.reject();
+      log.error("WesConsumer stream error", t);
+      log.error("WesConsumer stream error object {}", obj);
     };
   }
 }

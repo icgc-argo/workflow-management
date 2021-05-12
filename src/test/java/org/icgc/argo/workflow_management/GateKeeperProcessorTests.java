@@ -19,7 +19,8 @@
 package org.icgc.argo.workflow_management;
 
 import static org.icgc.argo.workflow_management.streams.utils.WfMgmtRunMsgConverters.createWfMgmtRunMsg;
-import static org.icgc.argo.workflow_management.util.TransactionUtils.*;
+import static org.icgc.argo.workflow_management.util.TransactionUtils.isRejected;
+import static org.icgc.argo.workflow_management.util.TransactionUtils.wrapWithTransaction;
 import static org.icgc.argo.workflow_management.util.WesUtils.generateWesRunId;
 import static org.junit.Assert.*;
 

@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import lombok.Getter;
 import lombok.SneakyThrows;
 import org.springframework.context.annotation.Configuration;
 import reactor.core.Disposable;
@@ -31,6 +32,7 @@ public class DisposableManager {
   public static final String WES_CONSUMER = "WESConsumer";
   public static final String GATEKEEPER_PRODUCER = "gatekeeperProducer";
 
+  @Getter
   private final Map<String, Disposable> disposablesRegistry =
       Collections.synchronizedMap(new HashMap<>());
 

@@ -47,7 +47,6 @@ import org.icgc.argo.workflow_management.exception.ReflectionUtilsException;
 import org.icgc.argo.workflow_management.streams.WebLogEventSender;
 import org.icgc.argo.workflow_management.util.ConditionalPutMap;
 import org.icgc.argo.workflow_management.wes.model.*;
-import org.icgc.argo.workflow_management.wes.model.RunsResponse;
 import org.icgc.argo.workflow_management.wes.properties.NextflowProperties;
 import org.icgc.argo.workflow_management.wes.secret.SecretProvider;
 import org.springframework.beans.factory.annotation.Autowired;

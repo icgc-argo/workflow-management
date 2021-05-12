@@ -19,7 +19,6 @@
 package org.icgc.argo.workflow_management.gatekeeper.service;
 
 import static org.icgc.argo.workflow_management.streams.schema.RunState.*;
-import static org.icgc.argo.workflow_management.streams.schema.RunState.COMPLETE;
 
 import java.util.Map;
 import java.util.Optional;
