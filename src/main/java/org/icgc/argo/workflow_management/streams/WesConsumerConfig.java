@@ -49,13 +49,13 @@ import reactor.util.retry.RetrySpec;
 @Configuration
 @RequiredArgsConstructor
 public class WesConsumerConfig {
-  @Value("${wes.consumer.topology.queueName}")
+  @Value("${wes.consumer.queue}")
   private String queueName;
 
-  @Value("${wes.consumer.topology.topicExchangeName}")
+  @Value("${wes.consumer.topicExchange}")
   private String topicExchangeName;
 
-  @Value("${wes.consumer.topology.topicRoutingKeys}")
+  @Value("${wes.consumer.topicRoutingKeys}")
   private String[] topicRoutingKeys;
 
   private final WebLogEventSender webLogEventSender;

@@ -58,21 +58,20 @@ rabbit:
       username: user
       password: pass
 
-wes.consumer.topology:
-  queueName: "execute-queue"
-  topicExchangeName: "mgmt-in"
-  topicRoutingKeys: "INITIALIZING, CANCELING" # comma separated Array of keys
+wes.consumer:
+    queue: "execute-queue"
+    topicExchange: "gatekeeper-out"
+    topicRoutingKeys: "INITIALIZING, CANCELING" # comma separated Array of keys
 
 ---
 spring.profiles: gatekeeper
 
-gatekeeper.consumer.topology:
-  queueName: "gatekeeper-in-queue"
-  topicExchangeName: "mgmt-in"
+gatekeeper.consumer:
+    queue: "gatekeeper-in-queue"
+    topicExchange: "gatekeeper-in"
 
-gatekeeper.producer.topology:
-  queueName: "gatekeeper-out-default"
-  topicExchangeName: "gatekeeper-out"
+gatekeeper.producer:
+    topicExchange: "gatekeeper-out"
 
 spring.cloud.stream:
   function.definition: weblogConsumer

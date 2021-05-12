@@ -62,16 +62,13 @@ public class GateKeeperStreamsConfig {
   private static final Set<RunState> RUN_STATES_TO_WEBLOG =
       Set.of(RunState.QUEUED, RunState.CANCELED);
 
-  @Value("${gatekeeper.producer.topology.queueName}")
-  private String producerDefaultQueueName;
-
-  @Value("${gatekeeper.producer.topology.topicExchangeName}")
+  @Value("${gatekeeper.producer.topicExchange}")
   private String producerTopicExchangeName;
 
-  @Value("${gatekeeper.consumer.topology.topicExchangeName}")
+  @Value("${gatekeeper.consumer.topicExchange}")
   private String consumerTopicExchangeName;
 
-  @Value("${gatekeeper.consumer.topology.queueName}")
+  @Value("${gatekeeper.consumer.queue}")
   private String consumerQueueName;
 
   private final RabbitEndpointService rabbit;
@@ -110,8 +107,7 @@ public class GateKeeperStreamsConfig {
                 })
             .onErrorContinue(handleError());
 
-    return createTransProducerStream(
-            rabbit, producerTopicExchangeName, producerDefaultQueueName, ROUTING_KEY)
+    return createTransProducerStream(rabbit, producerTopicExchangeName)
         .send(processedFlux)
         .onErrorContinue(handleError())
         .subscribe(
