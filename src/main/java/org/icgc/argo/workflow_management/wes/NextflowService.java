@@ -86,31 +86,22 @@ public class NextflowService implements WorkflowExecutionService {
 
   public Mono<RunsResponse> run(RunParams params) {
     log.debug("Initializing run: {}", params);
-    return webLogSender
-        .sendWfMgmtEvent(params, WesState.INITIALIZING)
-        .map(r -> this.startRun(params))
+    return Mono.fromCallable(() -> this.startRun(params))
         .map(RunsResponse::new)
-        .doOnError(t -> webLogSender.sendWfMgmtEventAsync(params, WesState.SYSTEM_ERROR))
         .onErrorMap(toRuntimeException("startRun", params.getRunId()))
         .subscribeOn(scheduler);
   }
 
   public Mono<RunsResponse> cancel(@NonNull String runId) {
     log.debug("Cancelling run: {}", runId);
-    return webLogSender
-        .sendWfMgmtEvent(runId, WesState.CANCELING)
-        .map(r -> this.cancelRun(runId))
+    return Mono.fromCallable(() -> this.cancelRun(runId))
         .map(RunsResponse::new)
-        .doOnError(t -> webLogSender.sendWfMgmtEventAsync(runId, WesState.SYSTEM_ERROR))
         .onErrorMap(toRuntimeException("cancelRun", runId))
         .subscribeOn(scheduler);
   }
 
   private Function<Throwable, Throwable> toRuntimeException(String methodName, String runId) {
     return t -> {
-      if (t instanceof RuntimeException) {
-        log.error("nextflow runtime exception", t);
-      }
       log.error(methodName + " exception", t);
       return new RuntimeException(
           format("%s error. runId: %s, msg: %s", methodName, runId, t.getMessage()));

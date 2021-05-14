@@ -58,10 +58,6 @@ public class WebLogEventSender {
     sendHttpMessage(msg).subscribe();
   }
 
-  public void sendWfMgmtEventAsync(RunParams params, WesState stateForEvent) {
-    sendWfMgmtEvent(params, stateForEvent).subscribe();
-  }
-
   public void sendWfMgmtEventAsync(String runId, WesState stateForEvent) {
     sendWfMgmtEvent(runId, stateForEvent).subscribe();
   }
