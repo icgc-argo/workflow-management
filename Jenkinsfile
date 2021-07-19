@@ -38,6 +38,8 @@ spec:
     env:
       - name: DOCKER_HOST
         value: tcp://localhost:2375
+      - name: HOME
+        value: /home/jenkins/agent
   securityContext:
     runAsUser: 1000
   volumes:
