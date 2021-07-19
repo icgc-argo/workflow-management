@@ -1,30 +1,68 @@
 scalar JSON
 
-type RunsResponse {
-    runId: ID
+type SearchResultInfo {
+    contentCount: String!
+    hasNextFrom: String!
+    totalHits: String!
 }
 
-input WorkflowEngineParams {
-  defaultContainer: String
-  revision: String
-  resume: ID
-  launchDir: String
-  projectDir: String
-  workDir: String
-  latest: Boolean
+type EngineParameters {
+    launchDir: String
+    projectDir: String
+    resume: String
+    revision: String
+    workDir: String
+    defaultContainer: String
+    latest: String
 }
 
-input RunsRequest {
-  workflowUrl: String!
-  workflowEngineParams: WorkflowEngineParams
-  workflowParams: JSON
-  workflowType: String
-  workflowTypeVersion: String
-  tags: JSON
+type Run {
+    runId: String!
+    state: String!
+    workflowUrl: String!
+    workflowType:  String
+    workflowTypeVersion:  String
+    workflowParamsJsonStr:  String
+    workflowEngineParams: EngineParameters!
+    timestamp: String!
 }
 
+input Example {
+  runId: String
+  state: String
+  workflowUrl: String
+  workflowType:  String
+  workflowTypeVersion:  String
+  workflowParamsJsonStr:  String
+  timestamp: String
+}
 
-type Mutation {
-    startRun(request: RunsRequest!): RunsResponse
-    cancelRun(runId: ID!): RunsResponse
+type RunsSearchResult {
+    content: [Run!]
+    info: SearchResultInfo!
+}
+
+enum SortOrder {
+    asc,
+    desc
+}
+
+enum SortField {
+    runId,
+    state,
+    timestamp
+}
+
+input Page {
+    size: Int!
+    from: Int!
+}
+
+input Sort {
+    fieldName: SortField!
+    order: SortOrder!
+}
+
+type Query {
+    runs(example: Example, page: Page, sorts: [Sort]): RunsSearchResult
 }

@@ -16,6 +16,11 @@ nextflow:
 secret:
   enabled: false
 
+logging.level:
+  com.pivotal: debug
+  #  org.springframework: debug
+  org.icgc.argo: debug
+
 ---
 spring.profiles: secure
 auth:
@@ -35,10 +40,69 @@ secret:
   apiKey: testapikeytotallylegit
 
 ---
-spring.profile: oauth2Token
+spring.profiles: oauth2Token
 
 secret:
   enabled: true
   clientId: testId
   clientSecret: testSecret
   tokenUri: http://localhost:8080/oauth/token
+
+---
+rabbit:
+  default-endpoint-name: standalone
+  endpoints:
+    standalone:
+      host: localhost
+      port: 5672
+      username: user
+      password: pass
+
+wes.consumer:
+    queue: "execute-queue"
+    topicExchange: "gatekeeper-out"
+    topicRoutingKeys: "INITIALIZING, CANCELING" # comma separated Array of keys
+
+---
+spring.profiles: gatekeeper
+
+gatekeeper.consumer:
+    queue: "gatekeeper-in-queue"
+    topicExchange: "gatekeeper-in"
+
+gatekeeper.producer:
+    topicExchange: "gatekeeper-out"
+
+spring.cloud.stream:
+  function.definition: weblogConsumer
+  bindings:
+    weblogConsumer-in-0:
+      group: mgmt-weblogConsumer
+      destination: weblog # kafka topic to listen to
+      binder: kafka
+  kafka:
+    binder.brokers: localhost:9092
+    bindings:
+      weblogConsumer-in-0:
+        consumer:
+          enableDlq: true
+          dlqName: weblog-in-0_dlq
+          autoCommitOnError: true
+          autoCommitOffset: true
+#          resetOffsets: true
+#          startOffset: earliest
+
+spring.datasource:
+  url: jdbc:postgresql://localhost:5432/gatekeeperdb?stringtype=unspecified
+  username: postgres
+  password: mysecretpassword
+spring.jpa:
+  hibernate:
+    ddl-auto: update
+
+---
+spring.profiles: test
+
+spring.jpa:
+  hibernate:
+    ddl-auto: create-drop
