@@ -86,22 +86,18 @@ public class NextflowService implements WorkflowExecutionService {
 
   public Mono<RunsResponse> run(RunParams params) {
     log.debug("Initializing run: {}", params);
-    return webLogSender
-        .sendWfMgmtEvent(params, WesState.INITIALIZING)
-        .map(r -> this.startRun(params))
+    return Mono.just(params)
+        .map(this::startRun)
         .map(RunsResponse::new)
-        .doOnError(t -> webLogSender.sendWfMgmtEventAsync(params, WesState.SYSTEM_ERROR))
         .onErrorMap(toRuntimeException("startRun", params.getRunId()))
         .subscribeOn(scheduler);
   }
 
   public Mono<RunsResponse> cancel(@NonNull String runId) {
     log.debug("Cancelling run: {}", runId);
-    return webLogSender
-        .sendWfMgmtEvent(runId, WesState.CANCELING)
-        .map(r -> this.cancelRun(runId))
+    return Mono.just(runId)
+        .map(this::cancelRun)
         .map(RunsResponse::new)
-        .doOnError(t -> webLogSender.sendWfMgmtEventAsync(runId, WesState.SYSTEM_ERROR))
         .onErrorMap(toRuntimeException("cancelRun", runId))
         .subscribeOn(scheduler);
   }
