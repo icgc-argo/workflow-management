@@ -46,9 +46,12 @@ public class WebLogEventSender {
   String endpoint;
 
   public void sendNextflowEventAsync(NextflowMetadata metadata, NextflowEvent event) {
+    // This msg has to emulate a next flow event for it to be processed by workflow-relay.
+    // The actual value of runId should be metadata.workflow.sessionId but that is always
+    // null since it doesn't exist. But runId is NonNull in wf-relay, so set it to a default.
     val msg =
         WorkflowEvent.builder()
-            .runId(metadata.getWorkflow().getRunName())
+            .runId("NO-SESSION-ID")
             .runName(metadata.getWorkflow().getRunName())
             .event(event.toString())
             .utcTime(nowInUtc())
