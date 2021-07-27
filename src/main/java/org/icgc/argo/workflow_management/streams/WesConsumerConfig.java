@@ -20,6 +20,7 @@ package org.icgc.argo.workflow_management.streams;
 
 import static org.icgc.argo.workflow_management.streams.DisposableManager.WES_CONSUMER;
 import static org.icgc.argo.workflow_management.streams.utils.RabbitmqUtils.createTransConsumerStream;
+import static org.icgc.argo.workflow_management.streams.utils.WfMgmtRunMsgConverters.createRunParams;
 import static org.icgc.argo.workflow_management.streams.utils.WfMgmtRunMsgConverters.createWfMgmtEvent;
 
 import com.pivotal.rabbitmq.RabbitEndpointService;
@@ -34,6 +35,7 @@ import org.icgc.argo.workflow_management.streams.schema.RunState;
 import org.icgc.argo.workflow_management.streams.schema.WfMgmtRunMsg;
 import org.icgc.argo.workflow_management.streams.utils.WfMgmtRunMsgConverters;
 import org.icgc.argo.workflow_management.wes.WorkflowExecutionService;
+import org.icgc.argo.workflow_management.wes.model.WesState;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.context.annotation.Configuration;
@@ -82,15 +84,15 @@ public class WesConsumerConfig {
     log.debug("WfMgmtRunMsg received: {}", msg);
 
     if (msg.getState().equals(RunState.INITIALIZING)) {
-      return Mono.just(msg)
-          .map(WfMgmtRunMsgConverters::createRunParams)
-          .flatMap(wes::run)
+      val params = createRunParams(msg);
+      return webLogEventSender.sendWfMgmtEvent(params, WesState.INITIALIZING)
+          .flatMap(res -> wes.run(params))
           .flatMap(runsResponse -> commitTx("Initialized", tx))
           .onErrorResume(t -> rejectAndWeblogTx(t, tx));
     } else if (msg.getState().equals(RunState.CANCELING)) {
-      return Mono.just(msg)
-          .map(WfMgmtRunMsg::getRunId)
-          .flatMap(wes::cancel)
+      val runId = msg.getRunId();
+      return webLogEventSender.sendWfMgmtEvent(runId, WesState.CANCELING)
+          .flatMap(res -> wes.cancel(runId))
           .retryWhen(RetrySpec.backoff(3, Duration.ofMinutes(3)))
           .flatMap(runsResponse -> commitTx("Cancelled", tx))
           .onErrorResume(t -> rejectAndWeblogTx(t, tx));
@@ -113,6 +115,11 @@ public class WesConsumerConfig {
     log.error("WES SYSTEM_ERROR msg: {}", msg);
     tx.reject();
 
-    return webLogEventSender.sendWfMgmtEvent(createWfMgmtEvent(msg)).thenReturn(false);
+    return webLogEventSender
+                   .sendWfMgmtEvent(createWfMgmtEvent(msg))
+                   // onError here means failed to weblog the SYSTEM_ERROR
+                   // not much left to do if can't weblog SYSTEM_ERROR
+                   .onErrorReturn(false)
+                   .thenReturn(false);
   }
 }
