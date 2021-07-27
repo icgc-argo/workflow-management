@@ -20,13 +20,11 @@ package org.icgc.argo.workflow_management.streams;
 
 import static org.icgc.argo.workflow_management.streams.DisposableManager.WES_CONSUMER;
 import static org.icgc.argo.workflow_management.streams.utils.RabbitmqUtils.createTransConsumerStream;
-import static org.icgc.argo.workflow_management.streams.utils.WfMgmtRunMsgConverters.createRunParams;
 import static org.icgc.argo.workflow_management.streams.utils.WfMgmtRunMsgConverters.createWfMgmtEvent;
 
 import com.pivotal.rabbitmq.RabbitEndpointService;
 import com.pivotal.rabbitmq.stream.Transaction;
 import java.time.Duration;
-import java.util.function.BiConsumer;
 import javax.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +32,7 @@ import lombok.val;
 import org.icgc.argo.workflow_management.config.rabbitmq.RabbitSchemaConfig;
 import org.icgc.argo.workflow_management.streams.schema.RunState;
 import org.icgc.argo.workflow_management.streams.schema.WfMgmtRunMsg;
+import org.icgc.argo.workflow_management.streams.utils.WfMgmtRunMsgConverters;
 import org.icgc.argo.workflow_management.wes.WorkflowExecutionService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
@@ -74,9 +73,6 @@ public class WesConsumerConfig {
         // consume each tx msg and flatMap into publisher of Mono<Boolean>.
         // Mono<Boolean> is used so reactor can manage subscriptions and publisher signals.
         .flatMap(this::consumeMessageAndExecuteInitializeOrCancel)
-        // Continue on error so disposable doesn't die.
-        // The tx commit/reject is handled in the flatmap so no need to worry about that here
-        .onErrorContinue(catchStreamError())
         .log(WES_CONSUMER)
         .subscribe();
   }
@@ -86,11 +82,15 @@ public class WesConsumerConfig {
     log.debug("WfMgmtRunMsg received: {}", msg);
 
     if (msg.getState().equals(RunState.INITIALIZING)) {
-      return wes.run(createRunParams(msg))
+      return Mono.just(msg)
+          .map(WfMgmtRunMsgConverters::createRunParams)
+          .flatMap(wes::run)
           .flatMap(runsResponse -> commitTx("Initialized", tx))
           .onErrorResume(t -> rejectAndWeblogTx(t, tx));
     } else if (msg.getState().equals(RunState.CANCELING)) {
-      return wes.cancel(msg.getRunId())
+      return Mono.just(msg)
+          .map(WfMgmtRunMsg::getRunId)
+          .flatMap(wes::cancel)
           .retryWhen(RetrySpec.backoff(3, Duration.ofMinutes(3)))
           .flatMap(runsResponse -> commitTx("Cancelled", tx))
           .onErrorResume(t -> rejectAndWeblogTx(t, tx));
@@ -114,12 +114,5 @@ public class WesConsumerConfig {
     tx.reject();
 
     return webLogEventSender.sendWfMgmtEvent(createWfMgmtEvent(msg)).thenReturn(false);
-  }
-
-  private BiConsumer<Throwable, Object> catchStreamError() {
-    return (t, obj) -> {
-      log.error("WesConsumer stream error", t);
-      log.error("WesConsumer stream error object {}", obj);
-    };
   }
 }
