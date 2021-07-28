@@ -19,6 +19,7 @@
 package org.icgc.argo.workflow_management.streams.utils;
 
 import static org.icgc.argo.workflow_management.util.JacksonUtils.readValue;
+import static org.icgc.argo.workflow_management.util.StringUtils.isStringUUID;
 
 import java.time.Instant;
 import java.util.Date;
@@ -110,11 +111,5 @@ public class WfMgmtRunMsgConverters {
         .workflowTypeVersion(msg.getWorkflowTypeVersion())
         .workflowUrl(msg.getWorkflowUrl())
         .build();
-  }
-
-  private static Boolean isStringUUID(String aString) {
-    return aString != null
-        && aString.matches(
-            "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$");
   }
 }
