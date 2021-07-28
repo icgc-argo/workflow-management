@@ -62,7 +62,7 @@ public class WfMgmtRunMsgConverters {
             .workDir(msgWep.getWorkDir())
             .latest(msgWep.getLatest());
 
-    if (msgWep.getResume() != null) {
+    if (isStringUUID(msgWep.getResume())) {
       wepBuilder.resume(UUID.fromString(msgWep.getResume()));
     }
 
@@ -91,7 +91,7 @@ public class WfMgmtRunMsgConverters {
             .workDir(msgWep.getWorkDir())
             .latest(msgWep.getLatest());
 
-    if (msgWep.getResume() != null) {
+    if (isStringUUID(msgWep.getResume())) {
       wepBuilder.resume(UUID.fromString(msgWep.getResume()));
     }
 
@@ -110,5 +110,11 @@ public class WfMgmtRunMsgConverters {
         .workflowTypeVersion(msg.getWorkflowTypeVersion())
         .workflowUrl(msg.getWorkflowUrl())
         .build();
+  }
+
+  private static Boolean isStringUUID(String aString) {
+    return aString != null
+        && aString.matches(
+            "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$");
   }
 }
