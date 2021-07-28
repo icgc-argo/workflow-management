@@ -19,6 +19,7 @@
 package org.icgc.argo.workflow_management.streams.utils;
 
 import static org.icgc.argo.workflow_management.util.JacksonUtils.readValue;
+import static org.icgc.argo.workflow_management.util.StringUtils.isStringUUID;
 
 import java.time.Instant;
 import java.util.Date;
@@ -62,7 +63,7 @@ public class WfMgmtRunMsgConverters {
             .workDir(msgWep.getWorkDir())
             .latest(msgWep.getLatest());
 
-    if (msgWep.getResume() != null) {
+    if (isStringUUID(msgWep.getResume())) {
       wepBuilder.resume(UUID.fromString(msgWep.getResume()));
     }
 
@@ -91,7 +92,7 @@ public class WfMgmtRunMsgConverters {
             .workDir(msgWep.getWorkDir())
             .latest(msgWep.getLatest());
 
-    if (msgWep.getResume() != null) {
+    if (isStringUUID(msgWep.getResume())) {
       wepBuilder.resume(UUID.fromString(msgWep.getResume()));
     }
 

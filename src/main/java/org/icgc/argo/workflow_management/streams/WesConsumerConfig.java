@@ -33,7 +33,6 @@ import lombok.val;
 import org.icgc.argo.workflow_management.config.rabbitmq.RabbitSchemaConfig;
 import org.icgc.argo.workflow_management.streams.schema.RunState;
 import org.icgc.argo.workflow_management.streams.schema.WfMgmtRunMsg;
-import org.icgc.argo.workflow_management.streams.utils.WfMgmtRunMsgConverters;
 import org.icgc.argo.workflow_management.wes.WorkflowExecutionService;
 import org.icgc.argo.workflow_management.wes.model.WesState;
 import org.springframework.beans.factory.annotation.Value;
@@ -85,13 +84,15 @@ public class WesConsumerConfig {
 
     if (msg.getState().equals(RunState.INITIALIZING)) {
       val params = createRunParams(msg);
-      return webLogEventSender.sendWfMgmtEvent(params, WesState.INITIALIZING)
+      return webLogEventSender
+          .sendWfMgmtEvent(params, WesState.INITIALIZING)
           .flatMap(res -> wes.run(params))
           .flatMap(runsResponse -> commitTx("Initialized", tx))
           .onErrorResume(t -> rejectAndWeblogTx(t, tx));
     } else if (msg.getState().equals(RunState.CANCELING)) {
       val runId = msg.getRunId();
-      return webLogEventSender.sendWfMgmtEvent(runId, WesState.CANCELING)
+      return webLogEventSender
+          .sendWfMgmtEvent(runId, WesState.CANCELING)
           .flatMap(res -> wes.cancel(runId))
           .retryWhen(RetrySpec.backoff(3, Duration.ofMinutes(3)))
           .flatMap(runsResponse -> commitTx("Cancelled", tx))
@@ -116,10 +117,10 @@ public class WesConsumerConfig {
     tx.reject();
 
     return webLogEventSender
-                   .sendWfMgmtEvent(createWfMgmtEvent(msg))
-                   // onError here means failed to weblog the SYSTEM_ERROR
-                   // not much left to do if can't weblog SYSTEM_ERROR
-                   .onErrorReturn(false)
-                   .thenReturn(false);
+        .sendWfMgmtEvent(createWfMgmtEvent(msg))
+        // onError here means failed to weblog the SYSTEM_ERROR
+        // not much left to do if can't weblog SYSTEM_ERROR
+        .onErrorReturn(false)
+        .thenReturn(false);
   }
 }
