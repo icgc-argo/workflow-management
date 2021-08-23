@@ -31,10 +31,12 @@ public class VolumeMounts {
             .flatMap(
                 path ->
                     Optional.ofNullable(k8sProperties.getVolMountMappings())
-                        .map(volMountsMapping -> extract(volMountsMapping, path))
-                        .orElse(Set.copyOf(k8sProperties.getVolMounts())).stream())
+                        .map(volMountsMapping -> extract(volMountsMapping, path).stream())
+                        .orElse(Stream.empty()))
             .collect(Collectors.toSet());
 
-    return volMounts.isEmpty() ? k8sProperties.getVolMounts() : volMounts;
+    return volMounts.isEmpty()
+        ? Optional.ofNullable(k8sProperties.getVolMounts()).orElse(Set.of())
+        : volMounts;
   }
 }

@@ -55,7 +55,8 @@ public class VolumeMountsTest {
 
   @Test
   public void testExtractFromPropertiesAndEngineParams() {
-    val k8sProperties = new NextflowProperties.K8sProperties(Set.of("pv-claim:/some/dir"));
+    val k8sProperties = new NextflowProperties.K8sProperties();
+    k8sProperties.setVolMounts(Set.of("pv-claim:/some/dir"));
 
     // include some inconsistent matching strings (with and without /)
     k8sProperties.setVolMountMappings(
@@ -81,7 +82,7 @@ public class VolumeMountsTest {
 
   @Test
   public void testExtractFromPropertiesWhenMissingVolMountsMapping() {
-    val k8sProperties = new NextflowProperties.K8sProperties(Set.of("pv-claim:/some/dir"));
+    val k8sProperties = new NextflowProperties.K8sProperties();
     k8sProperties.setVolMounts(Set.of("pv-claim:/some/dir"));
 
     val workflowEngineParams =
@@ -97,9 +98,9 @@ public class VolumeMountsTest {
 
   @Test
   public void testExtractFromPropertiesWhenMissingDirectories() {
-    val k8sProperties = new NextflowProperties.K8sProperties(Set.of("pv-claim:/some/dir"));
-    k8sProperties.setVolMountMappings(Set.of("pv-claim:/some/dir,/some/dir/"));
+    val k8sProperties = new NextflowProperties.K8sProperties();
     k8sProperties.setVolMounts(Set.of("pv-claim:/some/dir"));
+    k8sProperties.setVolMountMappings(Set.of("pv-claim:/some/dir,/some/dir/"));
 
     val workflowEngineParams = WorkflowEngineParams.builder().build();
 
@@ -109,7 +110,7 @@ public class VolumeMountsTest {
 
   @Test
   public void testExtractFromPropertiesDefaultVolMountsOnNoMatch() {
-    val k8sProperties = new NextflowProperties.K8sProperties(Set.of("pv-claim:/some/dir"));
+    val k8sProperties = new NextflowProperties.K8sProperties();
     k8sProperties.setVolMounts(Set.of("pv-claim:/some/dir"));
 
     val workflowEngineParams =
@@ -121,5 +122,19 @@ public class VolumeMountsTest {
 
     assertEquals(
         Set.of("pv-claim:/some/dir"), VolumeMounts.extract(k8sProperties, workflowEngineParams));
+  }
+
+  @Test
+  public void testExtractFromPropertiesNullVolMountsDefault() {
+    val k8sProperties = new NextflowProperties.K8sProperties();
+
+    val workflowEngineParams =
+        WorkflowEngineParams.builder()
+            .launchDir("/some/dir/launch/dir")
+            .projectDir("/some/dir/project/dir")
+            .workDir("/some/dir/work/dir")
+            .build();
+
+    assertEquals(Set.of(), VolumeMounts.extract(k8sProperties, workflowEngineParams));
   }
 }
