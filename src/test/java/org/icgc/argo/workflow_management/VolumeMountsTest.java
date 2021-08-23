@@ -125,7 +125,7 @@ public class VolumeMountsTest {
   }
 
   @Test
-  public void testExtractFromPropertiesNullVolMountsDefault() {
+  public void testExtractFromPropertiesNullVolMountsAndNullMappingsDefault() {
     val k8sProperties = new NextflowProperties.K8sProperties();
 
     val workflowEngineParams =
