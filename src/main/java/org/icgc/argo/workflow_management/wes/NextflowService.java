@@ -325,7 +325,7 @@ public class NextflowService implements WorkflowExecutionService {
     }
 
     // volume mount config for run
-    cmdParams.put("volMounts", VolumeMounts.extract(k8sConfig, workflowEngineParams.getWorkDir()));
+    cmdParams.put("volMounts", VolumeMounts.extract(k8sConfig, workflowEngineParams));
 
     return createWithReflection(CmdKubeRun.class, cmdParams)
         .orElseThrow(ReflectionUtilsException::new);
