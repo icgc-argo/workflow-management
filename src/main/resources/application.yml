@@ -6,8 +6,6 @@ nextflow:
     serviceAccount: "default"
     volMounts:
       - "pv-claim:/some/dir"
-    volMountMappings:
-      - "pv-claim:/some/dir,/some/dir"
     masterUrl: "localhost:8080"
     trustCertificate: false
   weblogUrl: "http://localhost"

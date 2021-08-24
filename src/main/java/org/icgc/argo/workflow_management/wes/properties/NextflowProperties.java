@@ -42,7 +42,6 @@ public class NextflowProperties {
     private String namespace;
     private String runNamespace;
     private Set<String> volMounts;
-    private Set<String> volMountMappings;
     private String masterUrl;
     private boolean trustCertificate;
   }
