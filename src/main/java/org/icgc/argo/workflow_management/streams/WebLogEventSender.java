@@ -46,9 +46,12 @@ public class WebLogEventSender {
   String endpoint;
 
   public void sendNextflowEventAsync(NextflowMetadata metadata, NextflowEvent event) {
+    // This msg has to emulate a next flow event for it to be processed by workflow-relay.
+    // The actual value of runId should be metadata.workflow.sessionId but that is always
+    // null since it doesn't exist. But runId is NonNull in wf-relay, so set it to a default.
     val msg =
         WorkflowEvent.builder()
-            .runId(metadata.getWorkflow().getRunName())
+            .runId("NO-SESSION-ID")
             .runName(metadata.getWorkflow().getRunName())
             .event(event.toString())
             .utcTime(nowInUtc())
@@ -110,8 +113,8 @@ public class WebLogEventSender {
             res -> {
               // Don't want to proceed with stream if response from weblog is bad, so throw error
               if (!res.getStatusCode().is2xxSuccessful() || !Objects.equals(res.getBody(), true)) {
-                log.debug("Event failed to send to or process in weblog!");
-                return Mono.error(new Exception("Event failed to send to or process in weblog!"));
+                log.info("*** Failed to send event to weblog! ***");
+                return Mono.error(new Exception("Failed to send event to weblog!"));
               }
               log.debug("Message sent to weblog: " + jsonReadyObject);
               return Mono.just(res.getBody());

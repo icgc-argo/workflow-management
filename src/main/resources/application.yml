@@ -86,7 +86,7 @@ spring.cloud.stream:
       weblogConsumer-in-0:
         consumer:
           enableDlq: true
-          dlqName: weblog-in-0_dlq
+          dlqName: weblog-into-mgmt_dlq
           autoCommitOnError: true
           autoCommitOffset: true
 #          resetOffsets: true
