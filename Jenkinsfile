@@ -125,7 +125,7 @@ spec:
                 branch "master"
             }
             steps {
-                build(job: "/provision/helm", parameters: [
+                build(job: "/provision/update-app-version", parameters: [
                     [$class: 'StringParameterValue', name: 'RDPC_ENV', value: 'qa' ],
                     [$class: 'StringParameterValue', name: 'TARGET_RELEASE', value: 'management'],
                     [$class: 'StringParameterValue', name: 'NEW_APP_VERSION', value: "${version}" ]
