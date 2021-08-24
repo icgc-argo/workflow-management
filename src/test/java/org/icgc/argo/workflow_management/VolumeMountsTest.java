@@ -62,7 +62,7 @@ public class VolumeMountsTest {
   @Test
   public void multiMatchNoDuplicates() {
     val volMounts =
-        List.of("pv-claim-one:/test-dir-1", "pv-claim-one:/test-dir-2", "pv-claim-one:/test-dir-3");
+        List.of("pv-claim-one:/test-dir-1", "pv-claim-one:/test-dir-1", "pv-claim-one:/test-dir-1");
 
     assertEquals(
         List.of("pv-claim-one:/test-dir-1"),
