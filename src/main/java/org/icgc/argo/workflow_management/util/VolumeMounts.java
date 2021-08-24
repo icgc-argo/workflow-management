@@ -7,7 +7,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.NonNull;
-import lombok.val;
 import org.icgc.argo.workflow_management.wes.model.WorkflowEngineParams;
 import org.icgc.argo.workflow_management.wes.properties.NextflowProperties;
 
@@ -22,21 +21,18 @@ public class VolumeMounts {
 
   public static Set<String> extract(
       NextflowProperties.K8sProperties k8sProperties, WorkflowEngineParams workflowEngineParams) {
-    val volMounts =
-        Stream.of(
-                workflowEngineParams.getLaunchDir(),
-                workflowEngineParams.getProjectDir(),
-                workflowEngineParams.getWorkDir())
-            .filter(Objects::nonNull)
-            .flatMap(
-                path ->
-                    Optional.ofNullable(k8sProperties.getVolMountMappings())
-                        .map(volMountsMapping -> extract(volMountsMapping, path).stream())
-                        .orElse(Stream.empty()))
-            .collect(Collectors.toSet());
-
-    return volMounts.isEmpty()
-        ? Optional.ofNullable(k8sProperties.getVolMounts()).orElse(Set.of())
-        : volMounts;
+    return Optional.ofNullable(k8sProperties.getVolMountMappings())
+        .map(
+            volMountsMapping ->
+                Stream.of(
+                        workflowEngineParams.getLaunchDir(),
+                        workflowEngineParams.getProjectDir(),
+                        workflowEngineParams.getWorkDir())
+                    .filter(Objects::nonNull)
+                    .flatMap(path -> extract(volMountsMapping, path).stream())
+                    .collect(Collectors.toSet()))
+        .flatMap(volMounts -> volMounts.isEmpty() ? Optional.empty() : Optional.of(volMounts))
+        .or(() -> Optional.ofNullable(k8sProperties.getVolMounts()))
+        .orElse(Set.of());
   }
 }
