@@ -2,8 +2,8 @@ package org.icgc.argo.workflow_management;
 
 import static org.junit.Assert.assertEquals;
 
+import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import lombok.val;
 import org.icgc.argo.workflow_management.util.VolumeMounts;
 import org.icgc.argo.workflow_management.wes.model.WorkflowEngineParams;
@@ -17,7 +17,7 @@ public class VolumeMountsTest {
     val volMounts = List.of("pv-claim:/some/dir");
 
     assertEquals(
-        Set.of("pv-claim:/some/dir"), VolumeMounts.extract(volMounts, "/some/dir/with/sub/dir"));
+        List.of("pv-claim:/some/dir"), VolumeMounts.extract(volMounts, "/some/dir/with/sub/dir"));
   }
 
   @Test
@@ -27,13 +27,15 @@ public class VolumeMountsTest {
             "pv-claim-one:/test-dir-1", "pv-claim-two:/test-dir-2", "pv-claim-three:/test-dir-3");
 
     assertEquals(
-        Set.of("pv-claim-one:/test-dir-1"), VolumeMounts.extract(volMounts, "/test-dir-1/sub/dir"));
+        List.of("pv-claim-one:/test-dir-1"),
+        VolumeMounts.extract(volMounts, "/test-dir-1/sub/dir"));
 
     assertEquals(
-        Set.of("pv-claim-two:/test-dir-2"), VolumeMounts.extract(volMounts, "/test-dir-2/sub/dir"));
+        List.of("pv-claim-two:/test-dir-2"),
+        VolumeMounts.extract(volMounts, "/test-dir-2/sub/dir"));
 
     assertEquals(
-        Set.of("pv-claim-three:/test-dir-3"),
+        List.of("pv-claim-three:/test-dir-3"),
         VolumeMounts.extract(volMounts, "/test-dir-3/sub/dir"));
   }
 
@@ -43,8 +45,8 @@ public class VolumeMountsTest {
         List.of("pv-claim-one:/test-dir-1", "pv-claim-one:/test-dir-2", "pv-claim-one:/test-dir-3");
 
     assertEquals(
-        Set.of("pv-claim-one:/test-dir-1", "pv-claim-one:/test-dir-2", "pv-claim-one:/test-dir-3"),
-        VolumeMounts.extract(volMounts, Set.of("/test-dir-1", "/test-dir-2", "/test-dir-3")));
+        List.of("pv-claim-one:/test-dir-1", "pv-claim-one:/test-dir-2", "pv-claim-one:/test-dir-3"),
+        VolumeMounts.extract(volMounts, List.of("/test-dir-1", "/test-dir-2", "/test-dir-3")));
   }
 
   @Test
@@ -53,8 +55,18 @@ public class VolumeMountsTest {
         List.of("pv-claim-one:/test-dir-1", "pv-claim-one:/test-dir-2", "pv-claim-one:/test-dir-3");
 
     assertEquals(
-        Set.of("pv-claim-one:/test-dir-2", "pv-claim-one:/test-dir-3"),
-        VolumeMounts.extract(volMounts, Set.of("/test-dir-2", "/test-dir-3")));
+        List.of("pv-claim-one:/test-dir-2", "pv-claim-one:/test-dir-3"),
+        VolumeMounts.extract(volMounts, List.of("/test-dir-2", "/test-dir-3")));
+  }
+
+  @Test
+  public void multiMatchNoDuplicates() {
+    val volMounts =
+        List.of("pv-claim-one:/test-dir-1", "pv-claim-one:/test-dir-2", "pv-claim-one:/test-dir-3");
+
+    assertEquals(
+        List.of("pv-claim-one:/test-dir-1"),
+        VolumeMounts.extract(volMounts, List.of("/test-dir-1", "/test-dir-1", "/test-dir-1")));
   }
 
   @Test
@@ -74,7 +86,7 @@ public class VolumeMountsTest {
             .build();
 
     assertEquals(
-        Set.of(
+        List.of(
             "pv-claim-one:/test-dir-1", "pv-claim-two:/test-dir-2", "pv-claim-three:/test-dir-3"),
         VolumeMounts.extract(k8sProperties, workflowEngineParams));
   }
@@ -91,7 +103,7 @@ public class VolumeMountsTest {
         WorkflowEngineParams.builder().workDir("/test-dir-3/sub/dir").build();
 
     assertEquals(
-        Set.of("pv-claim-three:/test-dir-3"),
+        List.of("pv-claim-three:/test-dir-3"),
         VolumeMounts.extract(k8sProperties, workflowEngineParams));
   }
 
@@ -108,7 +120,7 @@ public class VolumeMountsTest {
     // when no engine params are provided, Nextflow will be default use the first volume claim in
     // the list provided, we need to ensure at least one claim is sent even when not explicitly set
     assertEquals(
-        Set.of("pv-claim-one:/test-dir-1"),
+        List.of("pv-claim-one:/test-dir-1"),
         VolumeMounts.extract(k8sProperties, workflowEngineParams));
   }
 
@@ -127,7 +139,8 @@ public class VolumeMountsTest {
             .workDir("/some/dir/work/dir")
             .build();
 
-    assertEquals(Set.of(), VolumeMounts.extract(k8sProperties, workflowEngineParams));
+    assertEquals(
+        Collections.emptyList(), VolumeMounts.extract(k8sProperties, workflowEngineParams));
   }
 
   @Test
@@ -141,6 +154,7 @@ public class VolumeMountsTest {
             .workDir("/some/dir/work/dir")
             .build();
 
-    assertEquals(Set.of(), VolumeMounts.extract(k8sProperties, workflowEngineParams));
+    assertEquals(
+        Collections.emptyList(), VolumeMounts.extract(k8sProperties, workflowEngineParams));
   }
 }
