@@ -18,7 +18,7 @@
 
 package org.icgc.argo.workflow_management.wes.properties;
 
-import java.util.Set;
+import java.util.List;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -41,7 +41,7 @@ public class NextflowProperties {
     private String serviceAccount;
     private String namespace;
     private String runNamespace;
-    private Set<String> volMounts;
+    private List<String> volMounts;
     private String masterUrl;
     private boolean trustCertificate;
   }

@@ -2,6 +2,7 @@ package org.icgc.argo.workflow_management;
 
 import static org.junit.Assert.assertEquals;
 
+import java.util.List;
 import java.util.Set;
 import lombok.val;
 import org.icgc.argo.workflow_management.util.VolumeMounts;
@@ -13,7 +14,7 @@ public class VolumeMountsTest {
 
   @Test
   public void defaultConfigTest() {
-    val volMounts = Set.of("pv-claim:/some/dir");
+    val volMounts = List.of("pv-claim:/some/dir");
 
     assertEquals(
         Set.of("pv-claim:/some/dir"), VolumeMounts.extract(volMounts, "/some/dir/with/sub/dir"));
@@ -22,7 +23,7 @@ public class VolumeMountsTest {
   @Test
   public void multiDirTest() {
     val volMounts =
-        Set.of(
+        List.of(
             "pv-claim-one:/test-dir-1", "pv-claim-two:/test-dir-2", "pv-claim-three:/test-dir-3");
 
     assertEquals(
@@ -39,7 +40,7 @@ public class VolumeMountsTest {
   @Test
   public void multiMatchAllTest() {
     val volMounts =
-        Set.of("pv-claim-one:/test-dir-1", "pv-claim-one:/test-dir-2", "pv-claim-one:/test-dir-3");
+        List.of("pv-claim-one:/test-dir-1", "pv-claim-one:/test-dir-2", "pv-claim-one:/test-dir-3");
 
     assertEquals(
         Set.of("pv-claim-one:/test-dir-1", "pv-claim-one:/test-dir-2", "pv-claim-one:/test-dir-3"),
@@ -49,7 +50,7 @@ public class VolumeMountsTest {
   @Test
   public void multiMatchPartialTest() {
     val volMounts =
-        Set.of("pv-claim-one:/test-dir-1", "pv-claim-one:/test-dir-2", "pv-claim-one:/test-dir-3");
+        List.of("pv-claim-one:/test-dir-1", "pv-claim-one:/test-dir-2", "pv-claim-one:/test-dir-3");
 
     assertEquals(
         Set.of("pv-claim-one:/test-dir-2", "pv-claim-one:/test-dir-3"),
@@ -61,7 +62,7 @@ public class VolumeMountsTest {
     val k8sProperties = new NextflowProperties.K8sProperties();
 
     k8sProperties.setVolMounts(
-        Set.of(
+        List.of(
             "pv-claim-one:/test-dir-1", "pv-claim-two:/test-dir-2", "pv-claim-three:/test-dir-3"));
 
     // set a different volume for all three properties
@@ -79,11 +80,11 @@ public class VolumeMountsTest {
   }
 
   @Test
-  public void testExtractFromPropertiesMissingEngineParams() {
+  public void testExtractFromPropertiesMissingSomeEngineParams() {
     val k8sProperties = new NextflowProperties.K8sProperties();
 
     k8sProperties.setVolMounts(
-        Set.of(
+        List.of(
             "pv-claim-one:/test-dir-1", "pv-claim-two:/test-dir-2", "pv-claim-three:/test-dir-3"));
 
     val workflowEngineParams =
@@ -95,11 +96,28 @@ public class VolumeMountsTest {
   }
 
   @Test
+  public void testExtractFromPropertiesMissingAllEngineParams() {
+    val k8sProperties = new NextflowProperties.K8sProperties();
+
+    k8sProperties.setVolMounts(
+        List.of(
+            "pv-claim-one:/test-dir-1", "pv-claim-two:/test-dir-2", "pv-claim-three:/test-dir-3"));
+
+    val workflowEngineParams = WorkflowEngineParams.builder().build();
+
+    // when no engine params are provided, Nextflow will be default use the first volume claim in
+    // the list provided, we need to ensure at least one claim is sent even when not explicitly set
+    assertEquals(
+        Set.of("pv-claim-one:/test-dir-1"),
+        VolumeMounts.extract(k8sProperties, workflowEngineParams));
+  }
+
+  @Test
   public void testExtractFromPropertiesNoMatchVolMountsDefault() {
     val k8sProperties = new NextflowProperties.K8sProperties();
 
     k8sProperties.setVolMounts(
-        Set.of(
+        List.of(
             "pv-claim-one:/test-dir-1", "pv-claim-two:/test-dir-2", "pv-claim-three:/test-dir-3"));
 
     val workflowEngineParams =
