@@ -140,7 +140,8 @@ public class VolumeMountsTest {
             .build();
 
     assertEquals(
-        Collections.emptyList(), VolumeMounts.extract(k8sProperties, workflowEngineParams));
+        List.of("pv-claim-one:/test-dir-1"),
+        VolumeMounts.extract(k8sProperties, workflowEngineParams));
   }
 
   @Test
