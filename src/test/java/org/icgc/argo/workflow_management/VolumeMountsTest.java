@@ -1,14 +1,13 @@
 package org.icgc.argo.workflow_management;
 
+import static org.junit.Assert.assertEquals;
+
+import java.util.Set;
 import lombok.val;
 import org.icgc.argo.workflow_management.util.VolumeMounts;
 import org.icgc.argo.workflow_management.wes.model.WorkflowEngineParams;
 import org.icgc.argo.workflow_management.wes.properties.NextflowProperties;
 import org.junit.Test;
-
-import java.util.Set;
-
-import static org.junit.Assert.assertEquals;
 
 public class VolumeMountsTest {
 
@@ -76,6 +75,22 @@ public class VolumeMountsTest {
     assertEquals(
         Set.of(
             "pv-claim-one:/test-dir-1", "pv-claim-two:/test-dir-2", "pv-claim-three:/test-dir-3"),
+        VolumeMounts.extract(k8sProperties, workflowEngineParams));
+  }
+
+  @Test
+  public void testExtractFromPropertiesMissingEngineParams() {
+    val k8sProperties = new NextflowProperties.K8sProperties();
+
+    k8sProperties.setVolMounts(
+        Set.of(
+            "pv-claim-one:/test-dir-1", "pv-claim-two:/test-dir-2", "pv-claim-three:/test-dir-3"));
+
+    val workflowEngineParams =
+        WorkflowEngineParams.builder().workDir("/test-dir-3/sub/dir").build();
+
+    assertEquals(
+        Set.of("pv-claim-three:/test-dir-3"),
         VolumeMounts.extract(k8sProperties, workflowEngineParams));
   }
 

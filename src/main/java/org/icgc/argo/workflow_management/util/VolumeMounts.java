@@ -1,15 +1,14 @@
 package org.icgc.argo.workflow_management.util;
 
-import lombok.NonNull;
-import org.icgc.argo.workflow_management.wes.model.WorkflowEngineParams;
-import org.icgc.argo.workflow_management.wes.properties.NextflowProperties;
-
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.NonNull;
+import org.icgc.argo.workflow_management.wes.model.WorkflowEngineParams;
+import org.icgc.argo.workflow_management.wes.properties.NextflowProperties;
 
 public class VolumeMounts {
   public static Set<String> extract(@NonNull Set<String> volMounts, @NonNull String path) {
