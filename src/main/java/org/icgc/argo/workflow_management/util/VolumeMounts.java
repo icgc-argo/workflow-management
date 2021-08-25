@@ -1,12 +1,10 @@
 package org.icgc.argo.workflow_management.util;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.NonNull;
@@ -14,8 +12,6 @@ import org.icgc.argo.workflow_management.wes.model.WorkflowEngineParams;
 import org.icgc.argo.workflow_management.wes.properties.NextflowProperties;
 
 public class VolumeMounts {
-  private static final HashMap<String, Pattern> volMountPatternCache = new HashMap<>();
-
   /**
    * Given the k8sProperties configured in application properties, and the workflow engine
    * parameters for a run, extract the required volume mounts
@@ -85,20 +81,7 @@ public class VolumeMounts {
    *     used to generate this function
    */
   private static Predicate<String> getPathMatchFunctionForVolMount(String volMount) {
-    return path -> getPatternForVolMount(volMount).matcher(path).find();
-  }
-
-  /**
-   * Lazily computes a pattern for each volume mount (given the format
-   * volume-claim:volume-mount-path) in the application properties, backed by the static
-   * patternCache HashMap
-   *
-   * @param volMount - the volume mount to extract the pattern for
-   * @return the Pattern for the provided volMount string
-   */
-  private static Pattern getPatternForVolMount(String volMount) {
-    return volMountPatternCache.computeIfAbsent(
-        volMount, key -> Pattern.compile("^" + Pattern.quote(volMount.split(":")[1])));
+    return path -> path.startsWith(volMount.split(":")[1]);
   }
 
   /**
