@@ -1,8 +1,9 @@
 package org.icgc.argo.workflow_management;
 
+import static graphql.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.util.Collections;
 import java.util.List;
 import lombok.val;
 import org.icgc.argo.workflow_management.util.VolumeMounts;
@@ -155,7 +156,15 @@ public class VolumeMountsTest {
             .workDir("/some/dir/work/dir")
             .build();
 
-    assertEquals(
-        Collections.emptyList(), VolumeMounts.extract(k8sProperties, workflowEngineParams));
+    val exception =
+        assertThrows(
+            IllegalStateException.class,
+            () -> VolumeMounts.extract(k8sProperties, workflowEngineParams));
+
+    assertTrue(
+        exception
+            .getMessage()
+            .contains(
+                "At lease on volMount must be configured in order for Nextflow to run in Kubernetes"));
   }
 }
