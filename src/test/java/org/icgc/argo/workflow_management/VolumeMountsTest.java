@@ -165,6 +165,6 @@ public class VolumeMountsTest {
         exception
             .getMessage()
             .contains(
-                "At lease on volMount must be configured in order for Nextflow to run in Kubernetes"));
+                "At least one volMount must be configured in order for Nextflow to run in Kubernetes"));
   }
 }
