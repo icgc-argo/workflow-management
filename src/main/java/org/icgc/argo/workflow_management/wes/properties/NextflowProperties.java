@@ -42,8 +42,8 @@ public class NextflowProperties {
     private String namespace;
     private String runNamespace;
     private String imagePullPolicy;
-    private List<String> volMounts;
     private String pluginsDir;
+    private List<String> volMounts;
     private String masterUrl;
     private boolean trustCertificate;
   }
