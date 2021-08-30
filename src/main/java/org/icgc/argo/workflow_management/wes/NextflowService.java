@@ -20,7 +20,6 @@ package org.icgc.argo.workflow_management.wes;
 
 import static java.lang.String.format;
 import static java.util.Objects.nonNull;
-import static org.icgc.argo.workflow_management.util.NextflowConfigFile.createNextflowConfigFile;
 import static org.icgc.argo.workflow_management.util.ParamsFile.createParamsFile;
 import static org.icgc.argo.workflow_management.util.Reflections.createWithReflection;
 import static org.icgc.argo.workflow_management.util.Reflections.invokeDeclaredMethod;
@@ -296,14 +295,18 @@ public class NextflowService implements WorkflowExecutionService {
     // Write config file for run using required and optional arguments
     // Use launchDir, projectDir and/or workDir if provided in workflow_engine_options
     val config =
-        createNextflowConfigFile(
-            runName,
-            k8sConfig.getRunAsUser(),
-            k8sConfig.getServiceAccount(),
-            k8sConfig.getRunNamespace(),
-            workflowEngineParams.getLaunchDir(),
-            workflowEngineParams.getProjectDir(),
-            workflowEngineParams.getWorkDir());
+        NextflowConfigFile.builder()
+            .runName(runName)
+            .runAsUser(k8sConfig.getRunAsUser())
+            .serviceAccount(k8sConfig.getServiceAccount())
+            .runNamespace(k8sConfig.getRunNamespace())
+            .imagePullPolicy(k8sConfig.getImagePullPolicy())
+            .launchDir(workflowEngineParams.getLaunchDir())
+            .projectDir(workflowEngineParams.getProjectDir())
+            .workDir(workflowEngineParams.getWorkDir())
+            .build()
+            .getConfig();
+
     cmdParams.put("runConfig", List.of(config));
 
     // Resume workflow by name/id

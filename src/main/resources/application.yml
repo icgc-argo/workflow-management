@@ -3,6 +3,7 @@ nextflow:
     runAsUser: 9999
     namespace: "default" # Namespace where app will be running
     runNamespace: "default" # Namespace where wes and nf pods will live
+    imagePullPolicy: "IfNotPresent" # how K8s should pull a pod image for runs
     serviceAccount: "default"
     volMounts:
       - "pv-claim:/some/dir"
