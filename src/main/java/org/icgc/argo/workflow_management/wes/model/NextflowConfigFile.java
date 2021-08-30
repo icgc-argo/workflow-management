@@ -60,7 +60,7 @@ public class NextflowConfigFile {
     writeFormattedLineIfValue(fileContent::add, "\tserviceAccount = '%s'", serviceAccount);
 
     // k8s image pull policy for run
-    fileContent.add(String.format("\tpullPolicy = %s", imagePullPolicy));
+    fileContent.add(String.format("\tpullPolicy = '%s'", imagePullPolicy));
 
     // variable config passed in via WorkflowEngineParams
     writeFormattedLineIfValue(fileContent::add, "\tlaunchDir = '%s'", launchDir);
