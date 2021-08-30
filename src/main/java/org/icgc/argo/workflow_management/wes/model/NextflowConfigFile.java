@@ -37,6 +37,7 @@ public class NextflowConfigFile {
   private String serviceAccount;
   private String runNamespace;
   private String imagePullPolicy;
+  private String pluginsDir;
   private String launchDir;
   private String projectDir;
   private String workDir;
@@ -67,8 +68,11 @@ public class NextflowConfigFile {
     writeFormattedLineIfValue(fileContent::add, "\tprojectDir = '%s'", projectDir);
     writeFormattedLineIfValue(fileContent::add, "\tworkDir = '%s'", workDir);
 
-    // set plugins mode to prod
-    fileContent.add("\tpod = [env: 'NXF_PLUGINS_MODE', value: 'prod']");
+    // plugins
+    fileContent.add(
+        String.format(
+            "\tpod = [ [env: 'NXF_PLUGINS_MODE', value: 'prod'], [env: 'NXF_PLUGINS_DIR', value: '%s'] ]",
+            pluginsDir));
 
     // close k8s off
     fileContent.add("}");

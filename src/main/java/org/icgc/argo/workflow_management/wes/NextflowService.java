@@ -301,6 +301,7 @@ public class NextflowService implements WorkflowExecutionService {
             .serviceAccount(k8sConfig.getServiceAccount())
             .runNamespace(k8sConfig.getRunNamespace())
             .imagePullPolicy(k8sConfig.getImagePullPolicy())
+            .pluginsDir(k8sConfig.getPluginsDir())
             .launchDir(workflowEngineParams.getLaunchDir())
             .projectDir(workflowEngineParams.getProjectDir())
             .workDir(workflowEngineParams.getWorkDir())

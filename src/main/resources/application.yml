@@ -7,6 +7,7 @@ nextflow:
     serviceAccount: "default"
     volMounts:
       - "pv-claim:/some/dir"
+    pluginsDir: "/icgc-argo-scratch/plugins" # where nextflow should copy plugins to for a run
     masterUrl: "localhost:8080"
     trustCertificate: false
   weblogUrl: "http://localhost"
