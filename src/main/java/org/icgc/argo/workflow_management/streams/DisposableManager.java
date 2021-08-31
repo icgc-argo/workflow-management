@@ -24,10 +24,10 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import lombok.Getter;
 import lombok.SneakyThrows;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 import reactor.core.Disposable;
 
-@Configuration
+@Component
 public class DisposableManager {
   public static final String WES_CONSUMER = "WESConsumer";
   public static final String GATEKEEPER_PRODUCER = "gatekeeperProducer";
