@@ -3,6 +3,8 @@ nextflow:
     runAsUser: 9999
     namespace: "default" # Namespace where app will be running
     runNamespace: "default" # Namespace where wes and nf pods will live
+    imagePullPolicy: "IfNotPresent" # how K8s should pull a pod image for runs
+    pluginsDir: "/icgc-argo-scratch/plugins" # where nextflow should copy plugins to for a run
     serviceAccount: "default"
     volMounts:
       - "pv-claim:/some/dir"
@@ -20,17 +22,6 @@ logging.level:
   com.pivotal: debug
   #  org.springframework: debug
   org.icgc.argo: debug
-
----
-spring.profiles: secure
-auth:
-  jwtPublicKeyUrl: ""
-  jwtPublicKeyStr: "-----BEGIN PUBLIC KEY-----\nSET ME IF YOU DONT HAVE A URL, BUT URL TAKES PRIORITY\n-----END PUBLIC KEY-----"
-  graphqlScopes:
-    queryOnly:
-      - RDPC-CA.READ
-    queryAndMutation:
-      - RDPC-CA.WRITE
 
 ---
 spring.profiles: apiKey

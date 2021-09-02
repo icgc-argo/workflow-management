@@ -16,7 +16,7 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.icgc.argo.workflow_management.util;
+package org.icgc.argo.workflow_management.wes.model;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 
@@ -26,20 +26,24 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import lombok.Builder;
 import lombok.NonNull;
 import lombok.val;
 
+@Builder
 public class NextflowConfigFile {
-  public static String createNextflowConfigFile(
-      @NonNull String filename,
-      @NonNull Integer runAsUser,
-      String serviceAccount,
-      String runNamespace,
-      String launchDir,
-      String projectDir,
-      String workDir)
-      throws IOException {
-    val filePath = String.format("/tmp/%s.config", filename);
+  private @NonNull String runName;
+  private @NonNull Integer runAsUser;
+  private String serviceAccount;
+  private String runNamespace;
+  private String imagePullPolicy;
+  private String pluginsDir;
+  private String launchDir;
+  private String projectDir;
+  private String workDir;
+
+  public String getConfig() throws IOException {
+    val filePath = String.format("/tmp/%s.config", runName);
 
     File configFile = new File(filePath);
     FileWriter writer = new FileWriter(configFile);
@@ -56,12 +60,21 @@ public class NextflowConfigFile {
     writeFormattedLineIfValue(fileContent::add, "\tnamespace= '%s'", runNamespace);
     writeFormattedLineIfValue(fileContent::add, "\tserviceAccount = '%s'", serviceAccount);
 
+    // k8s image pull policy for run
+    fileContent.add(String.format("\tpullPolicy = '%s'", imagePullPolicy));
+
     // variable config passed in via WorkflowEngineParams
     writeFormattedLineIfValue(fileContent::add, "\tlaunchDir = '%s'", launchDir);
     writeFormattedLineIfValue(fileContent::add, "\tprojectDir = '%s'", projectDir);
     writeFormattedLineIfValue(fileContent::add, "\tworkDir = '%s'", workDir);
 
-    // close it off
+    // plugins
+    fileContent.add(
+        String.format(
+            "\tpod = [ [env: 'NXF_PLUGINS_MODE', value: 'prod'], [env: 'NXF_PLUGINS_DIR', value: '%s'] ]",
+            pluginsDir));
+
+    // close k8s off
     fileContent.add("}");
 
     // Write contents to file

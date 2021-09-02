@@ -20,7 +20,6 @@ package org.icgc.argo.workflow_management.wes;
 
 import static java.lang.String.format;
 import static java.util.Objects.nonNull;
-import static org.icgc.argo.workflow_management.util.NextflowConfigFile.createNextflowConfigFile;
 import static org.icgc.argo.workflow_management.util.ParamsFile.createParamsFile;
 import static org.icgc.argo.workflow_management.util.Reflections.createWithReflection;
 import static org.icgc.argo.workflow_management.util.Reflections.invokeDeclaredMethod;
@@ -46,6 +45,7 @@ import org.icgc.argo.workflow_management.exception.NextflowRunException;
 import org.icgc.argo.workflow_management.exception.ReflectionUtilsException;
 import org.icgc.argo.workflow_management.streams.WebLogEventSender;
 import org.icgc.argo.workflow_management.util.ConditionalPutMap;
+import org.icgc.argo.workflow_management.util.VolumeMounts;
 import org.icgc.argo.workflow_management.wes.model.*;
 import org.icgc.argo.workflow_management.wes.properties.NextflowProperties;
 import org.icgc.argo.workflow_management.wes.secret.SecretProvider;
@@ -151,13 +151,13 @@ public class NextflowService implements WorkflowExecutionService {
   private DefaultKubernetesClient createWorkflowRunK8sClient() {
     try {
       val masterUrl = config.getK8s().getMasterUrl();
-      val namespace = config.getK8s().getRunNamespace();
+      val runNamespace = config.getK8s().getRunNamespace();
       val trustCertificate = config.getK8s().isTrustCertificate();
       val config =
           new ConfigBuilder()
               .withTrustCerts(trustCertificate)
               .withMasterUrl(masterUrl)
-              .withNamespace(namespace)
+              .withNamespace(runNamespace)
               .build();
       return new DefaultKubernetesClient(config);
     } catch (KubernetesClientException e) {
@@ -256,9 +256,8 @@ public class NextflowService implements WorkflowExecutionService {
     cmdParams.put("args", List.of(params.getWorkflowUrl()));
     cmdParams.put("paramsFile", createParamsFile(runName, params.getWorkflowParams()));
 
-    // K8s options from application.yml
+    // Namespace that workflow-management is operating in
     cmdParams.put("namespace", k8sConfig.getNamespace());
-    cmdParams.put("volMounts", k8sConfig.getVolMounts());
 
     // Where to POST event-based logging
     cmdParams.put("withWebLog", webLogUrl);
@@ -296,14 +295,19 @@ public class NextflowService implements WorkflowExecutionService {
     // Write config file for run using required and optional arguments
     // Use launchDir, projectDir and/or workDir if provided in workflow_engine_options
     val config =
-        createNextflowConfigFile(
-            runName,
-            k8sConfig.getRunAsUser(),
-            k8sConfig.getServiceAccount(),
-            k8sConfig.getRunNamespace(),
-            workflowEngineParams.getLaunchDir(),
-            workflowEngineParams.getProjectDir(),
-            workflowEngineParams.getWorkDir());
+        NextflowConfigFile.builder()
+            .runName(runName)
+            .runAsUser(k8sConfig.getRunAsUser())
+            .serviceAccount(k8sConfig.getServiceAccount())
+            .runNamespace(k8sConfig.getRunNamespace())
+            .imagePullPolicy(k8sConfig.getImagePullPolicy())
+            .pluginsDir(k8sConfig.getPluginsDir())
+            .launchDir(workflowEngineParams.getLaunchDir())
+            .projectDir(workflowEngineParams.getProjectDir())
+            .workDir(workflowEngineParams.getWorkDir())
+            .build()
+            .getConfig();
+
     cmdParams.put("runConfig", List.of(config));
 
     // Resume workflow by name/id
@@ -323,6 +327,9 @@ public class NextflowService implements WorkflowExecutionService {
       processOptions.put("container", workflowEngineParams.getDefaultContainer());
       cmdParams.put("process", processOptions);
     }
+
+    // volume mount config for run
+    cmdParams.put("volMounts", VolumeMounts.extract(k8sConfig, workflowEngineParams));
 
     return createWithReflection(CmdKubeRun.class, cmdParams)
         .orElseThrow(ReflectionUtilsException::new);

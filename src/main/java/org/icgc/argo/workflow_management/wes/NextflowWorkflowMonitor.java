@@ -48,8 +48,11 @@ public class NextflowWorkflowMonitor implements Runnable {
   public void run() {
     boolean done = false;
     val podName = metadata.getWorkflow().getRunName();
-    while (!done) {
+    int count = 0;
+    while (!done && count < 3) {
+      count++;
       try {
+        Thread.sleep(5000);
         PodResource<Pod, DoneablePod> pod = kubernetesClient.pods().withName(podName);
         val p = pod.get();
         val log = pod.tailingLines(maxErrorLogLines).getLog();
@@ -57,6 +60,9 @@ public class NextflowWorkflowMonitor implements Runnable {
       } catch (Exception e) {
         log.error(format("Workflow Status Monitor threw exception %s", e.getMessage()));
       }
+    }
+    if (count == 3) {
+      log.debug("Not sure if WF is running, but I can't keep looking forever!");
     }
   }
 
