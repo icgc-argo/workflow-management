@@ -26,6 +26,6 @@ import org.icgc.argo.workflow_management.streams.schema.WfMgmtRunMsg;
 @EqualsAndHashCode(callSuper = true)
 @Value
 public class GatekeeperException extends Exception {
-    Transaction<WfMgmtRunMsg> tx;
-    Exception exceptionCause; 
+  Transaction<WfMgmtRunMsg> tx;
+  Exception exceptionCause;
 }

@@ -27,7 +27,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.pivotal.rabbitmq.RabbitEndpointService;
 import com.pivotal.rabbitmq.source.OnDemandSource;
 import com.pivotal.rabbitmq.stream.Transaction;
-
 import java.time.Instant;
 import java.util.Set;
 import java.util.function.BiConsumer;

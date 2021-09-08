@@ -19,10 +19,7 @@
 package org.icgc.argo.workflow_management.health;
 
 import com.pivotal.rabbitmq.RabbitEndpointService;
-import groovyx.gpars.csp.plugAndPlay.GConsole;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.ReactiveHealthIndicator;
 import org.springframework.stereotype.Component;
@@ -32,14 +29,18 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class RabbitHealthIndicator implements ReactiveHealthIndicator {
 
-    private final RabbitEndpointService rabbit;
-    
-    @Override
-    public Mono<Health> health() {
-       return rabbit.getManagementAPI().alivenessTest(rabbit.getProperties().getVirtualHost())
-            .map(alivenessTestResult ->
-                alivenessTestResult.isSuccessful() ? Health.up().build() : Health.down().build()
-            )
-            .onErrorReturn(Health.down().build());
-    }
+  private final RabbitEndpointService rabbit;
+
+  @Override
+  public Mono<Health> health() {
+    return rabbit
+        .getManagementAPI()
+        // alivenessTest produces a test message to and consumes it from a test rabbitmq queue.
+        // The test queue is named `aliveness-test` and is bound to the default exchange.
+        .alivenessTest(rabbit.getProperties().getVirtualHost())
+        .map(
+            alivenessTestResult ->
+                alivenessTestResult.isSuccessful() ? Health.up().build() : Health.down().build())
+        .onErrorReturn(Health.down().build());
+  }
 }

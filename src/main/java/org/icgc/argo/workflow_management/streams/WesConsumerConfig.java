@@ -26,6 +26,7 @@ import static org.icgc.argo.workflow_management.streams.utils.WfMgmtRunMsgConver
 import com.pivotal.rabbitmq.RabbitEndpointService;
 import com.pivotal.rabbitmq.stream.Transaction;
 import java.time.Duration;
+import java.time.Instant;
 import javax.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -111,6 +112,7 @@ public class WesConsumerConfig {
   private Mono<Boolean> rejectAndWeblogTx(Throwable t, Transaction<WfMgmtRunMsg> tx) {
     val msg = tx.get();
     msg.setState(RunState.SYSTEM_ERROR);
+    msg.setTimestamp(Instant.now().toEpochMilli());
 
     log.error("Error occurred", t);
     log.error("WES SYSTEM_ERROR msg: {}", msg);

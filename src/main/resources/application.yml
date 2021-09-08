@@ -48,9 +48,6 @@ rabbit:
       port: 5672
       username: user
       password: pass
-      connection:
-        timeout: 5
-        retryMax: 1
 
 wes.consumer:
     queue: "execute-queue"
