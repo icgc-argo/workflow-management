@@ -24,6 +24,7 @@ import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.icgc.argo.workflow_management.gatekeeper.error.GatekeeperException;
 import org.icgc.argo.workflow_management.streams.schema.WfMgmtRunMsg;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
@@ -60,18 +61,23 @@ public class GatekeeperProcessor
             .doOnNext(tx -> log.debug("GateKeeperConsumer Received: " + tx.get()))
             .handle(
                 (tx, sink) -> {
-                  val msg = tx.get();
-                  // WeblogEvents only change run state in gatekeeper service, not other params
-                  val allowedMsg =
-                      service.checkWithExistingAndUpdateStateOnly(msg.getRunId(), msg.getState());
-
-                  if (allowedMsg.isEmpty()) {
-                    tx.reject();
-                    log.debug("WeblogConsumer - Gatekeeper Rejected: {}, YOU SHALL NOT PASS!", msg);
-                    return;
-                  }
-
-                  sink.next(tx.map(allowedMsg.get()));
+                    try {
+                      val msg = tx.get();
+                      // WeblogEvents only change run state in gatekeeper service, not other params
+                      val allowedMsg =
+                          service.checkWithExistingAndUpdateStateOnly(msg.getRunId(), msg.getState());
+    
+                      if (allowedMsg.isEmpty()) {
+                        tx.reject();
+                        log.debug("WeblogConsumer - Gatekeeper Rejected: {}, YOU SHALL NOT PASS!", msg);
+                        return;
+                      }
+    
+                      sink.next(tx.map(allowedMsg.get()));
+                    } catch (Exception e) {
+                        log.error("WeblogConsumer error - ", e);
+                        sink.error(new GatekeeperException(tx, e));
+                    }
                 });
   }
 
@@ -82,17 +88,22 @@ public class GatekeeperProcessor
             .doOnNext(tx -> log.debug("GateKeeperConsumer Received: " + tx.get()))
             .handle(
                 (tx, sink) -> {
-                  val msg = tx.get();
-                  val allowedMsg = service.checkWfMgmtRunMsgAndUpdate(msg);
+                    try {
+                        val msg = tx.get();
+                        val allowedMsg = service.checkWfMgmtRunMsgAndUpdate(msg);
 
-                  if (allowedMsg.isEmpty()) {
-                    tx.reject();
-                    log.debug(
-                        "GateKeeperConsumer - Gatekeeper Rejected: {}, YOU SHALL NOT PASS!", msg);
-                    return;
-                  }
+                        if (allowedMsg.isEmpty()) {
+                            tx.reject();
+                            log.debug(
+                                    "GateKeeperConsumer - Gatekeeper Rejected: {}, YOU SHALL NOT PASS!", msg);
+                            return;
+                        }
 
-                  sink.next(tx.map(allowedMsg.get()));
+                        sink.next(tx.map(allowedMsg.get()));
+                    } catch (Exception e) {
+                        log.error("GateKeeperConsumer error - ", e);
+                        sink.error(new GatekeeperException(tx, e));
+                    }
                 });
   }
 }

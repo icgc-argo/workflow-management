@@ -27,6 +27,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.pivotal.rabbitmq.RabbitEndpointService;
 import com.pivotal.rabbitmq.source.OnDemandSource;
 import com.pivotal.rabbitmq.stream.Transaction;
+
+import java.time.Instant;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -35,6 +37,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.icgc.argo.workflow_management.config.rabbitmq.RabbitSchemaConfig;
+import org.icgc.argo.workflow_management.gatekeeper.error.GatekeeperException;
 import org.icgc.argo.workflow_management.gatekeeper.service.GatekeeperProcessor;
 import org.icgc.argo.workflow_management.streams.model.WeblogEvent;
 import org.icgc.argo.workflow_management.streams.schema.RunState;
@@ -105,11 +108,10 @@ public class GateKeeperStreamsConfig {
                   }
                   return Mono.just(tx);
                 })
-            .onErrorContinue(handleError());
+            .onErrorContinue(handleProcessorFluxError());
 
     return createTransProducerStream(rabbit, producerTopicExchangeName)
         .send(processedFlux)
-        .onErrorContinue(handleError())
         .subscribe(
             tx -> {
               log.debug("GateKeeperProducer Sent: {}", tx.get());
@@ -139,18 +141,23 @@ public class GateKeeperStreamsConfig {
         .receive();
   }
 
-  private BiConsumer<Throwable, Object> handleError() {
-    return (t, tx) -> {
+  private BiConsumer<Throwable, Object> handleProcessorFluxError() {
+    return (t, obj) -> {
       t.printStackTrace();
-      log.error("Error occurred with: {}", tx);
-      if (tx instanceof Transaction<?> && ((Transaction<?>) tx).get() instanceof WfMgmtRunMsg) {
-        val msg = (WfMgmtRunMsg) ((Transaction<?>) tx).get();
+      log.error("Error occurred - ", t);
+
+      if (t instanceof GatekeeperException) {
+        val tx = ((GatekeeperException) t).getTx();
+
+        val msg = tx.get();
         msg.setState(RunState.SYSTEM_ERROR);
-        log.info("SYSTEM_ERROR: {}", msg);
+        msg.setTimestamp(Instant.now().toEpochMilli());
+
+        log.debug("SYSTEM_ERROR: {}", msg);
         webLogEventSender.sendWfMgmtEventAsync(createWfMgmtEvent(msg));
-        ((Transaction<?>) tx).reject();
+        tx.reject();
       } else {
-        log.error("Can't get WfMgmtRunMsg, transaction is lost!");
+        log.debug("No transaction to reject!");
       }
     };
   }
