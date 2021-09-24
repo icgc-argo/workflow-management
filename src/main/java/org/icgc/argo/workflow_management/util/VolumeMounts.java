@@ -1,7 +1,6 @@
 package org.icgc.argo.workflow_management.util;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
@@ -31,7 +30,6 @@ public class VolumeMounts {
                             workflowEngineParams.getLaunchDir(),
                             workflowEngineParams.getProjectDir(),
                             workflowEngineParams.getWorkDir())
-                        .filter(Objects::nonNull)
                         .collect(Collectors.toList())))
         .orElseThrow(
             () ->
@@ -52,7 +50,10 @@ public class VolumeMounts {
    */
   public static List<String> extract(@NonNull List<String> volMounts, @NonNull List<String> paths) {
     return volMounts.stream()
-        .filter(volMount -> paths.stream().anyMatch(getPathMatchFunctionForVolMount(volMount)))
+        .filter(
+            volMount ->
+                paths.stream()
+                    .anyMatch(getPathMatchFunctionForVolMount(volMount, volMounts.get(0))))
         // volMounts need to be provided as a list,
         // however we only care about distinct values
         .distinct()
@@ -77,11 +78,17 @@ public class VolumeMounts {
    * Generates a function for matching path to volume mount
    *
    * @param volMount a single volMount entry from the list in application properties
+   * @param defaultVolMount in the event that the path is null (not set by the user) we want to
+   *     still match on the default provided as Nextflow will still schedule in that directory
    * @return a function which evaluates that the path provided matches the pattern for the volMount
    *     used to generate this function
    */
-  private static Predicate<String> getPathMatchFunctionForVolMount(String volMount) {
-    return path -> path.startsWith(volMount.split(":")[1]);
+  private static Predicate<String> getPathMatchFunctionForVolMount(
+      String volMount, String defaultVolMount) {
+    return path ->
+        Optional.ofNullable(path)
+            .map(definedPath -> definedPath.startsWith(volMount.split(":")[1]))
+            .orElseGet(() -> volMount.equals(defaultVolMount));
   }
 
   /**
