@@ -100,12 +100,22 @@ public class VolumeMountsTest {
         List.of(
             "pv-claim-one:/test-dir-1", "pv-claim-two:/test-dir-2", "pv-claim-three:/test-dir-3"));
 
-    val workflowEngineParams =
-        WorkflowEngineParams.builder().workDir("/test-dir-3/sub/dir").build();
+    val workDirOnly = WorkflowEngineParams.builder().workDir("/test-dir-3/sub/dir").build();
+
+    val projectDirOnly = WorkflowEngineParams.builder().projectDir("/test-dir-2/sub/dir").build();
+
+    val launchDirOnly = WorkflowEngineParams.builder().launchDir("/test-dir-1/sub/dir").build();
 
     assertEquals(
-        List.of("pv-claim-three:/test-dir-3"),
-        VolumeMounts.extract(k8sProperties, workflowEngineParams));
+        List.of("pv-claim-one:/test-dir-1", "pv-claim-three:/test-dir-3"),
+        VolumeMounts.extract(k8sProperties, workDirOnly));
+
+    assertEquals(
+        List.of("pv-claim-one:/test-dir-1", "pv-claim-two:/test-dir-2"),
+        VolumeMounts.extract(k8sProperties, projectDirOnly));
+
+    assertEquals(
+        List.of("pv-claim-one:/test-dir-1"), VolumeMounts.extract(k8sProperties, launchDirOnly));
   }
 
   @Test
