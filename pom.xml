@@ -10,7 +10,7 @@
     </parent>
     <groupId>org.icgc.argo</groupId>
     <artifactId>workflow-management</artifactId>
-    <version>3.3.0</version>
+    <version>3.4.0-SNAPSHOT</version>
     <name>workflow-management</name>
     <description>ARGO Workflow Management</description>
 
