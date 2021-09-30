@@ -40,7 +40,6 @@ import nextflow.cli.CliOptions;
 import nextflow.cli.CmdKubeRun;
 import nextflow.cli.Launcher;
 import nextflow.k8s.K8sDriverLauncher;
-import nextflow.script.ScriptBinding;
 import org.icgc.argo.workflow_management.exception.NextflowRunException;
 import org.icgc.argo.workflow_management.exception.ReflectionUtilsException;
 import org.icgc.argo.workflow_management.streams.WebLogEventSender;
@@ -124,10 +123,8 @@ public class NextflowService implements WorkflowExecutionService {
     if (exitStatus == 0) {
 
       // Build required objects for monitoring THIS run.
-      val workflowMetadata = NextflowWorkflowMetadata.create(cmd, driver, params.getWorkflowUrl());
-      val meta =
-          new NextflowMetadata(
-              workflowMetadata, new ScriptBinding.ParamsMap(params.getWorkflowParams()));
+      val workflowMetadata = new NextflowWorkflowMetadata(cmd, driver, params);
+      val meta = new NextflowMetadata(workflowMetadata, params.getWorkflowParams());
       val monitor =
           new NextflowWorkflowMonitor(
               webLogSender, meta, config.getMonitor().getMaxErrorLogLines(), workflowRunK8sClient);
