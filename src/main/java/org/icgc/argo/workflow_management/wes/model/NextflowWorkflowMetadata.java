@@ -25,7 +25,6 @@ import io.fabric8.kubernetes.api.model.Pod;
 import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import lombok.Data;
 import lombok.NoArgsConstructor;
