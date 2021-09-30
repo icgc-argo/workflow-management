@@ -124,7 +124,7 @@ public class NextflowService implements WorkflowExecutionService {
     if (exitStatus == 0) {
 
       // Build required objects for monitoring THIS run.
-      val workflowMetadata = NextflowWorkflowMetadata.create(cmd, driver, params.getWorkflowUrl());
+      val workflowMetadata = new NextflowWorkflowMetadata(cmd, driver, params);
       val meta =
           new NextflowMetadata(
               workflowMetadata, new ScriptBinding.ParamsMap(params.getWorkflowParams()));
