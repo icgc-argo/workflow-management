@@ -18,6 +18,7 @@
 
 package org.icgc.argo.workflow_management.wes.model;
 
+import static java.util.Optional.ofNullable;
 import static org.icgc.argo.workflow_management.util.Reflections.invokeDeclaredMethod;
 
 import io.fabric8.kubernetes.api.model.Pod;
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.UUID;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import nextflow.NextflowMeta;
 import nextflow.cli.CmdKubeRun;
@@ -79,24 +81,32 @@ public class NextflowWorkflowMetadata {
     this.setStart(OffsetDateTime.parse(pod.getStatus().getStartTime()));
   }
 
-  public static NextflowWorkflowMetadata create(
-      CmdKubeRun cmd, K8sDriverLauncher driver, String repo) {
-    NextflowWorkflowMetadata metadata = new NextflowWorkflowMetadata();
+  public void updateWithEngineParams(@NonNull WorkflowEngineParams engineParams) {
+    ofNullable(engineParams.getWorkDir()).map(Path::of).ifPresent(this::setWorkDir);
+    ofNullable(engineParams.getProjectDir()).map(Path::of).ifPresent(this::setProjectDir);
+    ofNullable(engineParams.getLaunchDir()).map(Path::of).ifPresent(this::setLaunchDir);
+
+    ofNullable(engineParams.getResume())
+        .map(Object::toString)
+        .filter(s -> s.equals("true") || s.equals("false"))
+        .map(Boolean::parseBoolean)
+        .ifPresent(this::setResume);
+  }
+
+  public NextflowWorkflowMetadata(CmdKubeRun cmd, K8sDriverLauncher driver, RunParams params) {
     String commandLine;
     try {
       commandLine = invokeDeclaredMethod(driver, "getLaunchCli", String.class);
     } catch (ReflectionUtilsException e) {
-      log.error(
-          "Caught ReflectionUtilsException while trying to invoke method 'getLaunchCli':"
-              + e.toString());
+      log.error("Caught ReflectionUtilsException while trying to invoke method 'getLaunchCli':", e);
       commandLine = "?";
     }
-    metadata.setCommandLine(commandLine);
-    metadata.setProfile(cmd.getProfile());
-    metadata.setRevision(cmd.getRevision());
-    metadata.setRunName(cmd.getRunName());
-    metadata.setSuccess(false);
-    metadata.setRepository(repo);
-    return metadata;
+    setCommandLine(commandLine);
+    setProfile(cmd.getProfile());
+    setRevision(cmd.getRevision());
+    setRunName(cmd.getRunName());
+    setSuccess(false);
+    setRepository(params.getWorkflowUrl());
+    ofNullable(params.getWorkflowEngineParams()).ifPresent(this::updateWithEngineParams);
   }
 }
