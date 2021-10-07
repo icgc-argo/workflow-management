@@ -125,6 +125,11 @@ public class GateKeeperService {
     return example == null ? repo.findAll(pageable) : repo.findAll(example, pageable);
   }
 
+  public Boolean removeRun(String runId) {
+    repo.deleteById(runId);
+    return true;
+  }
+
   private Run runFromMsg(WfMgmtRunMsg msg) {
     val msgWep = msg.getWorkflowEngineParams();
     val runWep =

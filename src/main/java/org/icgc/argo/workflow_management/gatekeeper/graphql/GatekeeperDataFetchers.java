@@ -19,14 +19,17 @@
 package org.icgc.argo.workflow_management.gatekeeper.graphql;
 
 import static java.util.stream.Collectors.toList;
+import static org.icgc.argo.workflow_management.gatekeeper.graphql.GraphQLProvider.REMOVE_RUN_MUTATION_NAME;
+import static org.icgc.argo.workflow_management.gatekeeper.graphql.GraphQLProvider.RUN_QUERY_NAME;
 import static org.icgc.argo.workflow_management.util.JacksonUtils.convertValue;
 
+import com.google.common.collect.ImmutableMap;
 import graphql.schema.DataFetcher;
+import java.util.Map;
 import lombok.val;
 import org.icgc.argo.workflow_management.gatekeeper.graphql.model.GqlSearchQueryArgs;
 import org.icgc.argo.workflow_management.gatekeeper.graphql.model.SearchResult;
 import org.icgc.argo.workflow_management.gatekeeper.service.GateKeeperService;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Example;
@@ -39,8 +42,22 @@ public class GatekeeperDataFetchers {
 
   @Bean
   @Profile("gatekeeper")
-  @Qualifier("runsDataFetcher")
-  public DataFetcher getActiveRunsDataFetcher(GateKeeperService gateKeeperService) {
+  public Map<String, DataFetcher> dataFetchersMap(GateKeeperService gateKeeperService) {
+    return ImmutableMap.of(
+        RUN_QUERY_NAME,
+        getActiveRunsDataFetcher(gateKeeperService),
+        REMOVE_RUN_MUTATION_NAME,
+        getRemoveRunDataFetcher(gateKeeperService));
+  }
+
+  @Bean
+  @Profile("!gatekeeper")
+  public Map<String, DataFetcher> disabledDataFetchersMap() {
+    final DataFetcher NO_OP_FETCHER = environment -> null;
+    return ImmutableMap.of(RUN_QUERY_NAME, NO_OP_FETCHER, REMOVE_RUN_MUTATION_NAME, NO_OP_FETCHER);
+  }
+
+  private DataFetcher getActiveRunsDataFetcher(GateKeeperService gateKeeperService) {
     return environment -> {
       val args = convertValue(environment.getArguments(), GqlSearchQueryArgs.class);
 
@@ -76,10 +93,7 @@ public class GatekeeperDataFetchers {
     };
   }
 
-  @Bean
-  @Profile("!gatekeeper")
-  @Qualifier("runsDataFetcher")
-  public DataFetcher getActiveRunsDisabledDataFetcher() {
-    return environment -> null;
+  private DataFetcher getRemoveRunDataFetcher(GateKeeperService gateKeeperService) {
+    return environment -> gateKeeperService.removeRun(environment.getArgument("runId"));
   }
 }
