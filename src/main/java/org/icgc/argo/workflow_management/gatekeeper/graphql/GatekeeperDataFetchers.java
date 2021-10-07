@@ -45,9 +45,9 @@ public class GatekeeperDataFetchers {
   public Map<String, DataFetcher> dataFetchersMap(GateKeeperService gateKeeperService) {
     return ImmutableMap.of(
         RUN_QUERY_NAME,
-        getActiveRunsDataFetcher(gateKeeperService),
+        createActiveRunsDataFetcher(gateKeeperService),
         REMOVE_RUN_MUTATION_NAME,
-        getRemoveRunDataFetcher(gateKeeperService));
+        createRemoveRunDataFetcher(gateKeeperService));
   }
 
   @Bean
@@ -57,7 +57,7 @@ public class GatekeeperDataFetchers {
     return ImmutableMap.of(RUN_QUERY_NAME, NO_OP_FETCHER, REMOVE_RUN_MUTATION_NAME, NO_OP_FETCHER);
   }
 
-  private DataFetcher getActiveRunsDataFetcher(GateKeeperService gateKeeperService) {
+  private static DataFetcher createActiveRunsDataFetcher(GateKeeperService gateKeeperService) {
     return environment -> {
       val args = convertValue(environment.getArguments(), GqlSearchQueryArgs.class);
 
@@ -93,7 +93,7 @@ public class GatekeeperDataFetchers {
     };
   }
 
-  private DataFetcher getRemoveRunDataFetcher(GateKeeperService gateKeeperService) {
+  private static DataFetcher createRemoveRunDataFetcher(GateKeeperService gateKeeperService) {
     return environment -> gateKeeperService.removeRun(environment.getArgument("runId"));
   }
 }
