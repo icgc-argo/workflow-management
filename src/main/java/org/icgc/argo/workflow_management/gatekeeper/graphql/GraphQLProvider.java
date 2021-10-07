@@ -30,6 +30,7 @@ import graphql.schema.GraphQLSchema;
 import graphql.schema.idl.RuntimeWiring;
 import java.io.IOException;
 import java.net.URL;
+import java.util.Map;
 import javax.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -38,7 +39,10 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class GraphQLProvider {
-  private final DataFetcher runsDataFetcher;
+  public static final String RUN_QUERY_NAME = "runs";
+  public static final String REMOVE_RUN_MUTATION_NAME = "removeRun";
+
+  private final Map<String, DataFetcher> dataFetcherMap;
   private GraphQL graphQL;
 
   @Bean
@@ -61,7 +65,12 @@ public class GraphQLProvider {
   private RuntimeWiring buildWiring() {
     return RuntimeWiring.newRuntimeWiring()
         .scalar(ExtendedScalars.Json)
-        .type(newTypeWiring("Query").dataFetcher("runs", runsDataFetcher))
+        .type(
+            newTypeWiring("Query").dataFetcher(RUN_QUERY_NAME, dataFetcherMap.get(RUN_QUERY_NAME)))
+        .type(
+            newTypeWiring("Mutation")
+                .dataFetcher(
+                    REMOVE_RUN_MUTATION_NAME, dataFetcherMap.get(REMOVE_RUN_MUTATION_NAME)))
         .build();
   }
 }

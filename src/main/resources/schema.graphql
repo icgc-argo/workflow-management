@@ -66,3 +66,7 @@ input Sort {
 type Query {
     runs(example: Example, page: Page, sorts: [Sort]): RunsSearchResult
 }
+
+type Mutation {
+    removeRun(runId: String!): Boolean!
+}
