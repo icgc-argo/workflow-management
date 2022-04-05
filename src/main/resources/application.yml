@@ -24,14 +24,14 @@ logging.level:
   org.icgc.argo: debug
 
 ---
-spring.profiles: apiKey
+spring.config.activate.on-profile: apiKey
 
 secret:
   enabled: true
   apiKey: testapikeytotallylegit
 
 ---
-spring.profiles: oauth2Token
+spring.config.activate.on-profile: oauth2Token
 
 secret:
   enabled: true
@@ -55,7 +55,7 @@ wes.consumer:
     topicRoutingKeys: "INITIALIZING, CANCELING" # comma separated Array of keys
 
 ---
-spring.profiles: gatekeeper
+spring.config.activate.on-profile: gatekeeper
 
 gatekeeper.consumer:
     queue: "gatekeeper-in-queue"
@@ -92,7 +92,7 @@ spring.jpa:
     ddl-auto: update
 
 ---
-spring.profiles: test
+spring.config.activate.on-profile: test
 
 spring.jpa:
   hibernate:
