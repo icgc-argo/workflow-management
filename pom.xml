@@ -36,7 +36,7 @@
         <reactor-rabbitmq-streams.version>0.0.9</reactor-rabbitmq-streams.version>
         <spring-cloud-stream-kafka.version>3.2.2</spring-cloud-stream-kafka.version>
         <spring-security-oauth2-autoconfigure.version>2.6.6</spring-security-oauth2-autoconfigure.version>
-        <kubernetes-client.version>4.7.0</kubernetes-client.version>
+        <kubernetes-client.version>4.7.2</kubernetes-client.version>
         <jackson.version>2.13.2</jackson.version>
     </properties>
 
