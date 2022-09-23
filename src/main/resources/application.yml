@@ -48,6 +48,12 @@ rabbit:
       port: 5672
       username: user
       password: pass
+    connection:
+      retryMax: 5       #Maximum number of reconnection attempts
+      timeout: 60s      #Total attempt time before terminating the application
+      randomBackoff:
+        firstBackoff: 2s  #Delay before first re-attempt
+        maxBackoff: 10s   #Maximum delay on next attempts.
 
 wes.consumer:
     queue: "execute-queue"
