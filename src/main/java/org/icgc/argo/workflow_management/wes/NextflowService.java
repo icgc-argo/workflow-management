@@ -117,7 +117,7 @@ public class NextflowService implements WorkflowExecutionService {
   private String startRun(RunParams params) {
     log.debug("startRun");
     val cmd = createCmd(createLauncher(), params);
-
+    log.debug("command created:cmd {}",cmd);
     val driver = createDriver(cmd);
     driver.run(params.getWorkflowUrl(), Collections.emptyList());
     val exitStatus = driver.shutdown();
