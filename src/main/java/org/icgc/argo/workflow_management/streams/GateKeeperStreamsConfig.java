@@ -106,7 +106,7 @@ public class GateKeeperStreamsConfig {
                   return Mono.just(tx);
                 })
             .onErrorContinue(handleError());
-
+    log.debug("GateKeeperProducer Sending to: {}",producerTopicExchangeName);
     return createTransProducerStream(rabbit, producerTopicExchangeName)
         .send(processedFlux)
         .onErrorContinue(handleError())

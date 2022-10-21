@@ -79,6 +79,7 @@ public class WesConsumerConfig {
   }
 
   private Mono<Boolean> consumeMessageAndExecuteInitializeOrCancel(Transaction<WfMgmtRunMsg> tx) {
+    log.debug("Message received from: {} {} {}",topicExchangeName,queueName,topicRoutingKeys);
     val msg = tx.get();
     log.debug("WfMgmtRunMsg received: {}", msg);
 
