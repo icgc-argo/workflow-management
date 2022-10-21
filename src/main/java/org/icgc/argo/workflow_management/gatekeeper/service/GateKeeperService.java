@@ -57,6 +57,7 @@ public class GateKeeperService {
   public Optional<WfMgmtRunMsg> checkWfMgmtRunMsgAndUpdate(WfMgmtRunMsg msg) {
     val knownRunOpt = repo.findActiveRunByRunId(msg.getRunId());
 
+    log.debug("knownRunOpt:state {}",knownRunOpt.get().getState());
     // short circuit, run is new
     if (knownRunOpt.isEmpty() && msg.getState().equals(QUEUED)) {
       val newRun = repo.save(runFromMsg(msg));
@@ -99,6 +100,7 @@ public class GateKeeperService {
 
     // check if this is a valid state transition
     val nextStateOpt = nextState(currentState, inputState);
+    log.debug("nextStateOpt: {}",nextStateOpt);
     if (nextStateOpt.isEmpty()) {
       return null;
     }
