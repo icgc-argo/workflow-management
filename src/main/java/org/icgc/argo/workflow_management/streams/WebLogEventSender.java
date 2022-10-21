@@ -49,6 +49,7 @@ public class WebLogEventSender {
     // This msg has to emulate a next flow event for it to be processed by workflow-relay.
     // The actual value of runId should be metadata.workflow.sessionId but that is always
     // null since it doesn't exist. But runId is NonNull in wf-relay, so set it to a default.
+    log.debug("sending Nextflow event");
     val msg =
         WorkflowEvent.builder()
             .runId("NO-SESSION-ID")
@@ -103,6 +104,8 @@ public class WebLogEventSender {
   }
 
   private Mono<Boolean> sendHttpMessage(Object jsonReadyObject) {
+    log.debug("sending event message to: {}",endpoint);
+    log.debug("jsonReadyObject: {}",toJsonString(jsonReadyObject));
     return WebClient.create(endpoint)
         .post()
         .contentType(MediaType.APPLICATION_JSON)

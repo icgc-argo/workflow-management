@@ -114,6 +114,8 @@ public class WesConsumerConfig {
 
     log.error("Error occurred", t);
     log.error("WES SYSTEM_ERROR msg: {}", msg);
+    log.debug("Error occurred", t);
+    log.debug("WES SYSTEM_ERROR msg: {}", msg);
     tx.reject();
 
     return webLogEventSender

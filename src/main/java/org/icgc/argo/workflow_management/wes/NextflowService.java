@@ -80,6 +80,7 @@ public class NextflowService implements WorkflowExecutionService {
     this.secretProvider = secretProvider;
     this.webLogSender = webLogSender;
     this.workflowRunK8sClient = createWorkflowRunK8sClient();
+    log.debug("WorkflowRunK8sClient created");
     this.scheduler = Schedulers.newElastic("nextflow-service");
   }
 
@@ -114,6 +115,7 @@ public class NextflowService implements WorkflowExecutionService {
 
   @SneakyThrows
   private String startRun(RunParams params) {
+    log.debug("startRun");
     val cmd = createCmd(createLauncher(), params);
 
     val driver = createDriver(cmd);
@@ -124,6 +126,7 @@ public class NextflowService implements WorkflowExecutionService {
 
       // Build required objects for monitoring THIS run.
       val workflowMetadata = new NextflowWorkflowMetadata(cmd, driver, params);
+      log.debug("workflowMetadata: {}", workflowMetadata);
       val meta = new NextflowMetadata(workflowMetadata, params.getWorkflowParams());
       val monitor =
           new NextflowWorkflowMonitor(
@@ -132,7 +135,7 @@ public class NextflowService implements WorkflowExecutionService {
       // Schedule a workflow monitor to watch over our nextflow pod and make sure
       // that we report an error to our web-log service if it fails to run.
       scheduler.schedule(monitor, config.getMonitor().getSleepInterval(), TimeUnit.MILLISECONDS);
-
+      log.debug("workflow scheduled");
       return cmd.getRunName();
     } else {
       throw new NextflowRunException(
@@ -161,10 +164,12 @@ public class NextflowService implements WorkflowExecutionService {
       log.error(e.getMessage(), e);
       throw new RuntimeException(e.getLocalizedMessage());
     }
+
   }
 
   @SneakyThrows
   private String cancelRun(@NonNull String runId) {
+    log.debug("cancelling run");
     val state = getPhase(runId);
 
     if (state.equals(KubernetesPhase.FAILED)) {
@@ -223,6 +228,7 @@ public class NextflowService implements WorkflowExecutionService {
   }
 
   private Launcher createLauncher() throws ReflectionUtilsException {
+
     // Add a launcher to the mix
     val launcherParams = new HashMap<String, Object>();
     val cliOptions = new CliOptions();
