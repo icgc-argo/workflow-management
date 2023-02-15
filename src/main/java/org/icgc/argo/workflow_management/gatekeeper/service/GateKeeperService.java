@@ -57,7 +57,6 @@ public class GateKeeperService {
   public Optional<WfMgmtRunMsg> checkWfMgmtRunMsgAndUpdate(WfMgmtRunMsg msg) {
     val knownRunOpt = repo.findActiveRunByRunId(msg.getRunId());
 
-    log.debug("knownRunOpt:state {}",knownRunOpt.get().getState());
     // short circuit, run is new
     if (knownRunOpt.isEmpty() && msg.getState().equals(QUEUED)) {
       val newRun = repo.save(runFromMsg(msg));
