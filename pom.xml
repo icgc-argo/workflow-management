@@ -63,11 +63,11 @@
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/io.nextflow/nextflow -->
-        <dependency>
-            <groupId>io.nextflow</groupId>
-            <artifactId>nextflow</artifactId>
-            <version>22.10.7</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>io.nextflow</groupId>-->
+<!--            <artifactId>nextflow</artifactId>-->
+<!--            <version>22.10.7</version>-->
+<!--        </dependency>-->
 
         <!-- Health Check -->
         <dependency>
