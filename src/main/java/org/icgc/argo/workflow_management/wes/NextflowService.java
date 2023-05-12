@@ -129,10 +129,16 @@ public class NextflowService implements WorkflowExecutionService {
       // Build required objects for monitoring THIS run.
       val workflowMetadata = new NextflowWorkflowMetadata(cmd, driver, params);
       log.debug("workflowMetadata: {}", workflowMetadata);
+      log.debug("workflowMetadata manifest: {}", workflowMetadata.getManifest());
 
       log.debug("Nextflow app version: {}", Const.APP_VER);
-      log.debug("Nextflow Manifest Nextflow Version: {}", workflowMetadata.getManifest().getNextflowVersion());
-      log.debug("Nextflow  Version: {}", workflowMetadata.getManifest().getVersion());
+
+
+      if(workflowMetadata.getManifest() != null){
+        log.debug("Nextflow Manifest Nextflow Version: {}", workflowMetadata.getManifest().getNextflowVersion());
+        log.debug("Nextflow  Version: {}", workflowMetadata.getManifest().getVersion());
+      }
+
 
       val meta = new NextflowMetadata(workflowMetadata, params.getWorkflowParams());
       val monitor =
