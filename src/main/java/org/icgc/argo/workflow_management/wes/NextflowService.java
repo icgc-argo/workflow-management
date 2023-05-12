@@ -36,9 +36,11 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import nextflow.Const;
 import nextflow.cli.CliOptions;
 import nextflow.cli.CmdKubeRun;
 import nextflow.cli.Launcher;
+import nextflow.config.Manifest;
 import nextflow.k8s.K8sDriverLauncher;
 import org.icgc.argo.workflow_management.exception.NextflowRunException;
 import org.icgc.argo.workflow_management.exception.ReflectionUtilsException;
@@ -127,6 +129,11 @@ public class NextflowService implements WorkflowExecutionService {
       // Build required objects for monitoring THIS run.
       val workflowMetadata = new NextflowWorkflowMetadata(cmd, driver, params);
       log.debug("workflowMetadata: {}", workflowMetadata);
+
+      log.debug("Nextflow app version: {}", Const.APP_VER);
+      log.debug("Nextflow Manifest Nextflow Version: {}", workflowMetadata.getManifest().getNextflowVersion());
+      log.debug("Nextflow  Version: {}", workflowMetadata.getManifest().getVersion());
+
       val meta = new NextflowMetadata(workflowMetadata, params.getWorkflowParams());
       val monitor =
           new NextflowWorkflowMonitor(
