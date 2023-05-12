@@ -67,8 +67,10 @@ spec:
         }
         stage('Build & Publish Develop') {
             when {
+               anyOf {
                 branch "develop"
                 branch "nextflow_version_test"
+                }
             }
             steps {
                 container('docker') {
