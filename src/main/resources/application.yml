@@ -6,6 +6,7 @@ nextflow:
     imagePullPolicy: "IfNotPresent" # how K8s should pull a pod image for runs
     pluginsDir: "/icgc-argo-scratch/plugins" # where nextflow should copy plugins to for a run
     serviceAccount: "default"
+    context: "devopslab1-27193-k8s" #Nextflow poc: context to determine the cluster the workflow will run in.
     volMounts:
       - "pv-claim:/some/dir"
     masterUrl: "localhost:8080"

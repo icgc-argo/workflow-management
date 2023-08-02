@@ -24,6 +24,7 @@ import static org.icgc.argo.workflow_management.util.ParamsFile.createParamsFile
 import static org.icgc.argo.workflow_management.util.Reflections.createWithReflection;
 import static org.icgc.argo.workflow_management.util.Reflections.invokeDeclaredMethod;
 
+import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
@@ -36,6 +37,7 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import nextflow.Nextflow;
 import nextflow.cli.CliOptions;
 import nextflow.cli.CmdKubeRun;
 import nextflow.cli.Launcher;
@@ -69,7 +71,7 @@ public class NextflowService implements WorkflowExecutionService {
   private final WebLogEventSender webLogSender;
 
   // State
-  private final DefaultKubernetesClient workflowRunK8sClient;
+  private DefaultKubernetesClient workflowRunK8sClient; //Nextflow poc: removed final
 
   private final Scheduler scheduler;
 
@@ -79,7 +81,7 @@ public class NextflowService implements WorkflowExecutionService {
     this.config = config;
     this.secretProvider = secretProvider;
     this.webLogSender = webLogSender;
-    this.workflowRunK8sClient = createWorkflowRunK8sClient();
+    //this.workflowRunK8sClient = createWorkflowRunK8sClient(); Nextflow poc: commented
     log.debug("WorkflowRunK8sClient created");
     this.scheduler = Schedulers.newElastic("nextflow-service");
   }
@@ -148,17 +150,22 @@ public class NextflowService implements WorkflowExecutionService {
    *
    * @return the kube client to be used to interact with deployed workflow pods
    */
-  private DefaultKubernetesClient createWorkflowRunK8sClient() {
+  private DefaultKubernetesClient createWorkflowRunK8sClient(String context, String masterUrl) { //Nextflow poc: added arguments
     try {
-      val masterUrl = config.getK8s().getMasterUrl();
+      //val masterUrl = config.getK8s().getMasterUrl(); //Nextflow poc: commented
       val runNamespace = config.getK8s().getRunNamespace();
       val trustCertificate = config.getK8s().isTrustCertificate();
-      val config =
+      /*val config =
           new ConfigBuilder()
               .withTrustCerts(trustCertificate)
               .withMasterUrl(masterUrl)
               .withNamespace(runNamespace)
-              .build();
+              .build();*/
+      Config config= Config.autoConfigure(context); //Nextflow poc:  context here for secret creation
+      config.setNamespace(runNamespace);
+      config.setTrustCerts(trustCertificate);
+      config.setMasterUrl(masterUrl);
+
       return new DefaultKubernetesClient(config);
     } catch (KubernetesClientException e) {
       log.error(e.getMessage(), e);
@@ -268,6 +275,31 @@ public class NextflowService implements WorkflowExecutionService {
     // Dynamic engine properties/config
     val workflowEngineParams = params.getWorkflowEngineParams();
 
+
+    //Nextflow poc:  context switching here for secret and pod creation
+    String context="rdpc-dev";
+    String masterUrl="https://kubernetes.default.svc.cluster.local";
+    config.getK8s().setContext("rdpc-dev");
+    config.getK8s().setContext("rdpc-dev"); //UK: for triggering pods
+    k8sConfig.setContext("rdpc-dev");
+    k8sConfig.setVolMounts(List.of("nfs-dev-1-vol-dev-1:/nfs-dev-1-vol-dev-1"));
+
+    if(params.getWorkflowParams().get("cluster").equals("azure")){
+      context = "devopslab1-27193-k8s";
+      masterUrl = "https://devopslab1-27193k8s-axhipu6r.hcp.canadacentral.azmk8s.io:443";
+      config.getK8s().setContext("devopslab1-27193-k8s");
+      k8sConfig.setContext("devopslab1-27193-k8s");
+      config.getK8s().setContext("devopslab1-27193-k8s"); //UK: for triggering pods
+      k8sConfig.setContext("devopslab1-27193-k8s");
+      k8sConfig.setVolMounts(List.of("pvc-nfs-dev-1-vol-1-nfs-client-provisioner:/nfs-dev-1-vol-dev-1"));
+      System.out.println("context changed");
+    }
+
+    workflowRunK8sClient=createWorkflowRunK8sClient(k8sConfig.getContext(), k8sConfig.getMasterUrl()); //UK:  context here for secret creation
+
+
+    // ---- Nextflow poc:
+
     // Create SecretName and K8s Secret
     val rdpcSecretName = String.format("%s-%s", runName, SECRET_SUFFIX);
     secretProvider
@@ -308,6 +340,7 @@ public class NextflowService implements WorkflowExecutionService {
             .launchDir(workflowEngineParams.getLaunchDir())
             .projectDir(workflowEngineParams.getProjectDir())
             .workDir(workflowEngineParams.getWorkDir())
+            .context(k8sConfig.getContext()) //Nextflow poc: context to determine the cluster the workflow will run in
             .build()
             .getConfig();
 
