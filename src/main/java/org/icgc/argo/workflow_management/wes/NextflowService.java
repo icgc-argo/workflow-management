@@ -295,7 +295,7 @@ public class NextflowService implements WorkflowExecutionService {
       System.out.println("context changed");
     }
 
-    workflowRunK8sClient=createWorkflowRunK8sClient(k8sConfig.getContext(), k8sConfig.getMasterUrl()); //UK:  context here for secret creation
+    workflowRunK8sClient=createWorkflowRunK8sClient(k8sConfig.getContext(), masterUrl); //UK:  context here for secret creation
 
 
     // ---- Nextflow poc:
