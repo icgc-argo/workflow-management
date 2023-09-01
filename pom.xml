@@ -31,7 +31,7 @@
         </repository>
         <repository>
             <id>github</id>
-            <url>https://maven.pkg.github.com/ummulkiramr/nextflow</url>
+            <url>https://maven.pkg.github.com/icgc-argo/nextflow</url>
             <snapshots>
                 <enabled>true</enabled>
             </snapshots>
