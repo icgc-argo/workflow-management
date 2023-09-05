@@ -73,11 +73,10 @@ spec:
                 container('docker') {
                     withCredentials([usernamePassword(credentialsId:'argoContainers', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD'), usernamePassword(credentialsId: 'argoGithub', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
                         sh 'docker login ghcr.io -u $USERNAME -p $PASSWORD'
-                        sh 'mvn clean install -Dserver.username=${GIT_USERNAME} -Dserver.password=${GIT_PASSWORD}'
                     }
 
                     // DNS error if --network is default
-                    sh "docker build --network=host . -t ${dockerRepo}:edge -t ${dockerRepo}:${version}-${commit}"
+                    sh "docker build --build-arg GH_TOKEN=${GIT_PASSWORD} --build-arg GH_USER=${GIT_USERNAME} --network=host . -t ${dockerRepo}:edge -t ${dockerRepo}:${version}-${commit}"
 
                     sh "docker push ${dockerRepo}:${version}-${commit}"
                     sh "docker push ${dockerRepo}:edge"
