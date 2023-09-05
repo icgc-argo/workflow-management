@@ -4,7 +4,8 @@
 FROM adoptopenjdk/openjdk11:jdk-11.0.6_10-alpine-slim as builder
 WORKDIR /usr/src/app
 ADD . .
-RUN ./mvnw clean package -DskipTests
+#RUN ./mvnw clean package -DskipTests
+RUN  mvn clean package -Dserver.username=${GH_USER} -Dserver.password=${GH_TOKEN} -DskipTests
 
 #############################
 #   Server
