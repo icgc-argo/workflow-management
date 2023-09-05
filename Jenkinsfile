@@ -71,8 +71,9 @@ spec:
             }
             steps {
                 container('docker') {
-                    withCredentials([usernamePassword(credentialsId:'argoContainers', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                    withCredentials([usernamePassword(credentialsId:'argoContainers', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD'), usernamePassword(credentialsId: 'argoGithub', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
                         sh 'docker login ghcr.io -u $USERNAME -p $PASSWORD'
+                        sh 'mvn clean install -Dserver.username=${GIT_USERNAME} -Dserver.password=${GIT_PASSWORD}'
                     }
 
                     // DNS error if --network is default
