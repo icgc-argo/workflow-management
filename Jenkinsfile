@@ -73,84 +73,84 @@ spec:
               }
               steps {
                   container('jdk') {
-                      configFileProvider(
-                          [configFile(fileId: '11c739e4-8ac5-4fd3-983a-c20bd29846ef', variable: 'MAVEN_SETTINGS')]) {
-                                sh './mvnw -s $MAVEN_SETTINGS clean package'
+                      configFileProvider([configFile(fileId: '11c739e4-8ac5-4fd3-983a-c20bd29846ef', variable: 'MAVEN_SETTINGS')]) {
+                          sh 'echo $MAVEN_SETTINGS'
+                          // sh './mvnw -s $MAVEN_SETTINGS clean package'
                       }
                   }
               }
         }
 
 
-        stage('Build & Publish Develop') {
-            when {
-                branch "nextflow_22-10-7_plugin_fix_deployment"
-            }
-            steps {
-                container('docker') {
-                    withCredentials([usernamePassword(credentialsId:'argoContainers', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')/* ,
-                                        usernamePassword(credentialsId: 'argoGithub', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME') */]) {
-                       sh 'docker login ghcr.io -u $USERNAME -p $PASSWORD'
-                       //sh "docker build --build-arg GH_TOKEN=${GIT_PASSWORD} --build-arg GH_USER=${GIT_USERNAME} --network=host . -t ${dockerRepo}:edge -t ${dockerRepo}:${version}-${commit}"
-                    }
+        // stage('Build & Publish Develop') {
+        //     when {
+        //         branch "nextflow_22-10-7_plugin_fix_deployment"
+        //     }
+        //     steps {
+        //         container('docker') {
+        //             withCredentials([usernamePassword(credentialsId:'argoContainers', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')/* ,
+        //                                 usernamePassword(credentialsId: 'argoGithub', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME') */]) {
+        //                sh 'docker login ghcr.io -u $USERNAME -p $PASSWORD'
+        //                //sh "docker build --build-arg GH_TOKEN=${GIT_PASSWORD} --build-arg GH_USER=${GIT_USERNAME} --network=host . -t ${dockerRepo}:edge -t ${dockerRepo}:${version}-${commit}"
+        //             }
 
-                    // DNS error if --network is default
-                    sh "docker build --network=host . -t ${dockerRepo}:edge -t ${dockerRepo}:${commit}"
+        //             // DNS error if --network is default
+        //             sh "docker build --network=host . -t ${dockerRepo}:edge -t ${dockerRepo}:${commit}"
 
-                    sh "docker push ${dockerRepo}:${version}-${commit}"
-                    sh "docker push ${dockerRepo}:edge"
-                }
-            }
-        }
+        //             sh "docker push ${dockerRepo}:${version}-${commit}"
+        //             sh "docker push ${dockerRepo}:edge"
+        //         }
+        //     }
+        // }
 
 
-        stage('deploy to rdpc-collab-dev') {
-            when {
-                branch "develop"
-            }
-            steps {
-                build(job: "/provision/update-app-version", parameters: [
-                    [$class: 'StringParameterValue', name: 'RDPC_ENV', value: 'dev' ],
-                    [$class: 'StringParameterValue', name: 'TARGET_RELEASE', value: 'management'],
-                    [$class: 'StringParameterValue', name: 'NEW_APP_VERSION', value: "${version}-${commit}" ]
-                ])
-            }
-        }
+        // stage('deploy to rdpc-collab-dev') {
+        //     when {
+        //         branch "develop"
+        //     }
+        //     steps {
+        //         build(job: "/provision/update-app-version", parameters: [
+        //             [$class: 'StringParameterValue', name: 'RDPC_ENV', value: 'dev' ],
+        //             [$class: 'StringParameterValue', name: 'TARGET_RELEASE', value: 'management'],
+        //             [$class: 'StringParameterValue', name: 'NEW_APP_VERSION', value: "${version}-${commit}" ]
+        //         ])
+        //     }
+        // }
 
-        stage('Release & Tag') {
-            when {
-                branch "master"
-            }
-            steps {
-                container('docker') {
-                    withCredentials([usernamePassword(credentialsId: 'argoGithub', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
-                        sh "git tag ${version}"
-                      sh "git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/${gitHubRepo} --tags"
-                    }
+        // stage('Release & Tag') {
+        //     when {
+        //         branch "master"
+        //     }
+        //     steps {
+        //         container('docker') {
+        //             withCredentials([usernamePassword(credentialsId: 'argoGithub', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
+        //                 sh "git tag ${version}"
+        //               sh "git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/${gitHubRepo} --tags"
+        //             }
 
-                    withCredentials([usernamePassword(credentialsId:'argoContainers', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-                        sh 'docker login ghcr.io -u $USERNAME -p $PASSWORD'
-                    }
+        //             withCredentials([usernamePassword(credentialsId:'argoContainers', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+        //                 sh 'docker login ghcr.io -u $USERNAME -p $PASSWORD'
+        //             }
 
-                    // DNS error if --network is default
-                    sh "docker build --network=host . -t ${dockerRepo}:latest -t ${dockerRepo}:${version}"
+        //             // DNS error if --network is default
+        //             sh "docker build --network=host . -t ${dockerRepo}:latest -t ${dockerRepo}:${version}"
 
-                    sh "docker push ${dockerRepo}:${version}"
-                    sh "docker push ${dockerRepo}:latest"
-                }
-            }
-        }
-        stage('deploy to rdpc-collab-qa') {
-            when {
-                branch "master"
-            }
-            steps {
-                build(job: "/provision/update-app-version", parameters: [
-                    [$class: 'StringParameterValue', name: 'RDPC_ENV', value: 'qa' ],
-                    [$class: 'StringParameterValue', name: 'TARGET_RELEASE', value: 'management'],
-                    [$class: 'StringParameterValue', name: 'NEW_APP_VERSION', value: "${version}" ]
-                ])
-            }
-        }
+        //             sh "docker push ${dockerRepo}:${version}"
+        //             sh "docker push ${dockerRepo}:latest"
+        //         }
+        //     }
+        // }
+        // stage('deploy to rdpc-collab-qa') {
+        //     when {
+        //         branch "master"
+        //     }
+        //     steps {
+        //         build(job: "/provision/update-app-version", parameters: [
+        //             [$class: 'StringParameterValue', name: 'RDPC_ENV', value: 'qa' ],
+        //             [$class: 'StringParameterValue', name: 'TARGET_RELEASE', value: 'management'],
+        //             [$class: 'StringParameterValue', name: 'NEW_APP_VERSION', value: "${version}" ]
+        //         ])
+        //     }
+        // }
     }
 }
