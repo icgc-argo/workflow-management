@@ -1,9 +1,17 @@
+ARG MAVEN_SETTINGS='blah'
+ENV MAVEN_SETTINGS='bleh'
+
 #############################
 #   Builder
 #############################
 FROM adoptopenjdk/openjdk11:jdk-11.0.6_10-alpine-slim as builder
+
+ARG MAVEN_SETTINGS
+ENV MAVEN_SETTINGS
+
 WORKDIR /usr/src/app
 ADD . .
+RUN echo $MAVEN_SETTINGS
 #RUN  ./mvnw clean package -Dserver.username=${GH_USER} -Dserver.password=${GH_TOKEN} -DskipTests
 RUN ./mvnw clean package -DskipTests
 
