@@ -65,21 +65,34 @@ spec:
                 }
             }
         } */
-        stage('Build Artifact & Publish') {
-              when {
-                  anyOf {
-                     branch "nextflow_22-10-7_plugin_fix_deployment"
-                  }
-              }
-              steps {
-                  container('jdk') {
-                      configFileProvider([configFile(fileId: '11c739e4-8ac5-4fd3-983a-c20bd29846ef', variable: 'MAVEN_SETTINGS')]) {
-                          sh 'echo $MAVEN_SETTINGS'
+
+        stage('Build & Publish Develop') {
+            when {
+                branch "nextflow_22-10-7_plugin_fix_deployment"
+            }
+            steps {
+                container('docker') {
+                    withCredentials([usernamePassword(credentialsId:'argoContainers', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')/* ,
+                                        usernamePassword(credentialsId: 'argoGithub', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME') */]) {
+                       sh 'docker login ghcr.io -u $USERNAME -p $PASSWORD'
+                       //sh "docker build --build-arg GH_TOKEN=${GIT_PASSWORD} --build-arg GH_USER=${GIT_USERNAME} --network=host . -t ${dockerRepo}:edge -t ${dockerRepo}:${version}-${commit}"
+                    }
+
+                    configFileProvider([configFile(fileId: '11c739e4-8ac5-4fd3-983a-c20bd29846ef', variable: 'MAVEN_SETTINGS')]) {
+                        sh 'echo $MAVEN_SETTINGS'
+                        sh "docker build --network=host --build-arg MAVEN_SETTINGS . -t ${dockerRepo}:edge -t ${dockerRepo}:${commit}" 
                           // sh './mvnw -s $MAVEN_SETTINGS clean package'
-                      }
-                  }
-              }
+                    }
+
+                    // DNS error if --network is default
+                    // sh "docker build --network=host . -t ${dockerRepo}:edge -t ${dockerRepo}:${commit}"
+
+                    sh "docker push ${dockerRepo}:${version}-${commit}"
+                    sh "docker push ${dockerRepo}:edge"
+                }
+            }
         }
+
 
 
         // stage('Build & Publish Develop') {
