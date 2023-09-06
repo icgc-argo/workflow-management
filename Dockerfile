@@ -1,5 +1,4 @@
 ARG MAVEN_SETTINGS='blah'
-ENV MAVEN_SETTINGS='bleh'
 
 #############################
 #   Builder
@@ -7,7 +6,6 @@ ENV MAVEN_SETTINGS='bleh'
 FROM adoptopenjdk/openjdk11:jdk-11.0.6_10-alpine-slim as builder
 
 ARG MAVEN_SETTINGS
-ENV MAVEN_SETTINGS
 
 WORKDIR /usr/src/app
 ADD . .
