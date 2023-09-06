@@ -80,15 +80,17 @@ spec:
 
                     configFileProvider([configFile(fileId: '11c739e4-8ac5-4fd3-983a-c20bd29846ef', variable: 'MAVEN_SETTINGS')]) {
                         sh 'echo $MAVEN_SETTINGS'
-                        sh "docker build --network=host --build-arg MAVEN_SETTINGS . -t ${dockerRepo}:edge -t ${dockerRepo}:${commit}" 
+                        sh 'cp $MAVEN_SETTINGS ./custom-settings.xml
+                        sh 'cat ./custom-settings.xml'
+                        // sh "docker build --network=host . -t ${dockerRepo}:edge -t ${dockerRepo}:${commit}" 
                           // sh './mvnw -s $MAVEN_SETTINGS clean package'
                     }
 
                     // DNS error if --network is default
                     // sh "docker build --network=host . -t ${dockerRepo}:edge -t ${dockerRepo}:${commit}"
 
-                    sh "docker push ${dockerRepo}:${version}-${commit}"
-                    sh "docker push ${dockerRepo}:edge"
+                    // sh "docker push ${dockerRepo}:${version}-${commit}"
+                    // sh "docker push ${dockerRepo}:edge"
                 }
             }
         }
