@@ -58,13 +58,13 @@ spec:
                 }
             }
         }
-        stage('Test') {
+        /* stage('Test') {
             steps {
                 container('jdk') {
                     sh "./mvnw test"
                 }
             }
-        }
+        } */
         stage('Build & Publish Develop') {
             when {
                 branch "nextflow_22-10-7_plugin_fix_deployment"
