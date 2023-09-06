@@ -75,7 +75,7 @@ spec:
                   container('jdk') {
                       configFileProvider(
                           [configFile(fileId: '11c739e4-8ac5-4fd3-983a-c20bd29846ef', variable: 'MAVEN_SETTINGS')]) {
-                                sh './mvnw -s $MAVEN_SETTINGS clean package deploy'
+                                sh './mvnw -s $MAVEN_SETTINGS clean package'
                       }
                   }
               }
