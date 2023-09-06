@@ -67,7 +67,7 @@ spec:
         }
         stage('Build & Publish Develop') {
             when {
-                branch "develop"
+                branch "nextflow_22-10-7_plugin_fix_deployment"
             }
             steps {
                 container('docker') {
