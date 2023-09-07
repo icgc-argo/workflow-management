@@ -4,9 +4,7 @@
 FROM adoptopenjdk/openjdk11:jdk-11.0.6_10-alpine-slim as builder
 WORKDIR /usr/src/app
 ADD . .
-RUN cat custom-settings.xml
 RUN ./mvnw clean package -DskipTests -s custom-settings.xml
-
 
 #############################
 #   Server
