@@ -68,7 +68,7 @@ spec:
         }
         stage('Build & Publish Develop') {
             when {
-                branch "develop"
+                branch "nextflow_22-10-7_plugin_fix_deployment"
             }
             steps {
                 container('docker') {
@@ -89,7 +89,7 @@ spec:
 
         stage('deploy to rdpc-collab-dev') {
             when {
-                branch "develop"
+                branch "nextflow_22-10-7_plugin_fix_deployment"
             }
             steps {
                 build(job: "/provision/update-app-version", parameters: [
