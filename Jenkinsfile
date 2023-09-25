@@ -47,13 +47,12 @@ spec:
 """
         }
     }
+
     stages {
         stage('Prepare') {
             steps {
                 script {
                     commit = sh(returnStdout: true, script: 'git describe --always').trim()
-                }
-                script {
                     version = readMavenPom().getVersion()
                 }
             }
@@ -61,7 +60,9 @@ spec:
         stage('Test') {
             steps {
                 container('jdk') {
-                    sh "./mvnw test"
+                    configFileProvider([configFile(fileId: '11c739e4-8ac5-4fd3-983a-c20bd29846ef', variable: 'MAVEN_SETTINGS_PATH')]) {
+                        sh "./mvnw test -s ${MAVEN_SETTINGS_PATH}"
+                    }
                 }
             }
         }
@@ -75,8 +76,10 @@ spec:
                         sh 'docker login ghcr.io -u $USERNAME -p $PASSWORD'
                     }
 
-                    // DNS error if --network is default
-                    sh "docker build --network=host . -t ${dockerRepo}:edge -t ${dockerRepo}:${version}-${commit}"
+                    configFileProvider([configFile(fileId: '11c739e4-8ac5-4fd3-983a-c20bd29846ef', variable: 'MAVEN_SETTINGS_PATH')]) {
+                        sh 'cp $MAVEN_SETTINGS_PATH ./custom-settings.xml'
+                        sh "docker build --network=host . -t ${dockerRepo}:edge -t ${dockerRepo}:${version}-${commit}"
+                    }
 
                     sh "docker push ${dockerRepo}:${version}-${commit}"
                     sh "docker push ${dockerRepo}:edge"
