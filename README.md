@@ -169,7 +169,7 @@ To do this:
 e.g. `configFileProvider([configFile(fileId: '11c739e4-8ac5-4fd3-983a-c20bd29846ef', variable: 'MAVEN_SETTINGS_PATH')])`
 
 - the contents of the Maven's settings.xml to be copied to a path ./custom-settings.xml for use inside the dockerfile
-  sh 'cp $MAVEN_SETTINGS_PATH ./custom-settings.xml'
+  `sh 'cp $MAVEN_SETTINGS_PATH ./custom-settings.xml'`
 
 - the docker build command should then use the contents of the custom-settings.xml file during packaging
   RUN ./mvnw clean package -DskipTests -s custom-settings.xml
