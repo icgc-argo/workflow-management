@@ -163,7 +163,7 @@ The nextflow library is to be pulled temporarily from https://maven.pkg.github.c
 To do this: 
 - create a new config file (maven's settings.xml) in rdpc jenkins which is needed during build and deployment. (Dashboard -> manage jenkins -> manage Files -> Config Files)
 
-- a github personal access token is required for the creation of the config file. This github token is to be added in rdpc jenkins (Dashboard -> Manage Jenkins -> Credentails -> click on System -> Global Crdentials -> Add credentials) 
+- a Github "personal access token" (PAT) is required for the creation of the config file. This Github token is to be added in rdpc jenkins (Dashboard -> Manage Jenkins -> Credentails -> click on System -> Global Credentials -> Add credentials) 
 
 - the jenkinsfile has to be updated to use the id of the config file (maven's settings.xml) created in rdpc jenkins 
   configFileProvider([configFile(fileId: '11c739e4-8ac5-4fd3-983a-c20bd29846ef', variable: 'MAVEN_SETTINGS_PATH')])
