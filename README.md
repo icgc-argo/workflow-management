@@ -166,7 +166,7 @@ To do this:
 - a Github "personal access token" (PAT) is required for the creation of the config file. This Github token is to be added in rdpc jenkins (Dashboard -> Manage Jenkins -> Credentails -> click on System -> Global Credentials -> Add credentials) 
 
 - the jenkinsfile has to be updated to use the id of the config file (maven's settings.xml) created in rdpc jenkins 
-  configFileProvider([configFile(fileId: '11c739e4-8ac5-4fd3-983a-c20bd29846ef', variable: 'MAVEN_SETTINGS_PATH')])
+e.g. `configFileProvider([configFile(fileId: '11c739e4-8ac5-4fd3-983a-c20bd29846ef', variable: 'MAVEN_SETTINGS_PATH')])`
 
 - the contents of the maven's settings.xml to be copied to a path ./custom-settings.xml for use inside the dockerfile
   sh 'cp $MAVEN_SETTINGS_PATH ./custom-settings.xml'
