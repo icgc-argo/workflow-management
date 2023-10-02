@@ -168,7 +168,7 @@ To do this:
 - the jenkinsfile has to be updated to use the id of the config file (maven's settings.xml) created in rdpc jenkins 
 e.g. `configFileProvider([configFile(fileId: '11c739e4-8ac5-4fd3-983a-c20bd29846ef', variable: 'MAVEN_SETTINGS_PATH')])`
 
-- the contents of the maven's settings.xml to be copied to a path ./custom-settings.xml for use inside the dockerfile
+- the contents of the Maven's settings.xml to be copied to a path ./custom-settings.xml for use inside the dockerfile
   sh 'cp $MAVEN_SETTINGS_PATH ./custom-settings.xml'
 
 - the docker build command should then use the contents of the custom-settings.xml file during packaging
