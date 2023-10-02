@@ -160,7 +160,7 @@ mvn clean test
 
 ##### Using a forked version of the Nextflow library
 The nextflow library is to be pulled temporarily from https://maven.pkg.github.com/icgc-argo/nextflow instead of nextflow.io. 
-to do this: 
+To do this: 
 - create a new config file (maven's settings.xml) in rdpc jenkins which is needed during build and deployment. (Dashboard -> manage jenkins -> manage Files -> Config Files)
 
 - a github personal access token is required for the creation of the config file. This github token is to be added in rdpc jenkins (Dashboard -> Manage Jenkins -> Credentails -> click on System -> Global Crdentials -> Add credentials) 
