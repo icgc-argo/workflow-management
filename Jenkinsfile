@@ -4,6 +4,6 @@ pipelineRDPCWorkflowManagement(
     dockerRegistry: "ghcr.io",
     dockerRepo: "icgc-argo/workflow-management",
     gitRepo: "icgc-argo/workflow-management",
-    testCommand: "./mvnw test --quiet",
+    testCommand: "./mvnw test",
     helmRelease: "management"
 )
