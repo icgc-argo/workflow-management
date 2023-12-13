@@ -29,6 +29,16 @@
             <id>jcenter</id>
             <url>https://jcenter.bintray.com/</url>
         </repository>
+        <repository>
+            <id>github</id>
+            <url>https://maven.pkg.github.com/icgc-argo/nextflow</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+        </repository>
     </repositories>
 
     <properties>
@@ -66,7 +76,7 @@
         <dependency>
             <groupId>io.nextflow</groupId>
             <artifactId>nextflow</artifactId>
-            <version>21.04.3</version>
+            <version>22.10.7-SNAPSHOT-PluginsFix</version>
         </dependency>
 
         <!-- Health Check -->
