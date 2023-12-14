@@ -79,6 +79,7 @@ public class WesConsumerConfig {
   }
 
   private Mono<Boolean> consumeMessageAndExecuteInitializeOrCancel(Transaction<WfMgmtRunMsg> tx) {
+    log.debug("Message received from: {} {} {}",topicExchangeName,queueName,topicRoutingKeys);
     val msg = tx.get();
     log.debug("WfMgmtRunMsg received: {}", msg);
 
@@ -114,6 +115,8 @@ public class WesConsumerConfig {
 
     log.error("Error occurred", t);
     log.error("WES SYSTEM_ERROR msg: {}", msg);
+    log.debug("Error occurred", t);
+    log.debug("WES SYSTEM_ERROR msg: {}", msg);
     tx.reject();
 
     return webLogEventSender

@@ -99,6 +99,7 @@ public class GateKeeperService {
 
     // check if this is a valid state transition
     val nextStateOpt = nextState(currentState, inputState);
+    log.debug("nextStateOpt: {}",nextStateOpt);
     if (nextStateOpt.isEmpty()) {
       return null;
     }

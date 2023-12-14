@@ -24,14 +24,14 @@ logging.level:
   org.icgc.argo: debug
 
 ---
-spring.profiles: apiKey
+spring.config.activate.on-profile: apiKey
 
 secret:
   enabled: true
   apiKey: testapikeytotallylegit
 
 ---
-spring.profiles: oauth2Token
+spring.config.activate.on-profile: oauth2Token
 
 secret:
   enabled: true
@@ -48,6 +48,12 @@ rabbit:
       port: 5672
       username: user
       password: pass
+    connection:
+      retryMax: 5       #Maximum number of reconnection attempts
+      timeout: 60s      #Total attempt time before terminating the application
+      randomBackoff:
+        firstBackoff: 2s  #Delay before first re-attempt
+        maxBackoff: 10s   #Maximum delay on next attempts.
 
 wes.consumer:
     queue: "execute-queue"
@@ -55,7 +61,7 @@ wes.consumer:
     topicRoutingKeys: "INITIALIZING, CANCELING" # comma separated Array of keys
 
 ---
-spring.profiles: gatekeeper
+spring.config.activate.on-profile: gatekeeper
 
 gatekeeper.consumer:
     queue: "gatekeeper-in-queue"
@@ -92,7 +98,7 @@ spring.jpa:
     ddl-auto: update
 
 ---
-spring.profiles: test
+spring.config.activate.on-profile: test
 
 spring.jpa:
   hibernate:
