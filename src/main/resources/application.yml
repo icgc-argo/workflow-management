@@ -6,6 +6,7 @@ nextflow:
     imagePullPolicy: "IfNotPresent" # how K8s should pull a pod image for runs
     pluginsDir: "/icgc-argo-scratch/plugins" # where nextflow should copy plugins to for a run
     serviceAccount: "default"
+    context: "devopslab1-27193-k8s" #Nextflow poc: context to determine the cluster the workflow will run in.
     volMounts:
       - "pv-claim:/some/dir"
     masterUrl: "localhost:8080"
@@ -14,6 +15,15 @@ nextflow:
   monitor:
     sleepInterval: 1000 # milliseconds
     maxErrorLogLines: 50 # we put the last ${maxErrorLogLines} into the error message if a Pod fails
+
+
+cluster:
+  masterUrl:
+    azure: "https://devopslab1-27193k8s-axhipu6r.hcp.canadacentral.azmk8s.io:443"
+    cumulus: "https://rdpc-dev.cumulus.infra.icgc-argo.org:6443"
+  context:
+    azure: "devopslab1-27193-k8s"
+    cumulus: "rdpc-dev-cumulus"
 
 secret:
   enabled: false
@@ -40,14 +50,30 @@ secret:
   tokenUri: http://localhost:8080/oauth/token
 
 ---
+#rabbit:
+#  default-endpoint-name: standalone
+#  endpoints:
+#    standalone:
+#      host: localhost
+#      port: 5672
+#      username: user
+#      password: pass
+#    connection:
+#      retryMax: 5       #Maximum number of reconnection attempts
+#      timeout: 60s      #Total attempt time before terminating the application
+#      randomBackoff:
+#        firstBackoff: 2s  #Delay before first re-attempt
+#        maxBackoff: 10s   #Maximum delay on next attempts.
+
+
 rabbit:
   default-endpoint-name: standalone
   endpoints:
     standalone:
       host: localhost
       port: 5672
-      username: user
-      password: pass
+      username: uklocal
+      password: uklocal
     connection:
       retryMax: 5       #Maximum number of reconnection attempts
       timeout: 60s      #Total attempt time before terminating the application
@@ -78,7 +104,7 @@ spring.cloud.stream:
       destination: weblog # kafka topic to listen to
       binder: kafka
   kafka:
-    binder.brokers: localhost:9092
+    binder.brokers: localhost:9093 # change
     bindings:
       weblogConsumer-in-0:
         consumer:
