@@ -152,12 +152,6 @@ public class NextflowService implements WorkflowExecutionService {
     try {
       val runNamespace = config.getK8s().getRunNamespace();
       val trustCertificate = config.getK8s().isTrustCertificate();
-      /*val config =
-          new ConfigBuilder()
-              .withTrustCerts(trustCertificate)
-              .withMasterUrl(masterUrl)
-              .withNamespace(runNamespace)
-              .build();*/
       Config config= Config.autoConfigure(context);
       config.setNamespace(runNamespace);
       config.setTrustCerts(trustCertificate);
@@ -322,7 +316,7 @@ public class NextflowService implements WorkflowExecutionService {
             .launchDir(workflowEngineParams.getLaunchDir())
             .projectDir(workflowEngineParams.getProjectDir())
             .workDir(workflowEngineParams.getWorkDir())
-            .context(k8sConfig.getContext()) //Nextflow poc: context to determine the cluster the workflow will run in
+            .context(k8sConfig.getContext())
             .build()
             .getConfig();
 

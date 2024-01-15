@@ -47,7 +47,7 @@ public class NextflowProperties {
     private String pluginsDir;
     private List<String> volMounts;
     private String masterUrl;
-    private String context; //Nextflow poc: context to determine the cluster the workflow will run in
+    private String context;
     private boolean trustCertificate;
   }
 
