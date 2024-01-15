@@ -25,7 +25,6 @@ import static org.icgc.argo.workflow_management.util.Reflections.createWithRefle
 import static org.icgc.argo.workflow_management.util.Reflections.invokeDeclaredMethod;
 
 import io.fabric8.kubernetes.client.Config;
-import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import java.io.IOException;
@@ -37,7 +36,6 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import nextflow.Nextflow;
 import nextflow.cli.CliOptions;
 import nextflow.cli.CmdKubeRun;
 import nextflow.cli.Launcher;
@@ -51,8 +49,6 @@ import org.icgc.argo.workflow_management.wes.model.*;
 import org.icgc.argo.workflow_management.wes.properties.NextflowProperties;
 import org.icgc.argo.workflow_management.wes.secret.SecretProvider;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
@@ -60,7 +56,6 @@ import reactor.core.scheduler.Schedulers;
 
 @Slf4j
 @Service(value = "nextflow")
-@ConfigurationProperties(prefix = "cluster")
 public class NextflowService implements WorkflowExecutionService {
 
   // Constants
@@ -70,6 +65,7 @@ public class NextflowService implements WorkflowExecutionService {
 
   // Dependencies
   private final NextflowProperties config;
+
   private final SecretProvider secretProvider;
   private final WebLogEventSender webLogSender;
 
@@ -77,12 +73,6 @@ public class NextflowService implements WorkflowExecutionService {
   private DefaultKubernetesClient workflowRunK8sClient;
 
   private final Scheduler scheduler;
-
-  //@Value("${context}")
-  private HashMap<String, String> context;
-
-  //@Value("${masterUrl}")
-  private HashMap<String, String> masterUrl;
 
   @Autowired
   public NextflowService(
@@ -259,6 +249,7 @@ public class NextflowService implements WorkflowExecutionService {
     // Config from application.yml
     val k8sConfig = config.getK8s();
     val webLogUrl = config.getWeblogUrl();
+    val clusterConfig = config.getCluster();
 
     // params map to build CmdKubeRun (put if val not null)
     val cmdParams = new ConditionalPutMap<String, Object>(Objects::nonNull, new HashMap<>());
@@ -281,29 +272,15 @@ public class NextflowService implements WorkflowExecutionService {
 
     // Dynamic engine properties/config
     val workflowEngineParams = params.getWorkflowEngineParams();
-
+    val cluster  =  Objects.nonNull(params.getWorkflowParams().get("cluster"))? params.getWorkflowParams().get("cluster").toString(): "cumulus";
 
     // --- Nextflow:  context switching here for secret and pod creation
-
-    String clusterContext = context.get("cumulus");
-    String clusterUrl= masterUrl.get("cumulus");
-    k8sConfig.setVolMounts(List.of("nfs-dev-1-vol-dev-1:/nfs-dev-1-vol-dev-1"));
-
-    if(params.getWorkflowParams().get("cluster").equals("azure")){
-       clusterContext = context.get("azure");
-       clusterUrl= masterUrl.get("azure");
-       k8sConfig.setVolMounts(List.of("pvc-nfs-dev-1-vol-1-nfs-client-provisioner:/nfs-dev-1-vol-dev-1"));
-    }
-
-    log.info("CONTEXT: "+clusterContext);
-    log.info("MASTERURL: "+clusterUrl);
-
-    config.getK8s().setContext(clusterContext);
+    val clusterContext = clusterConfig.getContext().get(cluster);
+    val clusterUrl= clusterConfig.getMasterUrl().get(cluster);
+    k8sConfig.setVolMounts(clusterConfig.getVolMounts().get(cluster));
     k8sConfig.setContext(clusterContext);
-    workflowRunK8sClient=createWorkflowRunK8sClient(k8sConfig.getContext(), clusterUrl); //context here for secret creation
+    workflowRunK8sClient=createWorkflowRunK8sClient(clusterContext, clusterUrl); //context here for secret creation
 
-
-    // ---- Nextflow:
 
     // Create SecretName and K8s Secret
     val rdpcSecretName = String.format("%s-%s", runName, SECRET_SUFFIX);
