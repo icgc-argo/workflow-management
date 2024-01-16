@@ -266,12 +266,12 @@ public class NextflowService implements WorkflowExecutionService {
 
     // Dynamic engine properties/config
     val workflowEngineParams = params.getWorkflowEngineParams();
-    val cluster  =  Objects.nonNull(params.getWorkflowParams().get("cluster"))? params.getWorkflowParams().get("cluster").toString(): "cumulus";
+    val cluster  =  Objects.nonNull(params.getWorkflowParams().get("cluster"))? params.getWorkflowParams().get("cluster").toString(): "default";
 
     // --- Nextflow:  context switching here for secret and pod creation
-    val clusterContext = clusterConfig.getContext().get(cluster);
-    val clusterUrl= clusterConfig.getMasterUrl().get(cluster);
-    k8sConfig.setVolMounts(clusterConfig.getVolMounts().get(cluster));
+    val clusterContext = clusterConfig.get(cluster).getContext();
+    val clusterUrl= clusterConfig.get(cluster).getMasterUrl();
+    k8sConfig.setVolMounts(clusterConfig.get(cluster).getVolMounts());
     k8sConfig.setContext(clusterContext);
     workflowRunK8sClient=createWorkflowRunK8sClient(clusterContext, clusterUrl); //context here for secret creation
 

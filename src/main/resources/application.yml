@@ -1,15 +1,14 @@
 nextflow:
-  cluster:  #context to determine the cluster the workflow will run in.
-    masterUrl:
-      azure: "localhost:8080/azure"
-      cumulus: "localhost:8080/cumulus"
-    context:
-      azure: "azure-context-name"
-      cumulus: "cumulus-context-name"
-    volMounts:
-      azure:
+  cluster: #context to determine the cluster the workflow will run in.
+    azure:
+      masterUrl: "localhost:8080/azure"
+      context: "azure-context-name"
+      volMounts:
         - "pv-claim:/some/dir/in/azure"
-      cumulus:
+    default:
+      masterUrl: "localhost:8080/cumulus"
+      context: "default-context-name"
+      volMounts:
         - "pv-claim:/some/dir/in/cumulus"
   k8s:
     runAsUser: 9999
