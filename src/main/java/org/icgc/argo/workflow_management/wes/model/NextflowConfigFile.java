@@ -63,7 +63,6 @@ public class NextflowConfigFile {
     writeFormattedLineIfValue(fileContent::add, "\tserviceAccount = '%s'", serviceAccount);
     writeFormattedLineIfValue(fileContent::add, "\tcontext = '%s'", context);
 
-
     // k8s image pull policy for run
     fileContent.add(String.format("\tpullPolicy = '%s'", imagePullPolicy));
 

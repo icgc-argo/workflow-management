@@ -18,10 +18,8 @@
 
 package org.icgc.argo.workflow_management.wes.properties;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -37,7 +35,7 @@ public class NextflowProperties {
   private String weblogUrl;
   private String masterUrl;
   private boolean trustCertificate;
-  private Map<String,ClusterProperties> cluster;
+  private Map<String, ClusterProperties> cluster;
 
   @Data
   public static class K8sProperties {
@@ -68,7 +66,5 @@ public class NextflowProperties {
     private String context;
     private String masterUrl;
     private List<String> volMounts;
-
   }
-
 }
