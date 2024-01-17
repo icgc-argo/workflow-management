@@ -35,6 +35,8 @@ public class NextflowConfigFile {
   private @NonNull String runName;
   private @NonNull Integer runAsUser;
   private String serviceAccount;
+
+  private String context;
   private String runNamespace;
   private String imagePullPolicy;
   private String pluginsDir;
@@ -59,6 +61,7 @@ public class NextflowConfigFile {
     // k8s service account (optional)
     writeFormattedLineIfValue(fileContent::add, "\tnamespace= '%s'", runNamespace);
     writeFormattedLineIfValue(fileContent::add, "\tserviceAccount = '%s'", serviceAccount);
+    writeFormattedLineIfValue(fileContent::add, "\tcontext = '%s'", context);
 
     // k8s image pull policy for run
     fileContent.add(String.format("\tpullPolicy = '%s'", imagePullPolicy));

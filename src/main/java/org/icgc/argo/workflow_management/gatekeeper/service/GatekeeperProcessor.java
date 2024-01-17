@@ -64,7 +64,7 @@ public class GatekeeperProcessor
                   // WeblogEvents only change run state in gatekeeper service, not other params
                   val allowedMsg =
                       service.checkWithExistingAndUpdateStateOnly(msg.getRunId(), msg.getState());
-                  log.debug("getWeblogInputMsgsTransformer:allowedMsg: {}",allowedMsg);
+                  log.debug("getWeblogInputMsgsTransformer:allowedMsg: {}", allowedMsg);
                   if (allowedMsg.isEmpty()) {
                     tx.reject();
                     log.debug("WeblogConsumer - Gatekeeper Rejected: {}, YOU SHALL NOT PASS!", msg);
@@ -84,7 +84,7 @@ public class GatekeeperProcessor
                 (tx, sink) -> {
                   val msg = tx.get();
                   val allowedMsg = service.checkWfMgmtRunMsgAndUpdate(msg);
-                  log.debug("getGateKeeperInputMsgTransformer:allowedMsg: {}",allowedMsg);
+                  log.debug("getGateKeeperInputMsgTransformer:allowedMsg: {}", allowedMsg);
                   if (allowedMsg.isEmpty()) {
                     tx.reject();
                     log.debug(

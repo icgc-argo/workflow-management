@@ -26,6 +26,7 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class WesUtils {
   private static final String WES_PREFIX = "wes-";
+
   // run name (used for paramsFile as well)
   // You may be asking yourself, why is he replacing the "-" in the UUID, this is a valid
   // question, well unfortunately when trying to resume a job, Nextflow searches for the

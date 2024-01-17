@@ -104,8 +104,8 @@ public class WebLogEventSender {
   }
 
   private Mono<Boolean> sendHttpMessage(Object jsonReadyObject) {
-    log.debug("sending event message to: {}",endpoint);
-    log.debug("jsonReadyObject: {}",toJsonString(jsonReadyObject));
+    log.debug("sending event message to: {}", endpoint);
+    log.debug("jsonReadyObject: {}", toJsonString(jsonReadyObject));
     return WebClient.create(endpoint)
         .post()
         .contentType(MediaType.APPLICATION_JSON)

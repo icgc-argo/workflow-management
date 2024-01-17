@@ -175,3 +175,35 @@ To do this:
   `RUN ./mvnw clean package -DskipTests -s custom-settings.xml`
 
 
+#### Using Workflow Management to fire workflows across multiple clusters
+
+Workflow Management allows users to trigger workflows across multiple clusters. 
+What this means is, say Workflow Management is running in clusterA(which is the default), it can now trigger workflows in clusterA as well as an external clusterB where workflow pods will run and finish.
+For this to work the below set of configuration properties are to be added.
+
+```
+nextflow:
+  cluster: 
+    cluster2:   
+      masterUrl: "localhost:8080/azure"
+      context: "azure-context-name"
+      volMounts:
+        - "pv-claim:/some/dir/in/azure"
+    default:
+      masterUrl: "localhost:8080/cumulus"
+      context: # "default-context-name". When left blank then current-context will be used.
+      volMounts:
+        - "pv-claim:/some/dir/in/cumulus"
+```
+
+The cluster config property above holds the list of clusters where workflows can be run. 
+The 'default' entry should always be present in this list. Here the masterUrl, context and volMounts are of the current cluster where Workflow Management is running. 
+Cluster2 is the external cluster where the workflow pods are to be triggered with its own values for masterUrl, context and volMounts. 
+
+Now when workflows are triggered, a cluster parameter needs to be sent in the workflow params. 
+```
+cluster = "cluster2"
+```
+The system will pick the masterUrl, context and volMounts values corresponding to that cluster and trigger workflows there. 
+This parameter is not mandatory and when skipped the workflows will run in the default cluster. 
+
