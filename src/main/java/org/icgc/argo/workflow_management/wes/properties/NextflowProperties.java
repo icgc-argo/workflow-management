@@ -59,10 +59,6 @@ public class NextflowProperties {
 
   @Data
   public static class ClusterProperties {
-    /*private HashMap<String, String> context;
-    private HashMap<String, String> masterUrl;
-    private HashMap<String, List<String>> volMounts;*/
-
     private String context;
     private String masterUrl;
     private List<String> volMounts;
