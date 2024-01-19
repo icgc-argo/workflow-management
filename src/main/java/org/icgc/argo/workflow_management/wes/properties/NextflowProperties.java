@@ -62,5 +62,6 @@ public class NextflowProperties {
     private String context;
     private String masterUrl;
     private List<String> volMounts;
+    private String pluginsDir;
   }
 }

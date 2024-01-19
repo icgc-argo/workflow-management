@@ -5,11 +5,13 @@ nextflow:
       context: "azure-context-name"
       volMounts:
         - "pv-claim:/some/dir/in/azure"
+      pluginsDir: "/tmp/plugins"
     default:
       masterUrl: "localhost:8080/cumulus"
       context: # "default-context-name". When left blank then current-context will be used.
       volMounts:
         - "pv-claim:/some/dir/in/cumulus"
+      pluginsDir: "/icgc-argo-scratch/plugins"
   k8s:
     runAsUser: 9999
     namespace: "default" # Namespace where app will be running

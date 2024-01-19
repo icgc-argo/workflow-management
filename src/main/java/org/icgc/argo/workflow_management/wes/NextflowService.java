@@ -275,6 +275,7 @@ public class NextflowService implements WorkflowExecutionService {
     val clusterUrl = clusterConfig.get(cluster).getMasterUrl();
     k8sConfig.setVolMounts(clusterConfig.get(cluster).getVolMounts());
     k8sConfig.setContext(clusterContext);
+    k8sConfig.setPluginsDir(clusterConfig.get(cluster).getPluginsDir());
     workflowRunK8sClient =
         createWorkflowRunK8sClient(clusterContext, clusterUrl); // context here for secret creation
 
